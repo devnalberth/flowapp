@@ -1,0 +1,179 @@
+.gh {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 18px;
+  min-height: 300px;
+}
+
+.gh__habits {
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+  color: #fff;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.gh__halo {
+  position: relative;
+  width: 118px;
+  height: 118px;
+}
+
+.gh__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.gh__ring--mid {
+  inset: 12px;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.gh__ring--inner {
+  inset: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+}
+
+.gh__habitsMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.gh__habitsLabel {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.gh__habitsValue {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.gh__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fff;
+  color: #121212;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.gh__arrow {
+  width: 10px;
+  height: 10px;
+  background: #34c759;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.gh__goals {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gh__goalsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gh__goalsTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #121212;
+}
+
+.gh__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f9fafa;
+  border-radius: 9999px;
+  color: #99a3ad;
+  font-size: 12px;
+}
+
+.gh__chev {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #99a3ad;
+  border-bottom: 2px solid #99a3ad;
+  transform: rotate(45deg);
+}
+
+.gh__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  background: #f5f6f7;
+  border-radius: 18px;
+  min-height: 150px;
+}
+
+.gh__cell {
+  height: 42px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.gh__cell--highlight {
+  background: linear-gradient(180deg, #ff8a00 0%, #ff4800 100%);
+}
+
+.gh__focus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.gh__focusLabel {
+  font-size: 12px;
+  color: #99a3ad;
+}
+
+.gh__focusValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #121212;
+}
+
+.gh__months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  font-size: 12px;
+  color: #99a3ad;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .gh {
+    grid-template-columns: 1fr;
+  }
+
+  .gh__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

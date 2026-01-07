@@ -1,0 +1,290 @@
+.createTaskModal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.createTaskModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 13, 18, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.createTaskModal__panel {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(13, 13, 18, 0.12);
+}
+
+.createTaskModal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid #dfe1e7;
+}
+
+.createTaskModal__title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 25.2px;
+  font-weight: 600;
+  color: #0d0d12;
+}
+
+.createTaskModal__iconBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 40px;
+  border: 1px solid #dfe1e7;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 2px rgba(13, 13, 18, 0.06);
+  cursor: pointer;
+}
+
+.createTaskModal__iconBtn:focus-visible {
+  outline: 2px solid #ff9500;
+  outline-offset: 2px;
+}
+
+.createTaskModal__closeIcon {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+
+.createTaskModal__closeIcon::before,
+.createTaskModal__closeIcon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #0d0d12;
+  transform-origin: center;
+}
+
+.createTaskModal__closeIcon::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.createTaskModal__closeIcon::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.createTaskModal__form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.createTaskModal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.createTaskModal__label {
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 500;
+  color: #0d0d12;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.createTaskModal__asterisk {
+  color: #df1c41;
+  font-weight: 600;
+}
+
+.createTaskModal__input,
+.createTaskModal__textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #dfe1e7;
+  padding: 12px;
+  font-size: 16px;
+  line-height: 24px;
+  font-family: var(--font-sans);
+  color: rgba(0, 0, 0, 0.8);
+  background: #fff;
+}
+
+.createTaskModal__input::placeholder,
+.createTaskModal__textarea::placeholder {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.createTaskModal__input:focus,
+.createTaskModal__textarea:focus {
+  outline: 2px solid #ff9500;
+  border-color: transparent;
+}
+
+.createTaskModal__input--select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #818898 50%),
+    linear-gradient(135deg, #818898 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.createTaskModal__dateRange {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #dfe1e7;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.createTaskModal__dateRange:focus-within {
+  border-color: transparent;
+  outline: 2px solid #ff9500;
+}
+
+.createTaskModal__dateInput {
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  line-height: 24px;
+  font-family: var(--font-sans);
+  color: rgba(0, 0, 0, 0.8);
+  flex: 1;
+  min-width: 0;
+}
+
+.createTaskModal__dateInput:focus {
+  outline: none;
+}
+
+.createTaskModal__dateInput::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.createTaskModal__dateDivider {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 16px;
+}
+
+.createTaskModal__calendarIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(13, 13, 18, 0.24);
+  position: relative;
+}
+
+.createTaskModal__calendarIcon::before,
+.createTaskModal__calendarIcon::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border: 1.5px solid rgba(13, 13, 18, 0.6);
+}
+
+.createTaskModal__calendarIcon::before {
+  top: 4px;
+}
+
+.createTaskModal__calendarIcon::after {
+  bottom: 4px;
+}
+
+.createTaskModal__textareaWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.createTaskModal__textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.createTaskModal__counter {
+  align-self: flex-end;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.24px;
+  color: rgba(0, 0, 0, 0.6);
+  font-family: 'Geist', var(--font-sans);
+}
+
+.createTaskModal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #dfe1e7;
+}
+
+.createTaskModal__btn {
+  min-width: 128px;
+  height: 48px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(13, 13, 18, 0.06);
+}
+
+.createTaskModal__btn--ghost {
+  background: #fff;
+  border-color: #dfe1e7;
+  color: #0d0d12;
+}
+
+.createTaskModal__btn--primary {
+  background: #ff9500;
+  color: #e8e8e8;
+}
+
+@media (max-width: 720px) {
+  .createTaskModal {
+    padding: 12px;
+  }
+
+  .createTaskModal__panel {
+    width: 100%;
+    max-height: 100vh;
+  }
+
+  .createTaskModal__form {
+    padding: 20px;
+  }
+
+  .createTaskModal__footer {
+    flex-direction: column;
+  }
+
+  .createTaskModal__btn {
+    width: 100%;
+  }
+}

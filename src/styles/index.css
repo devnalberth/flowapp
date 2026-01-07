@@ -1,0 +1,92 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Generic UI primitives */
+.ui-card {
+  background: var(--card);
+  border-radius: var(--r-card);
+}
+
+.ui-pill {
+  border-radius: var(--r-pill);
+}
+
+.ui-iconBtn {
+  width: 54px;
+  height: 54px;
+  border-radius: 43px;
+  background: var(--card);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: grid;
+  place-items: center;
+}
+
+/* Typographic helpers (based on your extracted styles) */
+.txt-brand {
+  font-family: var(--font-brand);
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.txt-h1 {
+  font-size: var(--h1-size);
+  line-height: var(--h1-line);
+  font-weight: var(--h1-weight);
+}
+
+.txt-lead {
+  font-size: var(--lead-size);
+  line-height: var(--lead-line);
+  font-weight: var(--lead-weight);
+  color: var(--subtext);
+}
+
+.txt-pill {
+  font-size: var(--pill-size);
+  line-height: var(--pill-line);
+  font-weight: var(--pill-weight);
+}
+
+.txt-cardTitle {
+  font-size: 16px;
+  line-height: 19.2px;
+  font-weight: 600;
+}
+
+.txt-kpiLabel {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--kpi-label);
+}
+
+.txt-kpiValue {
+  font-size: 42px;
+  line-height: 50.4px;
+  font-weight: 700;
+}

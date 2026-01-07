@@ -1,0 +1,164 @@
+.topNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topNav__pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 70px;
+  overflow: hidden;
+}
+
+.topNav__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 8px;
+}
+
+.topNav__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--grad-primary);
+  position: relative;
+}
+
+.topNav__logo::after {
+  content: '';
+  position: absolute;
+  inset: 11px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.topNav__brandText {
+  font-size: 18.89px;
+  line-height: 26.44px;
+}
+
+.topNav__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.topNav__item {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 26px;
+  background: var(--card);
+  color: #000;
+  transition: filter 120ms ease;
+}
+
+.topNav__item:hover {
+  filter: brightness(0.97);
+}
+
+.topNav__item:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
+.topNav__item--active {
+  background: var(--grad-primary);
+  color: var(--bg);
+}
+
+.topNav__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topNav__gear {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #111;
+  border-radius: 5px;
+  display: inline-block;
+  position: relative;
+}
+
+.topNav__gear::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 2px solid #111;
+  border-radius: 9999px;
+}
+
+.topNav__user {
+  border: 0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 70px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topNav__userInner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topNav__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+}
+
+.topNav__userMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.topNav__userName {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19.2px;
+}
+
+.topNav__userEmail {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 14.4px;
+}
+
+.topNav__chev {
+  width: 14px;
+  height: 14px;
+  border-right: 2px solid #111;
+  border-bottom: 2px solid #111;
+  transform: rotate(45deg);
+  margin-right: 8px;
+}
+
+@media (max-width: 900px) {
+  .topNav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topNav__pill {
+    justify-content: center;
+  }
+
+  .topNav__right {
+    justify-content: flex-end;
+  }
+}

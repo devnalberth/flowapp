@@ -1,0 +1,47 @@
+:root {
+  /* Colors */
+  --bg: #e8e8e8;
+  --card: #ffffff;
+  --muted: #f6f6f6;
+  --text: #0d0d12;
+  --text-2: #2e2e2e;
+  --subtext: #5b5a64;
+  --kpi-label: #666d80;
+
+  /* Brand */
+  --grad-primary: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+
+  /* Radius */
+  --r-card: 15px;
+  --r-pill: 9999px;
+  --r-soft: 12px;
+
+  /* Spacing */
+  --pad-page-y: 20px;
+  --pad-page-x: 120px;
+  --gap-1: 8px;
+  --gap-2: 12px;
+  --gap-3: 16px;
+  --gap-4: 20px;
+  --gap-5: 24px;
+
+  /* Typography */
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-brand: 'Outfit', var(--font-sans);
+
+  --h1-size: 42px;
+  --h1-line: 50.4px;
+  --h1-weight: 700;
+
+  --lead-size: 22px;
+  --lead-line: 33px;
+  --lead-weight: 400;
+
+  --body-size: 16px;
+  --body-line: 24px;
+
+  --pill-size: 12px;
+  --pill-line: 14.4px;
+  --pill-weight: 500;
+}

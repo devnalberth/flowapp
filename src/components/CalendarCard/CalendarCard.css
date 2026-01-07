@@ -1,0 +1,90 @@
+.cal {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 260px;
+}
+
+.cal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cal__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #121212;
+}
+
+.cal__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f9fafa;
+  border-radius: 9999px;
+}
+
+.cal__filterLabel {
+  font-size: 12px;
+  color: #99a3ad;
+}
+
+.cal__chev {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #99a3ad;
+  border-bottom: 2px solid #99a3ad;
+  transform: rotate(45deg);
+}
+
+.cal__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.cal__weekDay {
+  text-align: center;
+  font-size: 12px;
+  color: #99a3ad;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.cal__day {
+  height: 36px;
+  border-radius: 40px;
+  border: 0;
+  background: #f5f6f7;
+  color: #99a3ad;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.cal__day--selected {
+  background: linear-gradient(180deg, #df7200 0%, #f98500 100%);
+  color: #fff;
+  font-weight: 700;
+}
+
+.cal__day--accent {
+  background: linear-gradient(180deg, rgba(223, 114, 0, 0.2), rgba(249, 133, 0, 0.2));
+  color: #df7200;
+  font-weight: 600;
+}
+
+.cal__day--outlined {
+  background: rgba(254, 137, 0, 0.16);
+  border: 2px solid #df7200;
+  color: #df7200;
+  font-weight: 600;
+}

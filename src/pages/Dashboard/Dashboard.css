@@ -1,0 +1,99 @@
+.dash {
+  padding: var(--pad-page-y) var(--pad-page-x);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.dash__welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* KPI row: 3 stats + meeting card */
+.dash__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) minmax(320px, 380px);
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Bento grid area */
+.dash__grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  grid-template-areas:
+    "project productivity chat"
+    "goals calendar chat";
+  align-items: stretch;
+}
+
+.bento {
+  min-height: 220px;
+}
+
+.bento--project {
+  grid-area: project;
+}
+
+.bento--productivity {
+  grid-area: productivity;
+}
+
+.bento--chat {
+  grid-area: chat;
+}
+
+.bento--goals {
+  grid-area: goals;
+}
+
+.bento--calendar {
+  grid-area: calendar;
+}
+
+@media (max-width: 1200px) {
+  .dash__kpis {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+
+  .dash__grid {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    grid-template-areas:
+      "project productivity"
+      "goals calendar"
+      "chat chat";
+  }
+}
+
+@media (max-width: 768px) {
+  .dash {
+    padding: 20px 16px;
+  }
+
+  .dash__kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .dash__grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "project"
+      "productivity"
+      "goals"
+      "calendar"
+      "chat";
+  }
+
+  .txt-h1 {
+    font-size: 30px;
+    line-height: 36px;
+  }
+
+  .txt-lead {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
