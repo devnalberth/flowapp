@@ -3,8 +3,13 @@ import { useState } from 'react'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
 import Tasks from './pages/Tasks/Tasks.jsx'
+import Goals from './pages/Goals/Goals.jsx'
+import Studies from './pages/Studies/Studies.jsx'
+import Habits from './pages/Habits/Habits.jsx'
+import Finance from './pages/Finance/Finance.jsx'
+import AIAssistant from './pages/AIAssistant/AIAssistant.jsx'
 
-const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos']
+const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'AI Assistant']
 
 const USER = {
   name: 'Matheus Nalberth',
@@ -29,6 +34,26 @@ export default function App() {
 
   if (page === 'Tarefas') {
     return <Tasks {...pageProps} />
+  }
+
+  if (page === 'Metas') {
+    return <Goals {...pageProps} />
+  }
+
+  if (page === 'Estudos') {
+    return <Studies {...pageProps} />
+  }
+
+  if (page === 'Hábitos') {
+    return <Habits {...pageProps} />
+  }
+
+  if (page === 'Financeiro') {
+    return <Finance {...pageProps} />
+  }
+
+  if (page === 'AI Assistant') {
+    return <AIAssistant {...pageProps} />
   }
 
   return <Dashboard {...pageProps} />

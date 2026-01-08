@@ -15,7 +15,6 @@
       0 0 / 100% 100%,
     #ffffff;
   border: 1px solid rgba(255, 153, 0, 0.18);
-  box-shadow: 0 30px 80px rgba(255, 149, 0, 0.26);
 }
 
 .tasksHero__intro {
@@ -96,17 +95,17 @@
   gap: 10px;
   padding: 16px 22px;
   border-radius: 999px;
-  background: linear-gradient(120deg, rgba(10, 11, 18, 0.95), rgba(14, 15, 24, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  background: #ffffff;
+  border: 1px solid #ececec;
+  box-shadow: 0 12px 30px rgba(15, 15, 20, 0.06);
   align-self: stretch;
   margin-bottom: 4px;
 }
 
 .tasksFilters__chip {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid #e6e6ea;
+  background: #f9f9fb;
+  color: var(--text);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -161,11 +160,11 @@
 
 .tasksListShell {
   padding: 36px;
-  border-radius: 48px;
-  background: linear-gradient(145deg, #050608, #0c0e16 55%, #111321);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 50px 120px rgba(5, 5, 9, 0.65);
+  border-radius: 36px;
+  background: #f4f4f6;
+  color: var(--text);
+  border: 1px solid #e6e8ec;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -183,7 +182,7 @@
   letter-spacing: 0.08em;
   font-size: 12px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: #ff6a00;
 }
 
 .tasksListShell__head h2 {
@@ -199,7 +198,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(13, 13, 18, 0.55);
 }
 
 .tasksList {
@@ -217,33 +216,35 @@
   gap: 22px;
   padding: 24px 26px;
   border-radius: 30px;
-  background: linear-gradient(135deg, rgba(15, 16, 24, 0.96), rgba(12, 13, 21, 0.88));
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: border 200ms ease, transform 200ms ease;
+  background: #ffffff;
+  border: 1px solid #ececec;
+  box-shadow: 0 18px 40px rgba(13, 13, 18, 0.08);
+  transition: border 200ms ease, transform 200ms ease, box-shadow 200ms ease;
   position: relative;
   overflow: hidden;
 }
 
 .taskCard:hover {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 149, 0, 0.35);
+  box-shadow: 0 32px 70px rgba(255, 149, 0, 0.18);
   transform: translateY(-2px);
 }
 
 .taskCard--late {
-  border-color: rgba(255, 92, 92, 0.6);
+  border-color: rgba(255, 92, 92, 0.4);
 }
 
 .taskCard--done {
-  background: linear-gradient(135deg, rgba(26, 28, 38, 0.92), rgba(15, 16, 24, 0.85));
+  background: #f7f8fb;
 }
 
 .taskCard__checkbox {
   width: 58px;
   height: 58px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.25), transparent 60%),
-    rgba(255, 255, 255, 0.02);
+  border: 1px solid #e2e2e2;
+  background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0))
+      #ffffff;
   cursor: pointer;
   position: relative;
   display: grid;
@@ -252,7 +253,7 @@
 }
 
 .taskCard__checkbox:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 149, 0, 0.4);
 }
 
 .taskCard__checkbox:focus-visible {
@@ -263,14 +264,14 @@
 .taskCard__checkbox--checked {
   background: linear-gradient(135deg, #ff6a00, #ff9500);
   border-color: transparent;
-  box-shadow: 0 20px 40px rgba(255, 106, 0, 0.4);
+  box-shadow: 0 20px 40px rgba(255, 106, 0, 0.35);
 }
 
 .taskCard__checkboxGlow {
   position: absolute;
   inset: 6px;
   border-radius: inherit;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.6), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), transparent 70%);
   opacity: 0;
   transition: opacity 200ms ease;
 }
@@ -282,8 +283,8 @@
 .taskCard__checkboxMark {
   width: 20px;
   height: 10px;
-  border-left: 3px solid #1c1c22;
-  border-bottom: 3px solid #1c1c22;
+  border-left: 3px solid #26262d;
+  border-bottom: 3px solid #26262d;
   transform: rotate(-45deg) scale(0.4);
   transform-origin: center;
   transition: transform 200ms ease, border-color 200ms ease;
@@ -316,7 +317,7 @@
 
 .taskCard--done .taskCard__title {
   text-decoration: line-through;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(13, 13, 18, 0.45);
 }
 
 .taskCard__context {
@@ -326,13 +327,13 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(13, 13, 18, 0.55);
 }
 
 .taskCard__context span {
   padding: 4px 10px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f4f4f6;
 }
 
 .taskCard__badges {
@@ -348,8 +349,8 @@
   letter-spacing: 0.08em;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e1e1e6;
+  color: #2e2e36;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -386,11 +387,11 @@
 }
 
 .taskChip--status {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: #e1e1e6;
 }
 
 .taskChip--due {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: #e1e1e6;
 }
 
 .taskChip--dueLate {
@@ -408,9 +409,9 @@
 .taskCard__progress {
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: #f2f2f5;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #ececf0;
 }
 
 .taskCard__progress span {
@@ -425,14 +426,14 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(13, 13, 18, 0.6);
 }
 
 .taskCard__energy {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(13, 13, 18, 0.6);
   text-align: right;
 }
 
@@ -457,18 +458,18 @@
 }
 
 .taskCard__actionBtn--ghost {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: #f6f6f7;
+  color: var(--text);
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e6e6ea;
 }
 
 .taskCard__details {
   margin-top: 18px;
   padding: 18px 20px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #f7f7fa;
+  border: 1px solid #ececec;
 }
 
 .taskCard__detailsHead {
@@ -493,13 +494,13 @@
 
 .subtask {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e0e0e5;
   border-radius: 16px;
   display: flex;
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(13, 13, 18, 0.03);
   cursor: pointer;
   text-align: left;
 }
@@ -508,7 +509,7 @@
   width: 18px;
   height: 18px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(13, 13, 18, 0.35);
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -519,8 +520,8 @@
   content: '';
   width: 9px;
   height: 5px;
-  border-left: 2px solid rgba(255, 255, 255, 0.9);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+  border-left: 2px solid rgba(13, 13, 18, 0.65);
+  border-bottom: 2px solid rgba(13, 13, 18, 0.65);
   transform: rotate(-45deg) scale(0);
   transform-origin: center;
   transition: transform 140ms ease;
@@ -529,16 +530,16 @@
 .subtask__content p {
   margin: 0;
   font-size: 14px;
-  color: #fff;
+  color: #0d0d12;
 }
 
 .subtask__content small {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(13, 13, 18, 0.5);
 }
 
 .subtask--done {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 149, 0, 0.4);
+  background: rgba(255, 149, 0, 0.12);
 }
 
 .subtask--done .subtask__check {
@@ -562,8 +563,8 @@
   right: 20px;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
-  text-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  color: #ff6a00;
+  text-shadow: 0 6px 20px rgba(255, 149, 0, 0.3);
   animation: xpPop 900ms ease forwards;
 }
 
@@ -799,9 +800,10 @@
   }
 
   .taskCard__checkbox {
-    width: 100%;
-    height: 54px;
-    border-radius: 16px;
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    align-self: flex-start;
   }
 
   .taskCard__context {
