@@ -9,13 +9,6 @@ const STUDY_TYPES = {
     label: 'Curso profissional',
     badge: 'Imersão guiada',
     description: 'Ideal para certificações, bootcamps e cursos on demand.',
-    steps: [
-      { title: 'Cadastrar curso', detail: 'Defina nome, plataforma, carga horária e certificação.' },
-      { title: 'Preencher informações', detail: 'Detalhe objetivos, pré-requisitos e materiais.' },
-      { title: 'Cadastrar módulos', detail: 'Quebre o curso em módulos temáticos.' },
-      { title: 'Cadastrar aulas', detail: 'Decida se adiciona individualmente ou importa todas por módulo.' },
-      { title: 'Anotações e resumo', detail: 'Ative notas, destaques e resumos GTD em cada aula.' },
-    ],
     focus: 'Curso com módulos e aulas',
   },
   faculdade: {
@@ -23,24 +16,137 @@ const STUDY_TYPES = {
     label: 'Faculdade / Graduação',
     badge: 'Fluxo acadêmico',
     description: 'Fluxo completo com semestres, matérias, assuntos e módulos.',
-    steps: [
-      { title: 'Configurar semestres', detail: 'Escolha períodos (ex: 2026.1, 2026.2).' },
-      { title: 'Listar matérias', detail: 'Cadastre as cadeiras de cada semestre.' },
-      { title: 'Mapear assuntos', detail: 'Separe os grandes tópicos por matéria.' },
-      { title: 'Organizar módulos', detail: 'Cada assunto pode ter aulas, labs e leituras.' },
-      { title: 'Notas e ações', detail: 'Ative a central de estudos para cada assunto.' },
-    ],
     focus: 'Semestres → matérias → assuntos → módulos',
+  },
+  interesse: {
+    id: 'interesse',
+    label: 'Biblioteca pessoal',
+    badge: 'Explorar referências',
+    description: 'Trilhas de estudo, leituras e pesquisas paralelas.',
+    focus: 'Interesses → materiais → insights',
   },
 }
 
-const COURSE_FIELDS = [
-  { label: 'Nome do curso', value: 'Flow Systems Mastery', helper: 'Como aparecerá no certificado.' },
-  { label: 'Plataforma / Instituição', value: 'Flow University · Live + On demand', helper: 'Udemy, Alura, Coursera, etc.' },
-  { label: 'Carga horária total', value: '60 horas · 5 semanas intensivas', helper: 'Use horas ou módulos.' },
-  { label: 'Formato', value: 'Vídeos gravados + mentorias síncronas', helper: 'On demand, live, híbrido.' },
-  { label: 'Certificação', value: 'Emitir certificado ao concluir 85% das aulas', helper: 'Defina critérios.' },
-  { label: 'Tags e trilhas', value: 'GTD, FlowOS, Produtividade', helper: 'Ajuda a filtrar e conectar com metas.' },
+const STUDY_STATS = [
+  { label: 'Horas registradas', value: '148h', detail: '+18% versus último mês' },
+  { label: 'Cursos ativos', value: '5', detail: '3 em andamento · 2 em pausa' },
+  { label: 'Semestres mapeados', value: '4', detail: '2025.2 → 2027.1' },
+]
+
+const STUDY_TAGS = ['GTD', 'AI copilots', 'Product Ops', 'Pesquisa', 'Mental models']
+
+const STUDY_LIBRARY_SHELVES = [
+  {
+    id: 'courses',
+    eyebrow: 'Imersões guiadas',
+    title: 'Cursos em progresso',
+    description: 'Continue assistindo, abra notas e importe módulos direto do modal.',
+    actionLabel: 'Ver todos os cursos',
+    cards: [
+      {
+        id: 'flow-systems',
+        title: 'Flow Systems Mastery',
+        type: 'Curso',
+        status: '65% concluído',
+        progress: '4 / 6 módulos',
+        focus: 'Execução com GTD',
+        platform: 'Flow University',
+        nextAction: 'Revisar Módulo 02 · Execução focada',
+        cover: 'linear-gradient(135deg, #18153a, #f77055)',
+        accent: '#f77055',
+      },
+      {
+        id: 'product-labs',
+        title: 'Product Strategy Labs',
+        type: 'Curso',
+        status: 'Novo módulo liberado',
+        progress: '2 / 5 módulos',
+        focus: 'Discovery contínuo',
+        platform: 'Reforge',
+        nextAction: 'Assistir aula "North Star Metrics"',
+        cover: 'linear-gradient(135deg, #1f2d57, #64d8ff)',
+        accent: '#64d8ff',
+      },
+      {
+        id: 'data-storytelling',
+        title: 'Data Storytelling',
+        type: 'Curso',
+        status: 'Em revisão',
+        progress: '8 / 12 aulas',
+        focus: 'Narrativas com dados',
+        platform: 'Coursera',
+        nextAction: 'Consolidar notas GTD',
+        cover: 'linear-gradient(135deg, #1d2530, #b27cff)',
+        accent: '#b27cff',
+      },
+    ],
+  },
+  {
+    id: 'faculty',
+    eyebrow: 'Programas longos',
+    title: 'Faculdades e MBAs',
+    description: 'Mapa visual para semestres, matérias, assuntos e módulos.',
+    actionLabel: 'Abrir blueprint',
+    cards: [
+      {
+        id: 'software-semester',
+        title: '2026.1 · Engenharia de Software',
+        type: 'Semestre',
+        status: '20 semanas',
+        progress: '3 matérias com notas',
+        focus: 'Arquitetura limpa, DDD, KPIs',
+        platform: 'UF Flow',
+        nextAction: 'Cadastrar assuntos de Produto',
+        cover: 'linear-gradient(120deg, #082032, #2c394b)',
+        accent: '#96e5ff',
+      },
+      {
+        id: 'leadership-semester',
+        title: '2026.2 · Liderança e Gestão',
+        type: 'Semestre',
+        status: '18 semanas',
+        progress: '4 matérias planejadas',
+        focus: 'Squads & comunicação',
+        platform: 'Flow Business School',
+        nextAction: 'Adicionar módulo AI copilots',
+        cover: 'linear-gradient(120deg, #241a40, #5d2ee2)',
+        accent: '#f8c24f',
+      },
+    ],
+  },
+  {
+    id: 'interests',
+    eyebrow: 'Biblioteca viva',
+    title: 'Interesses e leituras',
+    description: 'Coleções temáticas com livros, papers e playlists de aulas.',
+    actionLabel: 'Explorar referências',
+    cards: [
+      {
+        id: 'ai-copilots',
+        title: 'AI copilots para squads',
+        type: 'Trilha',
+        status: '6 recursos prioritários',
+        progress: 'Atualizada esta semana',
+        focus: 'Playbooks + vídeos + prompts',
+        platform: 'Notion Library',
+        nextAction: 'Adicionar estudo de caso',
+        cover: 'linear-gradient(140deg, #032b43, #3dc9b0)',
+        accent: '#3dc9b0',
+      },
+      {
+        id: 'deep-work',
+        title: 'Rotinas de Deep Work',
+        type: 'Coleção',
+        status: '9 materiais',
+        progress: '3 notas GTD',
+        focus: 'Rituais e templates',
+        platform: 'Readwise',
+        nextAction: 'Registrar próximos experimentos',
+        cover: 'linear-gradient(140deg, #1c1f2b, #ff9c5f)',
+        accent: '#ff9c5f',
+      },
+    ],
+  },
 ]
 
 const COURSE_MODULES = [
@@ -136,162 +242,256 @@ const FACULTY_BLUEPRINT = [
   },
 ]
 
-const FACULTY_MODAL_FIELDS = [
-  { icon: '🗓️', label: 'Semestres ativos', value: '2026.1 · 2026.2', detail: 'Defina duração e férias.' },
-  { icon: '📚', label: 'Matérias por semestre', value: '5 matérias', detail: 'Engenharia, Produto, Dados, etc.' },
-  { icon: '🧠', label: 'Assuntos por matéria', value: '3 assuntos cada', detail: 'Ex: Arquitetura, Estratégia.' },
-  { icon: '🧩', label: 'Módulos por assunto', value: '2 módulos padrão', detail: 'Aulas, laboratórios, leituras.' },
-]
+const STUDY_FORM_FIELDS = {
+  curso: [
+    { id: 'name', label: 'Nome do curso', placeholder: 'Ex: Design Ops Lab' },
+    { id: 'platform', label: 'Plataforma / instituição', placeholder: 'Reforge, Coursera, Alura...' },
+    { id: 'hours', label: 'Carga horária', placeholder: '60h · 5 semanas' },
+    { id: 'format', label: 'Formato', type: 'select', options: ['On demand', 'Ao vivo', 'Híbrido'] },
+    { id: 'url', label: 'Link de acesso', placeholder: 'https://...' },
+    { id: 'notes', label: 'Notas iniciais', type: 'textarea', placeholder: 'Objetivos, certificação, tags...' },
+  ],
+  faculdade: [
+    { id: 'semesters', label: 'Semestres ativos', placeholder: '2026.1 / 2026.2' },
+    { id: 'subjects', label: 'Matérias por semestre', placeholder: 'Ex: Engenharia, Produto, Dados' },
+    { id: 'topics', label: 'Assuntos por matéria', placeholder: 'Arquitetura, Estratégia, KPIs' },
+    { id: 'modules', label: 'Módulos padrão', placeholder: 'Aulas, laboratórios, leituras' },
+    { id: 'rituals', label: 'Rituais e checkpoints', placeholder: 'Revisão quinzenal, provas, labs' },
+    { id: 'notes', label: 'Notas estratégicas', type: 'textarea', placeholder: 'Critérios de aprovação, integrações...' },
+  ],
+  interesse: [
+    { id: 'collection', label: 'Título da coleção', placeholder: 'Pesquisa · AI copilots' },
+    { id: 'source', label: 'Origem', placeholder: 'Readwise, Notion, YouTube...' },
+    { id: 'materials', label: 'Materiais principais', placeholder: 'Livros, papers, playlists' },
+    { id: 'cadence', label: 'Ritmo de revisão', placeholder: 'Revisão semanal / mensal' },
+    { id: 'outcome', label: 'Resultado esperado', placeholder: 'Preparar workshop, nova skill...' },
+    { id: 'notes', label: 'Observações', type: 'textarea', placeholder: 'Links, prompts, insights GTD' },
+  ],
+}
+
+function CreateStudyModal({ isOpen, onClose }) {
+  const [step, setStep] = useState(1)
+  const [selectedType, setSelectedType] = useState(null)
+  const [formData, setFormData] = useState({})
+
+  if (!isOpen) return null
+
+  const fields = selectedType ? STUDY_FORM_FIELDS[selectedType] : []
+
+  const handleInputChange = (fieldId, value) => {
+    setFormData((prev) => ({ ...prev, [fieldId]: value }))
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    onClose()
+  }
+
+  return (
+    <div className="studyModal__backdrop">
+      <div className="studyModal" role="dialog" aria-modal="true">
+        <header className="studyModal__header">
+          <div>
+            <p>Modal de novos estudos</p>
+            <h3>{step === 1 ? 'Escolha o fluxo ideal' : 'Configure os campos principais'}</h3>
+          </div>
+          <button type="button" className="ghost" onClick={onClose}>
+            Fechar
+          </button>
+        </header>
+
+        <div className="studyModal__steps">
+          {[1, 2].map((modalStep) => (
+            <div key={modalStep} className={step === modalStep ? 'modalStep modalStep--active' : 'modalStep'}>
+              <span>{String(modalStep).padStart(2, '0')}</span>
+              <p>{modalStep === 1 ? 'Tipo e objetivo' : 'Campos dinâmicos'}</p>
+            </div>
+          ))}
+        </div>
+
+        {step === 1 ? (
+          <div className="studyModal__types">
+            {Object.values(STUDY_TYPES).map((type) => {
+              const isActive = selectedType === type.id
+              return (
+                <button
+                  key={type.id}
+                  type="button"
+                  className={isActive ? 'modalType modalType--active' : 'modalType'}
+                  onClick={() => setSelectedType(type.id)}
+                >
+                  <span>{type.badge}</span>
+                  <h4>{type.label}</h4>
+                  <p>{type.description}</p>
+                  <small>{type.focus}</small>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <form className="studyModal__form" onSubmit={handleSubmit}>
+            <div className="studyModal__formHeader">
+              <div>
+                <p>Seleção</p>
+                <strong>{STUDY_TYPES[selectedType].label}</strong>
+              </div>
+              <button type="button" className="ghost" onClick={() => setStep(1)}>
+                Voltar para tipo
+              </button>
+            </div>
+            <div className="studyModal__fields">
+              {fields.map((field) => {
+                const commonProps = {
+                  id: field.id,
+                  value: formData[field.id] || '',
+                  onChange: (event) => handleInputChange(field.id, event.target.value),
+                  placeholder: field.placeholder,
+                }
+
+                return (
+                  <label key={field.id}>
+                    <span>{field.label}</span>
+                    {field.type === 'textarea' ? (
+                      <textarea {...commonProps} rows={3} />
+                    ) : field.type === 'select' ? (
+                      <select
+                        value={formData[field.id] || ''}
+                        onChange={(event) => handleInputChange(field.id, event.target.value)}
+                      >
+                        <option value="">Selecione</option>
+                        {field.options?.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input type="text" {...commonProps} />
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+            <footer>
+              <button type="button" className="ghost" onClick={() => setStep(1)}>
+                Voltar
+              </button>
+              <button type="submit">Salvar blueprint</button>
+            </footer>
+          </form>
+        )}
+
+        {step === 1 ? (
+          <footer className="studyModal__footer">
+            <p>Selecione um fluxo para liberar os campos dinâmicos.</p>
+            <button type="button" onClick={() => selectedType && setStep(2)} disabled={!selectedType}>
+              Prosseguir
+            </button>
+          </footer>
+        ) : null}
+      </div>
+    </div>
+  )
+}
 
 export default function Studies({ user, onNavigate }) {
-  const [studyMode, setStudyMode] = useState('curso')
-  const activeType = STUDY_TYPES[studyMode]
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const highlightCourse = STUDY_LIBRARY_SHELVES[0].cards[0]
 
   return (
     <div className="studiesPage">
       <TopNav user={user} active="Estudos" onNavigate={onNavigate} />
 
-      <header className="studiesHero ui-card">
-        <div>
-          <p className="studiesHero__eyebrow">Central de estudos detalhada</p>
-          <h1>Orquestre cursos, módulos e faculdades no mesmo fluxo</h1>
+      <section className="studiesHero ui-card">
+        <div className="studiesHero__content">
+          <p className="studiesHero__eyebrow">Centro de Estudos · Netflix mode</p>
+          <h1>Estudos em prateleiras inteligentes</h1>
           <p>
-            Respeitamos o passo a passo: cadastrar curso, preencher dados, mapear módulos e aulas. Quando for faculdade,
-            simplificamos a configuração no modal de semestres para seguir direto para o fluxo escolhido.
+            Organize cursos, faculdades e interesses como uma biblioteca viva. Cada cartão abre o modal certo, já com
+            módulos, aulas, notas e integrações GTD.
           </p>
+          <div className="studiesHero__actions">
+            <button type="button" onClick={() => setIsModalOpen(true)}>Novo estudo</button>
+            <button type="button" className="ghost">Ver calendário semanal</button>
+          </div>
+          <ul className="studiesHero__stats">
+            {STUDY_STATS.map((stat) => (
+              <li key={stat.label}>
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+                <small>{stat.detail}</small>
+              </li>
+            ))}
+          </ul>
+          <div className="studiesHero__tags">
+            {STUDY_TAGS.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
         </div>
-        <div className="studiesHero__panel">
+        <article className="studiesHero__highlight" style={{ backgroundImage: highlightCourse.cover }}>
           <div>
-            <span>Trilhas ativas</span>
-            <strong>05</strong>
-            <small>3 cursos · 2 faculdades</small>
+            <p>{highlightCourse.type}</p>
+            <h3>{highlightCourse.title}</h3>
+            <span>{highlightCourse.nextAction}</span>
           </div>
           <div>
-            <span>Aulas registradas</span>
-            <strong>124</strong>
-            <small>Com notas, destaques e resumos</small>
+            <p>{highlightCourse.status}</p>
+            <strong>{highlightCourse.progress}</strong>
           </div>
-          <button type="button">Nova trilha de estudos</button>
-        </div>
-      </header>
-
-      <section className="studiesConfigurator ui-card">
-        <div className="studiesConfigurator__intro">
-          <div>
-            <p className="studiesConfigurator__eyebrow">Escolha o fluxo</p>
-            <h2>Curso ou faculdade? Configure no modal e prossiga.</h2>
-            <p>
-              Primeiro escolhemos o tipo. Se for curso, já abrimos campos de cadastro e módulos. Se for faculdade, o modal
-              concentra semestres, matérias, assuntos e módulos para manter o processo enxuto.
-            </p>
-          </div>
-          <span>{activeType.focus}</span>
-        </div>
-
-        <div className="studiesConfigurator__options">
-          {Object.values(STUDY_TYPES).map((type) => {
-            const isActive = type.id === studyMode
-            return (
-              <button
-                key={type.id}
-                type="button"
-                className={isActive ? 'studyType studyType--active' : 'studyType'}
-                onClick={() => setStudyMode(type.id)}
-              >
-                <span>{type.badge}</span>
-                <h3>{type.label}</h3>
-                <p>{type.description}</p>
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="studiesConfigurator__timeline">
-          {activeType.steps.map((step, index) => (
-            <div key={step.title} className="studyStep">
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <div>
-                <strong>{step.title}</strong>
-                <p>{step.detail}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="studiesConfigurator__modal">
-          <div className="modalPreview">
-            <div className="modalPreview__header">
-              <p>Configuração do modal</p>
-              <span>{activeType.label}</span>
-            </div>
-            <div className="modalPreview__fields">
-              {(studyMode === 'faculdade' ? FACULTY_MODAL_FIELDS : COURSE_FIELDS.slice(0, 4)).map((field) => (
-                <article key={field.label}>
-                  {field.icon ? <span className="modalPreview__icon">{field.icon}</span> : null}
-                  <div>
-                    <p>{field.label}</p>
-                    <strong>{field.value}</strong>
-                    <small>{field.detail ?? field.helper}</small>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <button type="button">Prosseguir com {activeType.id === 'curso' ? 'curso' : 'faculdade'}</button>
-          </div>
-          <div className="modalPreview__note">
-            <p>
-              Assim que confirma no modal, carregamos automaticamente as próximas etapas para o fluxo escolhido. Nada de
-              telas extras: você parte direto para módulos/aulas ou para o blueprint acadêmico de semestres.
-            </p>
-          </div>
-        </div>
+        </article>
       </section>
 
-      {studyMode === 'curso' ? (
-        <>
-          <section className="courseDetails ui-card">
+      <section className="studiesShelves">
+        {STUDY_LIBRARY_SHELVES.map((shelf) => (
+          <article key={shelf.id} className="studyShelf ui-card">
             <header>
               <div>
-                <p>Cadastrar curso · Etapa 1</p>
-                <h2>Preencha as informações essenciais do curso</h2>
-                <p>Nome, plataforma, carga horária e formatação já ficam salvos e versionados.</p>
+                <p>{shelf.eyebrow}</p>
+                <h2>{shelf.title}</h2>
+                <span>{shelf.description}</span>
               </div>
-              <div className="courseDetails__actions">
-                <button type="button" className="ghost">Salvar rascunho</button>
-                <button type="button">Ir para módulos</button>
-              </div>
+              <button type="button" className="ghost">
+                {shelf.actionLabel}
+              </button>
             </header>
-            <div className="courseDetails__fields">
-              {COURSE_FIELDS.map((field) => (
-                <article key={field.label}>
-                  <p>{field.label}</p>
-                  <strong>{field.value}</strong>
-                  <span>{field.helper}</span>
-                </article>
+            <div className="studyShelf__scroller">
+              {shelf.cards.map((card) => (
+                <div key={card.id} className="studyCard" style={{ backgroundImage: card.cover }}>
+                  <div className="studyCard__meta">
+                    <span>{card.type}</span>
+                    <strong>{card.status}</strong>
+                  </div>
+                  <h3>{card.title}</h3>
+                  <p>{card.focus}</p>
+                  <div className="studyCard__footer">
+                    <span>{card.platform}</span>
+                    <button type="button">{card.nextAction}</button>
+                  </div>
+                </div>
               ))}
             </div>
-          </section>
+          </article>
+        ))}
+      </section>
 
-          <section className="courseModules ui-card">
+      <section className="buildersGrid">
+        <div className="courseBuilderStack">
+          <article className="courseBuilder ui-card">
             <header>
               <div>
-                <p>Módulos do curso · Etapa 2</p>
-                <h2>Defina módulos e organize as aulas</h2>
-                <p>
-                  Cadastre módulos e escolha se adiciona uma aula por vez ou importa todas do módulo. Cada aula já abre
-                  espaço para notas, destaques e resumo GTD.
-                </p>
+                <p>Cursos · Blueprint vivo</p>
+                <h2>Módulos → aulas → notas</h2>
+                <span>
+                  Cada módulo já abre espaço para cadência, notas e importação em massa, tudo sincronizado com o modal de
+                  criação.
+                </span>
               </div>
-              <div className="courseModules__actions">
-                <button type="button" className="ghost">Adicionar aula</button>
-                <button type="button">Cadastrar todas do módulo</button>
-                <button type="button" className="ghost">Importar planilha</button>
-              </div>
+              <button type="button" className="ghost">Adicionar módulo</button>
             </header>
-
-            <div className="courseModules__grid">
+            <div className="courseBuilder__modules">
               {COURSE_MODULES.map((module) => (
-                <article key={module.id} className="moduleCard">
+                <article key={module.id}>
                   <header>
                     <div>
                       <p>{module.focus}</p>
@@ -299,13 +499,13 @@ export default function Studies({ user, onNavigate }) {
                     </div>
                     <span>{module.progress}</span>
                   </header>
-                  <p className="moduleCard__cadence">{module.cadence}</p>
+                  <p>{module.cadence}</p>
                   <ul>
                     {module.lessons.map((lesson) => (
                       <li key={lesson.title}>
                         <div>
                           <strong>{lesson.title}</strong>
-                          <span>{lesson.type}</span>
+                          <small>{lesson.type}</small>
                         </div>
                         <div className="lessonBadges">
                           <span className="status">{lesson.status}</span>
@@ -316,32 +516,23 @@ export default function Studies({ user, onNavigate }) {
                       </li>
                     ))}
                   </ul>
-                  <footer>
-                    <button type="button" className="ghost">Adicionar aula</button>
-                    <button type="button">Importar todas</button>
-                  </footer>
                 </article>
               ))}
             </div>
-          </section>
+          </article>
 
-          <section className="lessonNotebook ui-card">
+          <article className="lessonKit ui-card">
             <header>
               <div>
-                <p>Aulas · Etapa 3</p>
-                <h2>Anote, destaque e faça resumos da aula</h2>
-                <p>Funciona tanto para registrar aula a aula quanto para consolidar todas de um módulo.</p>
+                <p>Kit de profundidade</p>
+                <h2>Notas, destaques e resumo GTD</h2>
               </div>
-              <div className="lessonNotebook__filters">
-                <button type="button" className="ghost">Aula individual</button>
-                <button type="button">Todas do módulo</button>
-              </div>
+              <button type="button" className="ghost">Abrir workspace</button>
             </header>
-
-            <div className="lessonNotebook__grid">
+            <div className="lessonKit__grid">
               {LESSON_NOTE_KIT.map((block) => (
-                <article key={block.id}>
-                  <span className="lessonNotebook__badge">{block.badge}</span>
+                <div key={block.id}>
+                  <span>{block.badge}</span>
                   <h3>{block.title}</h3>
                   <p>{block.description}</p>
                   {block.bullets ? (
@@ -352,14 +543,14 @@ export default function Studies({ user, onNavigate }) {
                     </ul>
                   ) : null}
                   {block.tags ? (
-                    <div className="lessonNotebook__tags">
+                    <div className="lessonKit__tags">
                       {block.tags.map((tag) => (
                         <span key={tag}>{tag}</span>
                       ))}
                     </div>
                   ) : null}
                   {block.checklist ? (
-                    <div className="lessonNotebook__checklist">
+                    <div className="lessonKit__checklist">
                       {block.checklist.map((item) => (
                         <label key={item}>
                           <input type="checkbox" />
@@ -368,28 +559,24 @@ export default function Studies({ user, onNavigate }) {
                       ))}
                     </div>
                   ) : null}
-                </article>
+                </div>
               ))}
             </div>
-          </section>
-        </>
-      ) : (
-        <section className="facultyBlueprint ui-card">
+          </article>
+        </div>
+
+        <article className="facultyBuilder ui-card">
           <header>
             <div>
               <p>Faculdade · Blueprint completo</p>
-              <h2>Semestres, matérias, assuntos e módulos organizados</h2>
-              <p>
-                Após configurar no modal, trazemos o semestre escolhido com matérias, assuntos e módulos encadeados. Cada
-                assunto pode abrir a mesma central de notas, destaques e resumos.
-              </p>
+              <h2>Semestres → matérias → assuntos</h2>
+              <span>Importe tudo do modal e navegue semestre a semestre.</span>
             </div>
-            <button type="button">Editar configuração</button>
+            <button type="button" className="ghost">Editar semestres</button>
           </header>
-
-          <div className="facultyBlueprint__grid">
+          <div className="facultyBuilder__grid">
             {FACULTY_BLUEPRINT.map((semester) => (
-              <article key={semester.semester} className="facultyCard">
+              <article key={semester.semester}>
                 <header>
                   <div>
                     <p>Semestre</p>
@@ -397,17 +584,17 @@ export default function Studies({ user, onNavigate }) {
                   </div>
                   <span>{semester.cadence}</span>
                 </header>
-                <div className="facultySubjects">
+                <div className="facultyBuilder__subjects">
                   {semester.subjects.map((subject) => (
-                    <div key={subject.name} className="facultySubject">
+                    <div key={subject.name}>
                       <div className="facultySubject__head">
                         <strong>{subject.name}</strong>
-                        <span>{subject.topics.length} assuntos</span>
+                        <small>{subject.topics.length} assuntos</small>
                       </div>
                       <ul>
                         {subject.topics.map((topic) => (
                           <li key={topic.name}>
-                            <p>{topic.name}</p>
+                            <span>{topic.name}</span>
                             <small>{topic.modules} módulos</small>
                           </li>
                         ))}
@@ -418,8 +605,10 @@ export default function Studies({ user, onNavigate }) {
               </article>
             ))}
           </div>
-        </section>
-      )}
+        </article>
+      </section>
+
+      <CreateStudyModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   )
 }
