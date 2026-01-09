@@ -5,80 +5,6 @@
   gap: 32px;
 }
 
-.aiHero {
-  display: flex;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 30px 34px;
-  border-radius: 36px;
-  background: var(--card);
-  border: 1px solid #ececec;
-  box-shadow: 0 26px 64px rgba(13, 13, 18, 0.08);
-}
-
-.aiHero__eyebrow {
-  margin: 0 0 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 12px;
-  color: #ff4800;
-}
-
-.aiHero h1 {
-  margin: 0 0 14px;
-  font-size: 34px;
-  line-height: 44px;
-}
-
-.aiHero p {
-  margin: 0;
-  color: var(--subtext);
-  line-height: 26px;
-}
-
-.aiHero__panel {
-  min-width: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.aiHero__panel div {
-  border-radius: 26px;
-  border: 1px solid #ececec;
-  padding: 18px 22px;
-  background: #fff;
-}
-
-.aiHero__panel span {
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 11px;
-  color: #ff4800;
-}
-
-.aiHero__panel strong {
-  display: block;
-  margin: 6px 0;
-  font-size: 26px;
-}
-
-.aiHero__panel small {
-  color: var(--subtext);
-}
-
-.aiHero__panel button {
-  border: 0;
-  border-radius: 26px;
-  padding: 14px 22px;
-  font-weight: 600;
-  background: var(--grad-primary);
-  color: #fff;
-  box-shadow: 0 18px 44px rgba(255, 72, 0, 0.3);
-  cursor: pointer;
-}
-
 .aiShell {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) 420px;
@@ -393,18 +319,9 @@
     padding: 24px 18px;
   }
 
-  .aiHero,
   .aiChat,
   .aiSidebar__section {
     padding: 22px;
-  }
-
-  .aiHero {
-    flex-direction: column;
-  }
-
-  .aiHero__panel {
-    width: 100%;
   }
 
   .aiMessage__bubble {

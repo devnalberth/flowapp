@@ -5,83 +5,6 @@
   gap: 32px;
 }
 
-.financeHero {
-  display: flex;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 32px 36px;
-  border-radius: 36px;
-  background: var(--card);
-  border: 1px solid #ececec;
-  box-shadow: 0 28px 70px rgba(13, 13, 18, 0.08);
-}
-
-.financeHero__eyebrow {
-  margin: 0 0 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 12px;
-  color: #ff4800;
-}
-
-.financeHero h1 {
-  margin: 0 0 12px;
-  font-size: 34px;
-  line-height: 44px;
-}
-
-.financeHero p {
-  margin: 0;
-  color: var(--subtext);
-  line-height: 26px;
-}
-
-.financeHero__panel {
-  min-width: 320px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.financeHero__panel div {
-  border-radius: 26px;
-  border: 1px solid #ececec;
-  padding: 18px 22px;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(13, 13, 18, 0.08);
-}
-
-.financeHero__panel span {
-  display: block;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: 11px;
-  color: #ff4800;
-}
-
-.financeHero__panel strong {
-  display: block;
-  margin: 8px 0 4px;
-  font-size: 28px;
-  color: var(--text);
-}
-
-.financeHero__panel small {
-  color: var(--subtext);
-}
-
-.financeHero__panel button {
-  grid-column: span 2;
-  border: 0;
-  border-radius: 28px;
-  padding: 14px 24px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--grad-primary);
-  box-shadow: 0 18px 44px rgba(255, 72, 0, 0.35);
-  cursor: pointer;
-}
-
 .financeMonths {
   padding: 28px 32px;
   border-radius: 32px;
@@ -631,14 +554,6 @@
 }
 
 @media (max-width: 1200px) {
-  .financeHero {
-    flex-direction: column;
-  }
-
-  .financeHero__panel {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-
   .financeConfigurator__content {
     grid-template-columns: 1fr;
   }
@@ -662,7 +577,6 @@
     padding: 24px 18px;
   }
 
-  .financeHero,
   .financeMonths,
   .financeConfigurator,
   .financeCards,
@@ -674,10 +588,6 @@
   }
 
   .financeMonths__grid article dl {
-    grid-template-columns: 1fr;
-  }
-
-  .financeHero__panel {
     grid-template-columns: 1fr;
   }
 

@@ -269,26 +269,6 @@ export default function Tasks({ onNavigate, user }) {
     <div className="tasksPage">
       <TopNav user={currentUser} active="Tarefas" onNavigate={onNavigate} />
 
-      <header className="tasksHero ui-card">
-        <div className="tasksHero__intro">
-          <p className="tasksHero__eyebrow">GTD em fluxo</p>
-          <h1 className="tasksHero__title">Painel de tarefas com filtros inteligentes</h1>
-          <p className="tasksHero__subtitle">
-            Organize capturas, clarificações e execuções com filtros táticos, lista gamificada e contexto GTD.
-          </p>
-        </div>
-        <div className="tasksHero__metrics">
-          <div className="tasksHero__metric">
-            <span className="tasksHero__metricLabel">Ritual ativo</span>
-            <span className="tasksHero__metricValue">Clarificar · Flow Sprint 07</span>
-          </div>
-          <div className="tasksHero__metric tasksHero__metric--accent">
-            <span className="tasksHero__metricLabel">Focus Points</span>
-            <span className="tasksHero__metricValue">128</span>
-          </div>
-        </div>
-      </header>
-
       <section className="tasksListShell">
         <div className="tasksListShell__filters">
           {FILTERS.map((filter) => {
@@ -335,6 +315,22 @@ export default function Tasks({ onNavigate, user }) {
             const prioritySlug = task.priority.toLowerCase()
             const isExpanded = expandedTaskId === task.id
 
+            const dueStateLabel = task.completed
+              ? 'Concluída'
+              : task.timeline === 'late'
+                ? 'Atrasada'
+                : task.timeline === 'unscheduled'
+                  ? 'Sem prazo'
+                  : 'No prazo'
+
+            const dueStateTone = task.completed
+              ? 'done'
+              : task.timeline === 'late'
+                ? 'late'
+                : task.timeline === 'unscheduled'
+                  ? 'none'
+                  : 'ok'
+
             if (task.completed) cardClasses.push('taskCard--done')
             if (task.timeline === 'late') cardClasses.push('taskCard--late')
             if (celebratingTask === task.id) cardClasses.push('taskCard--celebrate')
@@ -376,16 +372,11 @@ export default function Tasks({ onNavigate, user }) {
                       <span className={`taskChip taskChip--priority taskChip--priority-${prioritySlug}`}>
                         Prioridade · {task.priority}
                       </span>
-                      <span className="taskChip taskChip--status">{task.status}</span>
-                      <span
-                        className={
-                          task.timeline === 'late'
-                            ? 'taskChip taskChip--due taskChip--dueLate'
-                            : 'taskChip taskChip--due'
-                        }
-                      >
-                        {task.dueLabel}
+                      <span className={`taskChip taskChip--dueState taskChip--dueState-${dueStateTone}`}>
+                        {dueStateLabel}
                       </span>
+                      <span className="taskChip taskChip--status">{task.status}</span>
+                      <span className="taskCard__dueText">{task.dueLabel}</span>
                     </div>
                   </div>
 

@@ -88,35 +88,6 @@ export default function Finance({ user, onNavigate }) {
     <div className="financePage">
       <TopNav user={user} active="Financeiro" onNavigate={onNavigate} />
 
-      <header className="financeHero ui-card">
-        <div>
-          <p className="financeHero__eyebrow">Centro financeiro</p>
-          <h1>Organize receitas, despesas e metas da área Financeira</h1>
-          <p>
-            Visão mensal completa com cadastro detalhado, parcelamentos, cartões de crédito, limites por categoria e
-            gráficos comparativos. Tudo pronto para conectar metas financeiras com execução diária.
-          </p>
-        </div>
-        <div className="financeHero__panel">
-          <div>
-            <span>Receitas do mês</span>
-            <strong>{activeMonth.revenue}</strong>
-            <small>Atualizado às 09h12</small>
-          </div>
-          <div>
-            <span>Despesas do mês</span>
-            <strong>{activeMonth.expense}</strong>
-            <small>Inclui parceladas já previstas</small>
-          </div>
-          <div>
-            <span>Saldo projetado</span>
-            <strong>{activeMonth.delta}</strong>
-            <small>Cashflow positivo</small>
-          </div>
-          <button type="button">Nova movimentação</button>
-        </div>
-      </header>
-
       <section className="financeMonths ui-card">
         <header>
           <div>

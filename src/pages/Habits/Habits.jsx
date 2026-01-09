@@ -90,31 +90,6 @@ export default function Habits({ user, onNavigate }) {
     <div className="habitsPage">
       <TopNav user={user} active="Hábitos" onNavigate={onNavigate} />
 
-      <header className="habitsHero ui-card">
-        <div>
-          <p className="habitsHero__eyebrow">Operação de hábitos</p>
-          <h1>Visualize hábitos por dia, semana e mês</h1>
-          <p>
-            A mesma lógica do template no Notion, agora com camada GTD integrada: checklists, streaks visuais e calor
-            mensal para ajustar cadência.
-          </p>
-        </div>
-
-        <div className="habitsHero__panel">
-          <article>
-            <span>Streak atual</span>
-            <strong>10 dias</strong>
-            <small>Última quebra: 26 de dez</small>
-          </article>
-          <article>
-            <span>Score semanal</span>
-            <strong>64%</strong>
-            <small>5 hábitos ativos</small>
-          </article>
-          <button type="button">Novo hábito</button>
-        </div>
-      </header>
-
       <section className="habitsModes ui-card">
         <div className="habitsModes__intro">
           <div>

@@ -84,19 +84,11 @@ export default function Projects({ onNavigate, user }) {
   return (
     <div className="projects">
       <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} />
-
-      <header className="projects__hero">
-        <div>
-          <p className="projects__eyebrow">Tudo conectado</p>
-          <h1 className="projects__title">Projetos alinhados com metas e tarefas</h1>
-          <p className="projects__subtitle">
-            Centralize projetos, conecte-os às metas principais e mantenha as tarefas sincronizadas para não perder o foco.
-          </p>
-        </div>
+      <div className="projects__toolbar">
         <button className="projects__action" type="button" onClick={openModal}>
           Novo projeto
         </button>
-      </header>
+      </div>
 
       <section className="projectsBoard">
         {BOARD_COLUMNS.map((column) => (

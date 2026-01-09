@@ -109,30 +109,6 @@ export default function AIAssistant({ user, onNavigate }) {
     <div className="aiPage">
       <TopNav user={user} active="AI Assistant" onNavigate={onNavigate} />
 
-      <header className="aiHero ui-card">
-        <div>
-          <p className="aiHero__eyebrow">Flow Chat · IA totalmente integrada</p>
-          <h1>Converse com a IA para executar ações no FlowApp</h1>
-          <p>
-            Consulte metas, cadastre receitas/despesas, ajuste hábitos e peça recomendações. O Flow Chat entende todo o
-            contexto (Projetos, Metas, Financeiro, Hábitos, Estudos) e aplica o método GTD antes de agir.
-          </p>
-        </div>
-        <div className="aiHero__panel">
-          <div>
-            <span>Contextos ativos</span>
-            <strong>27 fontes</strong>
-            <small>Metas, finanças, hábitos, estudos</small>
-          </div>
-          <div>
-            <span>Última sincronização</span>
-            <strong>Hoje · 08h12</strong>
-            <small>Integrações Inter + Notion</small>
-          </div>
-          <button type="button">Configurar conectores</button>
-        </div>
-      </header>
-
       <section className="aiShell">
         <div className="aiChat ui-card">
           <header>

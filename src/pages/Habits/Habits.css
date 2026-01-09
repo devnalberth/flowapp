@@ -5,84 +5,6 @@
   gap: 32px;
 }
 
-.habitsHero {
-  display: flex;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 28px 32px;
-  border-radius: 32px;
-  background: var(--card);
-  border: 1px solid #ececec;
-  box-shadow: 0 24px 60px rgba(13, 13, 18, 0.08);
-}
-
-.habitsHero__eyebrow {
-  margin: 0 0 6px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 12px;
-  color: #ff4800;
-}
-
-.habitsHero h1 {
-  margin: 0 0 10px;
-  font-size: 32px;
-  line-height: 40px;
-}
-
-.habitsHero p {
-  margin: 0;
-  color: var(--subtext);
-  line-height: 26px;
-}
-
-.habitsHero__panel {
-  min-width: 280px;
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.habitsHero__panel article {
-  flex: 1 1 160px;
-  border-radius: 24px;
-  border: 1px solid #ececec;
-  background: #fff;
-  padding: 18px 22px;
-  box-shadow: 0 14px 32px rgba(13, 13, 18, 0.08);
-}
-
-.habitsHero__panel span {
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 11px;
-  color: #ff4800;
-}
-
-.habitsHero__panel strong {
-  display: block;
-  margin: 6px 0;
-  font-size: 28px;
-  color: var(--text);
-}
-
-.habitsHero__panel small {
-  color: var(--subtext);
-}
-
-.habitsHero__panel button {
-  border: 0;
-  border-radius: 26px;
-  padding: 14px 20px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--grad-primary);
-  box-shadow: 0 18px 44px rgba(255, 72, 0, 0.3);
-  cursor: pointer;
-}
-
 .habitsModes {
   padding: 26px 30px;
   border-radius: 30px;
@@ -400,16 +322,10 @@
 }
 
 @media (max-width: 1024px) {
-  .habitsHero,
   .habitsDaily header,
   .habitsMonthly header,
   .habitsModes__intro {
     flex-direction: column;
-  }
-
-  .habitsHero__panel {
-    width: 100%;
-    justify-content: flex-start;
   }
 
   .habitsDaily__content {
@@ -422,7 +338,6 @@
     padding: 24px 18px;
   }
 
-  .habitsHero,
   .habitsModes,
   .habitsDaily,
   .habitsMonthly {
