@@ -1,236 +1,312 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 
 import './AIAssistant.css'
 
-const INITIAL_MESSAGES = [
+const suggestionPrompts = [
   {
-    id: 'msg-01',
-    role: 'assistant',
-    text: 'Oi, eu sou o Flow Chat. Posso ler metas, projetos, finanças e hábitos para executar ações ou responder com contexto.',
-    chips: ['Financeiro', 'Metas', 'Estudos'],
+    id: 'prompt-expense',
+    title: 'Adicionar despesa rápida',
+    detail: 'Ex: Comprar equipamento em 3x hoje',
   },
   {
-    id: 'msg-02',
+    id: 'prompt-summary',
+    title: 'Resumo do dia',
+    detail: 'Quais tarefas concluídas + saldo diário',
+  },
+  {
+    id: 'prompt-habit',
+    title: 'Registrar hábito',
+    detail: 'Marcar Treino + Ritual de leitura',
+  },
+]
+
+const widgetResponse = {
+  id: 'assistant-action-demo',
+  role: 'assistant',
+  text: 'Interpretei três ações a partir do seu comando. Revise os cartões antes de confirmar.',
+  blocks: [
+    {
+      type: 'task',
+      title: 'Entregar site do Dr Guilherme',
+      schedule: 'Quinta-feira · 14:00',
+      cta: 'Editar',
+      status: 'Agendado',
+    },
+    {
+      type: 'finance',
+      value: 'R$ 1.500,00',
+      category: 'Receita · Freelancer',
+      date: '10/01',
+      status: 'Confirmado',
+    },
+    {
+      type: 'habit',
+      title: 'Treino Muay Thai',
+      statusLabel: 'Concluído ✅',
+      streak: 'Série: 12 dias',
+    },
+  ],
+  meta: {
+    status: 'success',
+    label: 'Ações sincronizadas com o workspace',
+  },
+}
+
+const initialMessages = [
+  {
+    id: 'assistant-welcome',
+    role: 'assistant',
+    text: 'Oi, eu sou o FlowChat. Posso criar tarefas, finanças e hábitos a partir de linguagem natural.',
+  },
+  {
+    id: 'user-command-demo',
     role: 'user',
-    text: 'Mostre minhas despesas parceladas e diga quanto falta pagar neste mês.',
+    text: "Flow, crie a tarefa 'Entregar site do Dr Guilherme' para quinta 14h, adicione uma receita de R$1.500 (freela) para dia 10/01 e marque o hábito 'Treino Muay Thai' como concluído.",
   },
-  {
-    id: 'msg-03',
-    role: 'assistant',
-    text: 'Identifiquei 3 despesas parceladas para dezembro. Ainda restam R$ 4.870 a pagar este mês.',
-    actions: [
-      { label: 'Cartão Flow Visa', detail: 'Calça Marca X · 3x · faltam 2 parcelas' },
-      { label: 'Educação', detail: 'Curso Flow Systems · 6x · faltam 4 parcelas' },
-      { label: 'Tecnologia', detail: 'MacBook Pro · 12x · faltam 9 parcelas' },
-    ],
-    followUps: ['Gerar lembrete antes do vencimento', 'Reclassificar despesa', 'Exportar para CSV'],
-  },
+  widgetResponse,
 ]
 
-const QUICK_ACTIONS = [
-  {
-    id: 'parcelada',
-    title: 'Registrar compra parcelada 3x',
-    description: 'Calça Marca X · R$ 490 · cartão Flow Visa · compra em 08/01',
-    command: 'Adicione uma compra parcelada de R$ 490 da Marca X em 3x no cartão Flow Visa feita em 08/01.',
-  },
-  {
-    id: 'receita',
-    title: 'Cadastrar nova receita',
-    description: 'Mentoria Flow Squad · Stripe · entrada em 12/01',
-    command: 'Cadastre receita de mentoria Flow Squad recebida via Stripe em 12/01.',
-  },
-  {
-    id: 'metas',
-    title: 'Alinhar meta financeira',
-    description: 'Pergunte quais projetos impactam o runway atual',
-    command: 'Quais projetos impactam o runway financeiro e quais ações devo priorizar esta semana?',
-  },
-]
+const mockThinkingDelay = 1400
 
-const KNOWLEDGE_BLOCKS = [
-  {
-    id: 'finance',
-    title: 'Financeiro · dezembro',
-    entries: ['Receitas: R$ 30.120', 'Despesas: R$ 22.470', 'Saldo: +R$ 7.650'],
-  },
-  {
-    id: 'projects',
-    title: 'Projetos ativos',
-    entries: ['FlowOS Expansion', 'Vida Essencial', 'FlowFit Sprint 02'],
-  },
-  {
-    id: 'habits',
-    title: 'Hábitos hoje',
-    entries: ['4/5 concluídos', 'Gratidão ✔', 'Estudos pendente'],
-  },
-]
+const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
 
-const CONNECTORS = [
-  { id: 'banks', name: 'Bancos + Cartões', detail: 'Inter, Nubank, BTG, Visa Infinite' },
-  { id: 'notion', name: 'Notion Template', detail: 'Sincronizado com Flow OS' },
-  { id: 'files', name: 'Docs & Planilhas', detail: 'Drive · CSVs · Integrações' },
-]
-
-const FLOW_PROTOCOLS = [
-  'Ler dados sempre com contexto (metas → projetos → tarefas).',
-  'Confirmar antes de executar ações críticas (ex: transferências).',
-  'Retornar plano em etapas para solicitações complexas.',
-]
-
-export default function AIAssistant({ user, onNavigate }) {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
-  const [draft, setDraft] = useState('')
-
-  const handleSend = (event) => {
-    event.preventDefault()
-    const trimmed = draft.trim()
-    if (!trimmed) return
-
-    const userMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      text: trimmed,
-    }
-
-    const assistantMessage = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      text: 'Entendi. Vou interpretar os dados do sistema, executar a ação solicitada e retornar um resumo com os impactos.',
-      followUps: ['Ver detalhes da operação', 'Criar lembrete associado', 'Atualizar dashboards'],
-    }
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage])
-    setDraft('')
-  }
-
+function TaskCard({ title, schedule, cta }) {
   return (
-    <div className="aiPage">
-      <TopNav user={user} active="AI Assistant" onNavigate={onNavigate} />
-
-      <section className="aiShell">
-        <div className="aiChat ui-card">
-          <header>
-            <div>
-              <p>Flow Chat</p>
-              <h2>Assistente conectado ao seu workspace</h2>
-            </div>
-            <span>Modo seguro · requer confirmação antes de executar</span>
-          </header>
-
-          <div className="aiMessages" role="log" aria-live="polite">
-            {messages.map((message) => (
-              <article key={message.id} className={`aiMessage aiMessage--${message.role}`}>
-                <div className="aiMessage__bubble">
-                  <p>{message.text}</p>
-                  {message.chips ? (
-                    <div className="aiMessage__chips">
-                      {message.chips.map((chip) => (
-                        <span key={chip}>{chip}</span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {message.actions ? (
-                    <ul className="aiMessage__actions">
-                      {message.actions.map((action) => (
-                        <li key={action.label}>
-                          <strong>{action.label}</strong>
-                          <span>{action.detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {message.followUps ? (
-                    <div className="aiMessage__follow">
-                      {message.followUps.map((item) => (
-                        <button key={item} type="button">
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <form className="aiComposer" onSubmit={handleSend}>
-            <label htmlFor="flow-chat-input" className="sr-only">
-              Enviar mensagem para o Flow Chat
-            </label>
-            <textarea
-              id="flow-chat-input"
-              placeholder="Ex: Adicione uma compra parcelada em 3x da marca X no cartão Flow Visa"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-            />
-            <div className="aiComposer__actions">
-              <span>O Flow Chat valida dados financeiros antes de executar.</span>
-              <button type="submit">Enviar</button>
-            </div>
-          </form>
-        </div>
-
-        <aside className="aiSidebar">
-          <section className="aiSidebar__section">
-            <div className="aiSidebar__head">
-              <p>Ações rápidas</p>
-              <span>compreende linguagem natural</span>
-            </div>
-            <div className="aiQuickActions">
-              {QUICK_ACTIONS.map((action) => (
-                <article key={action.id}>
-                  <strong>{action.title}</strong>
-                  <p>{action.description}</p>
-                  <button type="button" onClick={() => setDraft(action.command)}>
-                    Usar comando
-                  </button>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="aiSidebar__section">
-            <div className="aiSidebar__head">
-              <p>Contexto carregado</p>
-              <span>extratos + metas + hábitos</span>
-            </div>
-            <div className="aiKnowledge">
-              {KNOWLEDGE_BLOCKS.map((block) => (
-                <article key={block.id}>
-                  <h4>{block.title}</h4>
-                  <ul>
-                    {block.entries.map((entry) => (
-                      <li key={entry}>{entry}</li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="aiSidebar__section">
-            <div className="aiSidebar__head">
-              <p>Conectores & protocolos</p>
-              <span>para entender o sistema</span>
-            </div>
-            <div className="aiConnectors">
-              {CONNECTORS.map((connector) => (
-                <article key={connector.id}>
-                  <strong>{connector.name}</strong>
-                  <p>{connector.detail}</p>
-                </article>
-              ))}
-            </div>
-            <ul className="aiProtocols">
-              {FLOW_PROTOCOLS.map((rule) => (
-                <li key={rule}>{rule}</li>
-              ))}
-            </ul>
-          </section>
-        </aside>
-      </section>
+    <div className="flowCard flowCard--task">
+      <div className="flowCard__text">
+        <span className="flowCard__label">Tarefa criada</span>
+        <strong className="flowCard__title">{title}</strong>
+        <span className="flowCard__meta">{schedule}</span>
+      </div>
+      <button type="button" className="flowCard__ghost">
+        {cta}
+      </button>
     </div>
   )
 }
+
+function FinanceCard({ value, category, date, status }) {
+  return (
+    <div className="flowCard flowCard--finance">
+      <div className="flowCard__text">
+        <span className="flowCard__label">{status}</span>
+        <strong className="flowCard__title">{value}</strong>
+        <span className="flowCard__meta">{category}</span>
+      </div>
+      <span className="flowCard__pill">{date}</span>
+    </div>
+  )
+}
+
+function HabitCard({ title, statusLabel, streak }) {
+  return (
+    <div className="flowCard flowCard--habit">
+      <div className="flowCard__text">
+        <span className="flowCard__label">Hábito atualizado</span>
+        <strong className="flowCard__title">{title}</strong>
+        <span className="flowCard__meta">{statusLabel}</span>
+      </div>
+      <span className="flowCard__pill">{streak}</span>
+    </div>
+  )
+}
+
+function MessageWidgets({ blocks }) {
+  return (
+    <div className="flowChatWidgets">
+      {blocks.map((block) => {
+        if (block.type === 'task') {
+          return <TaskCard key={block.title} {...block} />
+        }
+        if (block.type === 'finance') {
+          return <FinanceCard key={block.title ?? block.value} {...block} />
+        }
+        if (block.type === 'habit') {
+          return <HabitCard key={block.title} {...block} />
+        }
+        return null
+      })}
+    </div>
+  )
+}
+
+function ThinkingBubble() {
+  return (
+    <motion.div
+      className="flowChatThinking"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+    >
+      <span />
+      <span />
+      <span />
+      <p>Pensando nas ações...</p>
+    </motion.div>
+  )
+}
+
+export default function AIAssistant({ user, onNavigate }) {
+  const [messages, setMessages] = useState(initialMessages)
+  const [draft, setDraft] = useState('')
+  const [isThinking, setThinking] = useState(false)
+  const historyRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  const showEmptyState = useMemo(() => messages.length === 0, [messages.length])
+
+  useEffect(() => {
+    if (!textareaRef.current) return
+    const el = textareaRef.current
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [draft])
+
+  useEffect(() => {
+    if (!historyRef.current) return
+    historyRef.current.scrollTo({ top: historyRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages, isThinking])
+
+  const handleSend = (event) => {
+    event.preventDefault()
+    const value = draft.trim()
+    if (!value) return
+
+    const userMessage = { id: uuid(), role: 'user', text: value }
+    setMessages((prev) => [...prev, userMessage])
+    setDraft('')
+    setThinking(true)
+
+    setTimeout(() => {
+      setMessages((prev) => [...prev, { ...widgetResponse, id: uuid() }])
+      setThinking(false)
+    }, mockThinkingDelay)
+  }
+
+  const handlePromptClick = (prompt) => {
+    setDraft((prev) => (prev ? `${prev} ${prompt}` : prompt))
+  }
+
+  return (
+    <div className="flowChatPage">
+      <TopNav user={user} active="FlowChat" onNavigate={onNavigate} />
+
+      <section className="flowChatShell">
+        <header className="flowChatHeader ui-card">
+          <div>
+            <p className="txt-pill">FlowChat</p>
+            <h1>Converse e confirme ações em segundos</h1>
+            <p>Envie comandos curtos para criar tarefas, atualizar finanças ou marcar hábitos. FlowChat valida tudo antes de sincronizar.</p>
+          </div>
+          <div className="flowChatHeader__status">
+            <span className="flowChatHeader__dot" aria-hidden="true" />
+            <strong>Online</strong>
+            <span>Fila limpa há 3 min</span>
+          </div>
+        </header>
+
+        <div className="flowChatActions">
+          {suggestionPrompts.map((prompt) => (
+            <button key={prompt.id} type="button" onClick={() => handlePromptClick(prompt.title)}>
+              <strong>{prompt.title}</strong>
+              <span>{prompt.detail}</span>
+            </button>
+          ))}
+          <button type="button" className="flowChatActions__secondary" onClick={() => handlePromptClick('Resumo geral da semana')}>
+            <span>Resumo geral da semana</span>
+          </button>
+        </div>
+
+        <section className="flowChatConversation ui-card">
+          <div className="flowChatHistory" ref={historyRef} role="log" aria-live="polite">
+            <AnimatePresence initial={false}>
+              {showEmptyState && !isThinking ? (
+                <motion.div
+                  key="empty-state"
+                  className="flowChatEmpty ui-card"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -30 }}
+                >
+                  <p className="txt-pill">FlowChat conectado</p>
+                  <h2>Comece uma conversa</h2>
+                  <p>Envie um comando ou escolha um dos prompts para gerar tarefas, finanças e hábitos automaticamente.</p>
+                  <div className="flowChatEmpty__prompts">
+                    {suggestionPrompts.map((prompt) => (
+                      <button key={prompt.id} type="button" onClick={() => handlePromptClick(prompt.title)}>
+                        <strong>{prompt.title}</strong>
+                        <span>{prompt.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                messages.map((message) => (
+                  <motion.article
+                    key={message.id}
+                    className={`flowChatMessage flowChatMessage--${message.role}`}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -16 }}
+                  >
+                    {message.role === 'assistant' ? (
+                      <div className="flowChatMessage__avatar" aria-hidden="true">
+                        <span>FC</span>
+                      </div>
+                    ) : null}
+                    <div className="flowChatMessage__bubble">
+                      <p>{message.text}</p>
+                      {message.blocks ? <MessageWidgets blocks={message.blocks} /> : null}
+                      {message.meta?.status ? (
+                        <div className="flowChatMessage__meta">
+                          <span>{message.meta.label}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </motion.article>
+                ))
+              )}
+              {isThinking ? <ThinkingBubble key="thinking" /> : null}
+            </AnimatePresence>
+          </div>
+        </section>
+        <form className="flowChatComposer ui-card" onSubmit={handleSend}>
+          <div className="flowChatComposer__field">
+            <textarea
+              ref={textareaRef}
+              placeholder="Ex: Flow, gere um resumo financeiro da semana e crie uma tarefa com os próximos passos"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={1}
+            />
+            <div className="flowChatComposer__tools">
+              <button type="button" className="flowChatComposer__icon" aria-label="Gravar comando de voz">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 3a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V6a3 3 0 0 0-3-3zm-5 6v2a5 5 0 0 0 10 0V9m-5 8v3m-4 0h8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <button type="submit" className="flowChatComposer__send" aria-label="Enviar mensagem">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12L4 4l16 8-16 8 1-8z" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="flowChatComposer__tips">
+            <span>FlowChat valida com dados reais antes de executar.</span>
+            <button type="button" onClick={() => handlePromptClick('Adicionar despesa rápida')}>
+              Adicionar despesa rápida
+            </button>
+            <button type="button" onClick={() => handlePromptClick('Resumo do dia')}>
+              Resumo do dia
+            </button>
+          </div>
+        </form>

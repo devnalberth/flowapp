@@ -1,330 +1,457 @@
-.aiPage {
-  padding: var(--pad-page-y) var(--pad-page-x);
+.flowChatPage {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  background: var(--bg);
+  color: var(--text);
 }
 
-.aiShell {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 420px;
-  gap: 24px;
-}
-
-.aiChat {
-  padding: 28px 32px;
-  border-radius: 36px;
-  background: #111219;
-  color: #fdfdfd;
+.flowChatShell {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--pad-page-y) clamp(18px, 6vw, var(--pad-page-x)) 40px;
 }
 
-.aiChat header {
+.flowChatHeader {
+  padding: 28px 32px;
+  border-radius: 28px;
+  border: 1px solid #ececf2;
+  background: #fff;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08);
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
 }
 
-.aiChat header p {
+.flowChatHeader h1 {
+  margin: 8px 0 14px;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.flowChatHeader p {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--subtext);
 }
 
-.aiChat header span {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.aiMessages {
+.flowChatWidgets {
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  max-height: 540px;
+  gap: 12px;
+}
+
+.flowCard {
+  border-radius: 18px;
+  border: 1px solid #ececf5;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+}
+
+.flowCard__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.flowCard__label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--subtext);
+}
+
+.flowCard__title {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.flowCard__meta {
+  font-size: 13px;
+  color: var(--subtext);
+}
+
+.flowCard__ghost {
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-weight: 600;
+  background: rgba(84, 105, 212, 0.12);
+  color: #4f5bd5;
+  cursor: pointer;
+}
+
+.flowCard__pill {
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f1f2ff;
+  color: #4f5bd5;
+}
+
+.flowCard--task {
+  border-left: 3px solid #4f5bd5;
+}
+
+.flowCard--finance {
+  border-left: 3px solid #0a9463;
+}
+
+.flowCard--habit {
+  border-left: 3px solid #ff5a00;
+}
+
+.flowChatHistory {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.aiMessage {
-  display: flex;
+.flowChatHistory::-webkit-scrollbar {
+  width: 6px;
 }
 
-.aiMessage--user {
-  justify-content: flex-end;
-}
-
-.aiMessage__bubble {
-  max-width: 88%;
-  border-radius: 26px;
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.aiMessage--user .aiMessage__bubble {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.aiMessage__bubble p {
-  margin: 0;
-  line-height: 24px;
-}
-
-.aiMessage__chips {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.aiMessage__chips span {
-  padding: 4px 10px;
+.flowChatHistory::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  font-size: 12px;
+  background: rgba(84, 105, 212, 0.35);
 }
 
-.aiMessage__actions {
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.aiMessage__actions li {
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.aiMessage__actions strong {
-  display: block;
-}
-
-.aiMessage__actions span {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.aiMessage__follow {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.aiMessage__follow button {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
+.flowChatHistory::-webkit-scrollbar-track {
   background: transparent;
-  color: #fff;
-  padding: 6px 14px;
-  font-size: 12px;
-  cursor: pointer;
 }
 
-.aiComposer {
+.flowChatMessage {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  max-width: 760px;
 }
 
-.aiComposer textarea {
-  width: 100%;
-  min-height: 110px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.35);
+.flowChatMessage--user {
+  margin-left: auto;
+}
+
+.flowChatMessage__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff5a00, #ff9500);
   color: #fff;
-  padding: 16px;
-  font-size: 15px;
-  resize: vertical;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
 }
 
-.aiComposer textarea::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.flowChatMessage__bubble {
+  border-radius: 22px;
+  border: 1px solid #ececf5;
+  background: #f6f7fb;
+  padding: 14px 16px;
+  box-shadow: none;
 }
 
-.aiComposer__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-
-.aiComposer__actions span {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.aiComposer__actions button {
-  border-radius: 20px;
-  border: 0;
-  padding: 10px 20px;
-  font-weight: 600;
+.flowChatMessage--user .flowChatMessage__bubble {
   background: var(--grad-primary);
   color: #fff;
+  border-color: transparent;
+  box-shadow: 0 16px 28px rgba(255, 90, 0, 0.2);
+}
+
+.flowChatMessage__bubble p {
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.flowChatMessage__bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.flowChatMessage__meta {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.flowChatMessage--assistant .flowChatMessage__meta {
+  border-top-color: #dde0f3;
+  color: #5a5f78;
+}
+
+.flowChatWidgets {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.flowCard {
+  border-radius: 20px;
+  border: 1px solid #ececf5;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  box-shadow: none;
+}
+
+.flowCard__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(84, 105, 212, 0.15);
+  display: grid;
+  place-items: center;
+  color: #4f5bd5;
+}
+
+.flowCard__badge {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: #f0f0fa;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.flowCard__body p,
+.flowCard__body span {
+  margin: 0;
+  font-size: 13px;
+  color: var(--subtext);
+}
+
+.flowCard__body h4 {
+  margin: 4px 0;
+  font-size: 16px;
+}
+
+.flowCard__ghost {
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-weight: 600;
+  background: rgba(84, 105, 212, 0.12);
+  color: #4f5bd5;
   cursor: pointer;
 }
 
-.aiSidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+.flowCard--finance .flowCard__icon {
+  background: rgba(10, 167, 97, 0.14);
+  color: #0a9463;
 }
 
-.aiSidebar__section {
-  padding: 20px 22px;
-  border-radius: 28px;
+.flowCard--finance {
+  background: rgba(10, 167, 97, 0.08);
+  border-color: #ececf5;
+}
+
+.flowCard--habit .flowCard__icon {
+  background: rgba(255, 90, 0, 0.12);
+  color: #ff5a00;
+}
+
+.flowCard--habit {
+  background: rgba(255, 90, 0, 0.06);
+  border-color: #ececf5;
+}
+
+.flowChatEmpty {
+  border: 1px dashed #dfe3ec;
+  border-radius: 24px;
+  padding: 36px;
+  background: var(--muted);
+}
+
+.flowChatEmpty__prompts {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.flowChatEmpty__prompts button {
+  border: 1px solid #e3e6f4;
+  border-radius: 16px;
+  padding: 12px 14px;
   background: #fff;
-  border: 1px solid #ececec;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  cursor: pointer;
 }
 
-.aiSidebar__head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.flowChatThinking {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid #ececf5;
+  background: #fff;
 }
 
-.aiSidebar__head p {
+.flowChatThinking span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5a00;
+  animation: flowTyping 1.2s infinite ease-in-out;
+}
+
+.flowChatThinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.flowChatThinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.flowChatThinking p {
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 11px;
-  color: #ff4800;
-}
-
-.aiSidebar__head span {
   font-size: 12px;
   color: var(--subtext);
 }
 
-.aiQuickActions {
+@keyframes flowTyping {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.flowChatComposer {
+  position: sticky;
+  bottom: 24px;
+  padding: 18px 22px;
+  border-radius: 26px;
+  border: 1px solid #ececf5;
+  background: #fff;
+  box-shadow: 0 22px 45px rgba(13, 18, 33, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.aiQuickActions article {
-  border-radius: 20px;
-  border: 1px solid #ececec;
-  padding: 14px 16px;
-  background: #fafafa;
+.flowChatComposer__field {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  border-radius: 24px;
+  border: 1px solid #e2e6f5;
+  background: #f9f9fb;
+  padding: 10px 14px;
 }
 
-.aiQuickActions strong {
-  display: block;
+.flowChatComposer textarea {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: var(--body-size);
+  line-height: 1.5;
+  font-family: var(--font-sans);
+  resize: none;
+  color: var(--text);
+  max-height: 160px;
 }
 
-.aiQuickActions p {
-  margin: 4px 0 10px;
+.flowChatComposer textarea:focus {
+  outline: none;
+}
+
+.flowChatComposer__tools {
+  display: flex;
+  gap: 8px;
+}
+
+.flowChatComposer__icon,
+.flowChatComposer__send {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e2e6f5;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.flowChatComposer__send {
+  border: 0;
+  background: var(--grad-primary);
+  color: #fff;
+  box-shadow: 0 16px 28px rgba(255, 90, 0, 0.28);
+}
+
+.flowChatComposer__icon:hover,
+.flowChatComposer__send:hover {
+  transform: translateY(-2px);
+}
+
+.flowChatComposer__tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
   color: var(--subtext);
 }
 
-.aiQuickActions button {
-  border-radius: 18px;
-  border: 1px solid #ffe0c4;
-  background: #fff6ef;
+.flowChatComposer__tips button {
+  border: 1px solid #ececf5;
+  border-radius: var(--r-pill);
   padding: 6px 12px;
-  font-weight: 600;
-  color: #a3541f;
+  background: #f7f7fb;
   cursor: pointer;
 }
 
-.aiKnowledge {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.aiKnowledge article {
-  border-radius: 18px;
-  border: 1px solid #ececec;
-  padding: 12px 14px;
-  background: #fafafa;
-}
-
-.aiKnowledge h4 {
-  margin: 0 0 6px;
-}
-
-.aiKnowledge ul {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.aiConnectors {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.aiConnectors article {
-  border-radius: 16px;
-  border: 1px dashed #f3c9a3;
-  padding: 10px 12px;
-  background: #fffefb;
-}
-
-.aiConnectors p {
-  margin: 2px 0 0;
-  color: var(--subtext);
-  font-size: 13px;
-}
-
-.aiProtocols {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: var(--text);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-@media (max-width: 1200px) {
-  .aiShell {
-    grid-template-columns: 1fr;
+@media (max-width: 1024px) {
+  .flowChatConversation {
+    min-height: auto;
+    padding: 24px;
   }
 }
 
 @media (max-width: 640px) {
-  .aiPage {
-    padding: 24px 18px;
+  .flowChatShell {
+    padding: 20px;
   }
 
-  .aiChat,
-  .aiSidebar__section {
-    padding: 22px;
+  .flowChatHeader,
+  .flowChatConversation,
+  .flowChatComposer {
+    padding: 20px;
   }
 
-  .aiMessage__bubble {
-    max-width: 100%;
+  .flowChatHeader {
+    flex-direction: column;
+  }
+
+  .flowChatMessage {
+    flex-direction: column;
+  }
+
+  .flowChatComposer__field {
+    flex-direction: column;
+  }
+
+  .flowChatComposer__tools {
+    align-self: flex-end;
   }
 }

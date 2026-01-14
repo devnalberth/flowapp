@@ -1,365 +1,1079 @@
 import { useMemo, useState } from 'react'
+import {
+  ResponsiveContainer,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 
 import './Finance.css'
 
-const MONTH_VIEWS = [
+const MONTHS = [
+  { value: '01', label: 'Janeiro' },
+  { value: '02', label: 'Fevereiro' },
+  { value: '03', label: 'Março' },
+  { value: '04', label: 'Abril' },
+  { value: '05', label: 'Maio' },
+  { value: '06', label: 'Junho' },
+  { value: '07', label: 'Julho' },
+  { value: '08', label: 'Agosto' },
+  { value: '09', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+]
+
+const YEARS = ['2024', '2025', '2026']
+
+const PAYMENT_METHODS = [
+  { id: 'cash', label: 'Dinheiro', helper: 'Pagamentos à vista' },
+  { id: 'pix', label: 'Pix', helper: 'Instantâneo' },
+  { id: 'debit', label: 'Débito', helper: 'Conta corrente' },
+  { id: 'credit', label: 'Cartão de crédito', helper: 'Fatura mensal' },
+]
+
+const STATUS_OPTIONS = ['Conciliado', 'Agendado', 'Em revisão', 'Fatura aberta', 'Liquidado']
+
+const CATEGORY_OPTIONS = [
+  { id: 'operacoes', label: 'Operações' },
+  { id: 'marketing', label: 'Marketing' },
+  { id: 'pessoal', label: 'Pessoal' },
+  { id: 'education', label: 'Educação' },
+  { id: 'lazer', label: 'Lazer' },
+]
+
+const GOALS = [
+  { id: 'meta1', label: 'Reserva 6 meses' },
+  { id: 'meta2', label: 'Meta Q1 Growth' },
+  { id: 'meta3', label: 'Viagem Squad' },
+]
+
+const TAG_SUGGESTIONS = ['fixo', 'software', 'cartao', 'mentoria', 'aluguel']
+
+const CASHFLOW_SERIES = [
+  { month: 'Jan', receita: 22000, despesa: 16800 },
+  { month: 'Fev', receita: 24000, despesa: 17600 },
+  { month: 'Mar', receita: 25500, despesa: 18500 },
+  { month: 'Abr', receita: 26200, despesa: 19100 },
+  { month: 'Mai', receita: 27800, despesa: 20500 },
+  { month: 'Jun', receita: 29000, despesa: 21400 },
+  { month: 'Jul', receita: 30100, despesa: 22200 },
+  { month: 'Ago', receita: 31200, despesa: 22700 },
+  { month: 'Set', receita: 31800, despesa: 23300 },
+  { month: 'Out', receita: 32700, despesa: 24100 },
+  { month: 'Nov', receita: 33400, despesa: 24800 },
+  { month: 'Dez', receita: 34400, despesa: 25900 },
+]
+
+const CATEGORY_BREAKDOWN = [
+  { id: 'operacoes', label: 'Operações', value: 8200 },
+  { id: 'marketing', label: 'Marketing', value: 5400 },
+  { id: 'education', label: 'Educação', value: 3100 },
+  { id: 'pessoal', label: 'Pessoal', value: 2800 },
+  { id: 'lazer', label: 'Lazer', value: 1700 },
+]
+
+const INITIAL_BUDGETS = [
+  { id: 'operacoes', label: 'Operações', ceiling: 8000, spent: 6200 },
+  { id: 'marketing', label: 'Marketing', ceiling: 6000, spent: 4800 },
+  { id: 'education', label: 'Educação', ceiling: 3000, spent: 2950 },
+  { id: 'pessoal', label: 'Pessoal', ceiling: 4000, spent: 2200 },
+]
+
+const INITIAL_TRANSACTIONS = [
   {
-    id: 'prev',
-    label: 'Novembro · 2025',
-    period: 'Mês anterior',
-    revenue: 'R$ 28.400',
-    expense: 'R$ 19.850',
-    delta: '+ R$ 8.550',
+    id: 't-01',
+    type: 'receita',
+    description: 'Consultoria Flow OS',
+    category: 'operacoes',
+    date: '2025-12-05',
+    amount: 12000,
+    account: 'Banco Inter PJ',
+    paymentMethod: 'pix',
+    status: 'Conciliado',
+    tags: ['software', 'recorrente'],
+    goalId: 'meta2',
   },
   {
-    id: 'current',
-    label: 'Dezembro · 2025',
-    period: 'Mês atual',
-    revenue: 'R$ 30.120',
-    expense: 'R$ 22.470',
-    delta: '+ R$ 7.650',
+    id: 't-02',
+    type: 'receita',
+    description: 'Mentoria Squad 12',
+    category: 'education',
+    date: '2025-12-11',
+    amount: 4800,
+    account: 'Stripe',
+    paymentMethod: 'pix',
+    status: 'Conciliado',
+    tags: ['mentoria'],
   },
   {
-    id: 'next',
-    label: 'Janeiro · 2026',
-    period: 'Próximo mês',
-    revenue: 'R$ 31.800',
-    expense: 'R$ 24.100',
-    delta: '+ R$ 7.700',
+    id: 't-03',
+    type: 'despesa',
+    description: 'Infra + SaaS',
+    category: 'operacoes',
+    date: '2025-12-09',
+    amount: 3450,
+    account: 'Flow Visa Infinite',
+    paymentMethod: 'credit',
+    status: 'Fatura aberta',
+    cardId: 'card-flow',
+    tags: ['software'],
+  },
+  {
+    id: 't-04',
+    type: 'despesa',
+    description: 'Marketing performance',
+    category: 'marketing',
+    date: '2025-12-13',
+    amount: 4300,
+    account: 'Nu Empresarial',
+    paymentMethod: 'credit',
+    status: 'Agendado',
+    cardId: 'card-nu',
+    tags: ['paid'],
+  },
+  {
+    id: 't-05',
+    type: 'despesa',
+    description: 'Backup equipe remota',
+    category: 'pessoal',
+    date: '2025-12-18',
+    amount: 2620,
+    account: 'Banco Inter PJ',
+    paymentMethod: 'pix',
+    status: 'Conciliado',
+    tags: ['fixo'],
+    goalId: 'meta1',
+  },
+  {
+    id: 't-06',
+    type: 'receita',
+    description: 'Conteúdo patrocinado',
+    category: 'marketing',
+    date: '2025-12-22',
+    amount: 2920,
+    account: 'PayPal',
+    paymentMethod: 'pix',
+    status: 'Em revisão',
+    tags: ['conteudo'],
   },
 ]
 
-const TRANSACTION_STEPS = [
-  { step: '01', title: 'Selecionar tipo', detail: 'Receita ou despesa · única ou recorrente', highlight: 'Tipo + conta' },
-  { step: '02', title: 'Configurar parcelas', detail: 'Defina qtd. e intervalo (ex: 6x / mensal)', highlight: 'Parcelamentos' },
-  { step: '03', title: 'Categorias + limites', detail: 'Escolha categoria e limite mensal', highlight: 'Metas de gasto' },
-  { step: '04', title: 'Revisão e notas', detail: 'Adicione notas GTD e links do banco', highlight: 'Notas' },
+const INITIAL_CARDS = [
+  { id: 'card-flow', name: 'Flow Visa Infinite', brand: 'Visa', limit: 25000, used: 0.58, closingDay: 2, dueDay: 10 },
+  { id: 'card-nu', name: 'Nu Empresarial', brand: 'Mastercard', limit: 18000, used: 0.41, closingDay: 28, dueDay: 5 },
+  { id: 'card-black', name: 'Pessoal Black', brand: 'Visa', limit: 12000, used: 0.73, closingDay: 7, dueDay: 15 },
 ]
 
-const REVENUE_DATA = [
-  { id: 'consult', title: 'Consultoria FlowOS', date: '05/12', account: 'Banco Inter PJ', amount: 'R$ 12.000', status: 'Confirmado' },
-  { id: 'royalties', title: 'Royalties Template Notion', date: '10/12', account: 'Stripe', amount: 'R$ 4.800', status: 'Liquidação' },
-  { id: 'mentoria', title: 'Mentoria Squad', date: '15/12', account: 'Nubank', amount: 'R$ 6.400', status: 'Agendado' },
-  { id: 'conteudo', title: 'Conteúdo patrocinado', date: '22/12', account: 'PayPal', amount: 'R$ 2.920', status: 'Confirmado' },
-]
+const PIE_COLORS = ['#ff4800', '#ff8d00', '#ffc241', '#7c88ff', '#5cd1b3']
+const BASE_BALANCE = 148200
 
-const EXPENSE_DATA = [
-  { id: 'operacao', title: 'Operação FlowApp', date: '04/12', account: 'Banco Inter PJ', amount: 'R$ 5.200', status: 'Pago' },
-  { id: 'infra', title: 'Infra + SaaS', date: '09/12', account: 'Cartão Black', amount: 'R$ 3.450', status: 'Fatura' },
-  { id: 'marketing', title: 'Marketing / Paid media', date: '13/12', account: 'Cartão Nu Empresarial', amount: 'R$ 4.300', status: 'Pago' },
-  { id: 'educacao', title: 'Educação / Cursos', date: '18/12', account: 'Banco BTG', amount: 'R$ 2.250', status: 'Parcelado 3x' },
-  { id: 'pessoal', title: 'Financeiro pessoal', date: '25/12', account: 'Cartão pessoal', amount: 'R$ 2.620', status: 'Planejado' },
-]
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0)
 
-const CREDIT_CARDS = [
-  { id: 'flow-visa', name: 'Flow Visa Infinite', limit: 'R$ 25.000', used: 0.58, due: '10 jan', closing: '02 jan' },
-  { id: 'nubank', name: 'Nu Empresarial', limit: 'R$ 18.000', used: 0.41, due: '05 jan', closing: '28 dez' },
-  { id: 'pessoal', name: 'Pessoal Black', limit: 'R$ 12.000', used: 0.73, due: '15 jan', closing: '07 jan' },
-]
+const parseNumber = (value) => {
+  const parsed = typeof value === 'number' ? value : Number(String(value).replace(/[^0-9.-]/g, ''))
+  return Number.isNaN(parsed) ? 0 : parsed
+}
 
-const BANK_ACTIVITY = [
-  { id: 1, type: 'Entrada', title: 'PIX Consultoria Sprint 07', account: 'Banco Inter PJ', amount: '+ R$ 8.400', time: '08h12', status: 'Conciliado' },
-  { id: 2, type: 'Saída', title: 'Pagamento equipe remota', account: 'Banco Inter PJ', amount: '- R$ 6.100', time: '09h45', status: 'Em revisão' },
-  { id: 3, type: 'Cartão', title: 'AWS + Vercel', account: 'Visa Infinite', amount: '- R$ 1.180', time: '12h10', status: 'Fatura' },
-  { id: 4, type: 'Entrada', title: 'Mentoria Squad 08', account: 'Stripe', amount: '+ R$ 3.600', time: '15h30', status: 'Conciliado' },
-]
+const formatDate = (value) => {
+  if (!value) return '--'
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(value))
+}
 
-const CATEGORY_LIMITS = [
-  { id: 'operacoes', label: 'Operações', limit: 'R$ 8.000', used: 0.62 },
-  { id: 'marketing', label: 'Marketing', limit: 'R$ 6.000', used: 0.48 },
-  { id: 'education', label: 'Educação', limit: 'R$ 3.000', used: 0.74 },
-  { id: 'pessoal', label: 'Pessoal', limit: 'R$ 4.000', used: 0.55 },
-]
+const generateInstallmentSchedule = (dateString, count, dueDay) => {
+  const baseDate = dateString ? new Date(dateString) : new Date()
+  const installments = []
+  for (let index = 0; index < count; index += 1) {
+    const projected = new Date(baseDate)
+    projected.setMonth(projected.getMonth() + index)
+    projected.setDate(dueDay ?? projected.getDate())
+    installments.push(
+      new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(projected).replace('.', '')
+    )
+  }
+  return installments
+}
 
-const GRAPH_SUMMARY = [
-  { id: 'cash', label: 'Fluxo de caixa', detail: 'Receitas x despesas', value: 'R$ 7.650', progress: 0.68 },
-  { id: 'growth', label: 'Meta financeira', detail: 'Meta trimestre', value: '72% atingido', progress: 0.72 },
-  { id: 'runway', label: 'Runway', detail: 'Meses cobertos', value: '5.6 meses', progress: 0.56 },
-]
+const createDefaultForm = (type = 'receita') => ({
+  id: null,
+  type,
+  description: '',
+  amount: '',
+  category: CATEGORY_OPTIONS[0].id,
+  tags: [],
+  goalId: '',
+  date: new Date().toISOString().slice(0, 10),
+  recurring: false,
+  paymentMethod: 'pix',
+  account: 'Banco Inter PJ',
+  status: STATUS_OPTIONS[0],
+  cardId: '',
+  isInstallment: false,
+  totalAmount: '',
+  installmentCount: '1',
+  notes: '',
+})
 
-const formatPercent = (value) => `${Math.round(value * 100)}%`
+const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
+
+const paymentLabelMap = PAYMENT_METHODS.reduce((acc, method) => ({ ...acc, [method.id]: method.label }), {})
+const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate }) {
-  const [monthView, setMonthView] = useState('current')
-  const activeMonth = useMemo(() => MONTH_VIEWS.find((view) => view.id === monthView), [monthView])
+  const [selectedMonth, setSelectedMonth] = useState('12')
+  const [selectedYear, setSelectedYear] = useState('2025')
+  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS)
+  const [cards, setCards] = useState(INITIAL_CARDS)
+  const [budgets, setBudgets] = useState(INITIAL_BUDGETS)
+
+  const [isTransactionModalOpen, setTransactionModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('receita')
+  const [formData, setFormData] = useState(createDefaultForm())
+  const [editingTransactionId, setEditingTransactionId] = useState(null)
+  const [tagDraft, setTagDraft] = useState('')
+
+  const [isCardModalOpen, setCardModalOpen] = useState(false)
+  const [cardForm, setCardForm] = useState({ name: '', brand: '', closingDay: '1', dueDay: '10', limit: '' })
+
+  const [isBudgetModalOpen, setBudgetModalOpen] = useState(false)
+  const [budgetForm, setBudgetForm] = useState({ category: CATEGORY_OPTIONS[0].id, limit: '' })
+
+  const currentMonthMeta = useMemo(() => MONTHS.find((month) => month.value === selectedMonth), [selectedMonth])
+
+  const handleShiftMonth = (direction) => {
+    setSelectedMonth((prevMonth) => {
+      let monthIndex = MONTHS.findIndex((month) => month.value === prevMonth)
+      if (monthIndex === -1) monthIndex = 0
+      monthIndex += direction
+      let yearDelta = 0
+      if (monthIndex < 0) {
+        monthIndex = MONTHS.length - 1
+        yearDelta = -1
+      } else if (monthIndex >= MONTHS.length) {
+        monthIndex = 0
+        yearDelta = 1
+      }
+
+      const currentYearIndex = YEARS.indexOf(selectedYear)
+      const hitsLowerBound = yearDelta < 0 && currentYearIndex === 0
+      const hitsUpperBound = yearDelta > 0 && currentYearIndex === YEARS.length - 1
+      if (hitsLowerBound || hitsUpperBound) {
+        return prevMonth
+      }
+
+      if (yearDelta !== 0) {
+        setSelectedYear((prevYear) => {
+          const yearIndex = YEARS.indexOf(prevYear)
+          const nextIndex = Math.min(Math.max(yearIndex + yearDelta, 0), YEARS.length - 1)
+          return YEARS[nextIndex] ?? prevYear
+        })
+      }
+      return MONTHS[monthIndex].value
+    })
+  }
+
+  const periodKey = `${selectedYear}-${selectedMonth}`
+  const periodLabel = `${currentMonthMeta?.label ?? ''} · ${selectedYear}`
+
+  const filteredTransactions = useMemo(() => {
+    return transactions
+      .filter((transaction) => transaction.date.startsWith(periodKey))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+  }, [transactions, periodKey])
+
+  const monthlyRevenue = useMemo(
+    () => filteredTransactions.filter((item) => item.type === 'receita').reduce((sum, item) => sum + item.amount, 0),
+    [filteredTransactions]
+  )
+
+  const monthlyExpenses = useMemo(
+    () => filteredTransactions.filter((item) => item.type === 'despesa').reduce((sum, item) => sum + item.amount, 0),
+    [filteredTransactions]
+  )
+
+  const creditUsage = useMemo(() => {
+    const totalLimit = cards.reduce((acc, card) => acc + card.limit, 0)
+    const used = cards.reduce((acc, card) => acc + card.limit * card.used, 0)
+    return { totalLimit, used, available: totalLimit - used }
+  }, [cards])
+
+  const openCardInvoices = useMemo(
+    () => transactions.filter((t) => t.paymentMethod === 'credit' && t.status !== 'Liquidado').reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  )
+
+  const kpiMetrics = useMemo(
+    () => [
+      {
+        id: 'balance',
+        label: 'Saldo atual',
+        value: formatCurrency(BASE_BALANCE + monthlyRevenue - monthlyExpenses),
+        helper: 'Consolidado geral',
+      },
+      {
+        id: 'revenue',
+        label: 'Receitas do mês',
+        value: formatCurrency(monthlyRevenue),
+        helper: `${filteredTransactions.filter((item) => item.type === 'receita').length} entradas`,
+      },
+      {
+        id: 'expense',
+        label: 'Despesas do mês',
+        value: formatCurrency(monthlyExpenses),
+        helper: `${filteredTransactions.filter((item) => item.type === 'despesa').length} saídas`,
+      },
+      {
+        id: 'invoice',
+        label: 'Faturas abertas',
+        value: formatCurrency(openCardInvoices),
+        helper: 'Cartões em uso',
+      },
+      {
+        id: 'limit',
+        label: 'Limite disponível',
+        value: formatCurrency(creditUsage.available),
+        helper: formatCurrency(creditUsage.totalLimit),
+      },
+    ],
+    [monthlyRevenue, monthlyExpenses, filteredTransactions, openCardInvoices, creditUsage]
+  )
+
+  const selectedCard = useMemo(() => cards.find((card) => card.id === formData.cardId), [cards, formData.cardId])
+
+  const installmentDetails = useMemo(() => {
+    if (formData.paymentMethod !== 'credit' || !selectedCard) return null
+    if (!formData.isInstallment) return null
+    const installmentCount = Math.max(1, Number(formData.installmentCount) || 1)
+    const total = parseNumber(formData.totalAmount || formData.amount)
+    if (!total) return null
+    const valuePerInstallment = total / installmentCount
+    const schedule = generateInstallmentSchedule(formData.date, installmentCount, selectedCard.dueDay)
+    return { total, installmentCount, valuePerInstallment, schedule }
+  }, [formData, selectedCard])
+
+  const handleOpenTransactionModal = (type = 'receita') => {
+    setTransactionModalOpen(true)
+    setActiveTab(type)
+    setEditingTransactionId(null)
+    setFormData(createDefaultForm(type))
+    setTagDraft('')
+  }
+
+  const handleEditTransaction = (transaction) => {
+    setTransactionModalOpen(true)
+    setActiveTab(transaction.type)
+    setEditingTransactionId(transaction.id)
+    setFormData({
+      ...createDefaultForm(transaction.type),
+      ...transaction,
+      amount: transaction.amount.toString(),
+      totalAmount: transaction.installments && transaction.installments > 1 ? (transaction.installmentValue * transaction.installments).toString() : '',
+      installmentCount: transaction.installments ? String(transaction.installments) : '1',
+      isInstallment: Boolean(transaction.installments && transaction.installments > 1),
+    })
+    setTagDraft('')
+  }
+
+  const closeTransactionModal = () => {
+    setTransactionModalOpen(false)
+    setEditingTransactionId(null)
+    setFormData(createDefaultForm(activeTab))
+    setTagDraft('')
+  }
+
+  const handleFormChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleTagAdd = () => {
+    const value = tagDraft.trim()
+    if (!value || formData.tags.includes(value)) return
+    setFormData((prev) => ({ ...prev, tags: [...prev.tags, value] }))
+    setTagDraft('')
+  }
+
+  const handleTagKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault()
+      handleTagAdd()
+    }
+  }
+
+  const handleTagRemove = (tag) => {
+    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((item) => item !== tag) }))
+  }
+
+  const handleTransactionSubmit = (event) => {
+    event.preventDefault()
+    const amount = parseNumber(formData.amount)
+    if (!amount || !formData.description) return
+
+    const payload = {
+      id: editingTransactionId ?? generateId(),
+      type: activeTab,
+      description: formData.description,
+      category: formData.category,
+      date: formData.date,
+      amount,
+      account: formData.account,
+      paymentMethod: formData.paymentMethod,
+      status: formData.status,
+      tags: formData.tags,
+      goalId: formData.goalId,
+      recurring: formData.recurring,
+      cardId: formData.paymentMethod === 'credit' ? formData.cardId : undefined,
+      installments:
+        formData.paymentMethod === 'credit' && formData.isInstallment ? Math.max(1, Number(formData.installmentCount) || 1) : 1,
+      installmentValue:
+        formData.paymentMethod === 'credit' && formData.isInstallment && installmentDetails
+          ? installmentDetails.valuePerInstallment
+          : amount,
+    }
+
+    setTransactions((prev) => {
+      if (editingTransactionId) {
+        return prev.map((transaction) => (transaction.id === editingTransactionId ? payload : transaction))
+      }
+      return [payload, ...prev]
+    })
+
+    closeTransactionModal()
+  }
+
+  const handleCardSubmit = (event) => {
+    event.preventDefault()
+    if (!cardForm.name || !cardForm.limit) return
+    setCards((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        name: cardForm.name,
+        brand: cardForm.brand || 'Outro',
+        limit: parseNumber(cardForm.limit),
+        used: 0,
+        closingDay: Number(cardForm.closingDay) || 1,
+        dueDay: Number(cardForm.dueDay) || 10,
+      },
+    ])
+    setCardForm({ name: '', brand: '', closingDay: '1', dueDay: '10', limit: '' })
+    setCardModalOpen(false)
+  }
+
+  const handleBudgetSubmit = (event) => {
+    event.preventDefault()
+    if (!budgetForm.limit) return
+    const limitValue = parseNumber(budgetForm.limit)
+    setBudgets((prev) => {
+      const exists = prev.find((item) => item.id === budgetForm.category)
+      if (exists) {
+        return prev.map((item) => (item.id === budgetForm.category ? { ...item, ceiling: limitValue } : item))
+      }
+      return [
+        ...prev,
+        {
+          id: budgetForm.category,
+          label: categoryLabelMap[budgetForm.category] ?? 'Categoria',
+          ceiling: limitValue,
+          spent: 0,
+        },
+      ]
+    })
+    setBudgetForm({ category: CATEGORY_OPTIONS[0].id, limit: '' })
+    setBudgetModalOpen(false)
+  }
 
   return (
     <div className="financePage">
       <TopNav user={user} active="Financeiro" onNavigate={onNavigate} />
 
-      <section className="financeMonths ui-card">
-        <header>
-          <div>
-            <p>Visões mensais</p>
-            <h2>Mês anterior · atual · próximo</h2>
+      <section className="financeHeader ui-card">
+        <div>
+          <p>Saúde financeira</p>
+          <h1>Finanças · {periodLabel}</h1>
+        </div>
+        <div className="financeHeader__controls">
+          <div className="financeHeader__carousel" aria-label="Selecionar período">
+            <button type="button" aria-label="Mês anterior" onClick={() => handleShiftMonth(-1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <div>
+              <strong>{currentMonthMeta?.label}</strong>
+              <span>{selectedYear}</span>
+            </div>
+            <button type="button" aria-label="Próximo mês" onClick={() => handleShiftMonth(1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
-          <div className="financeMonths__toggle">
-            {MONTH_VIEWS.map((view) => (
-              <button
-                key={view.id}
-                type="button"
-                className={monthView === view.id ? 'is-active' : ''}
-                onClick={() => setMonthView(view.id)}
-              >
-                {view.period}
-              </button>
-            ))}
-          </div>
-        </header>
-        <div className="financeMonths__grid">
-          {MONTH_VIEWS.map((view) => (
-            <article key={view.id} className={monthView === view.id ? 'is-focused' : ''}>
-              <span>{view.period}</span>
-              <h3>{view.label}</h3>
-              <dl>
-                <div>
-                  <dt>Receitas</dt>
-                  <dd>{view.revenue}</dd>
-                </div>
-                <div>
-                  <dt>Despesas</dt>
-                  <dd>{view.expense}</dd>
-                </div>
-                <div>
-                  <dt>Saldo</dt>
-                  <dd>{view.delta}</dd>
-                </div>
-              </dl>
-            </article>
-          ))}
+          <button type="button" className="btn btn--primary" onClick={() => handleOpenTransactionModal('receita')}>
+            Nova transação
+          </button>
         </div>
       </section>
 
-      <section className="financeConfigurator ui-card">
-        <div className="financeConfigurator__intro">
-          <div>
-            <p>Cadastro e modal</p>
-            <h2>Receitas/despesas com parcelamento e limites por categoria</h2>
-            <p>
-              Defina tipo da transação, origem bancária, conta, parcelas e categoria com limite. Tudo configurado antes do
-              lançamento oficial.
-            </p>
-          </div>
-          <div className="financeConfigurator__type">
-            <button type="button" className="is-active">Receita</button>
-            <button type="button">Despesa</button>
-            <button type="button">Transferência</button>
-          </div>
-        </div>
-
-        <div className="financeConfigurator__content">
-          <div className="financeSteps">
-            {TRANSACTION_STEPS.map((item) => (
-              <article key={item.step}>
-                <span>{item.step}</span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                  <small>{item.highlight}</small>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="financeModalPreview">
-            <div className="financeModalPreview__header">
-              <p>Configuração do modal</p>
-              <span>Transação parcelada</span>
-            </div>
-            <div className="financeModalPreview__fields">
-              <article>
-                <p>Conta / origem</p>
-                <strong>Banco Inter PJ</strong>
-                <small>Saldo atual R$ 45.120</small>
-              </article>
-              <article>
-                <p>Categoria</p>
-                <strong>Operações · SaaS</strong>
-                <small>Limite mensal R$ 8k</small>
-              </article>
-              <article>
-                <p>Parcelamento</p>
-                <strong>6x · mensal</strong>
-                <small>Entrada em 10 jan</small>
-              </article>
-              <article>
-                <p>Lembretes</p>
-                <strong>Notificar 2 dias antes</strong>
-                <small>Enviar para Slack financeiro</small>
-              </article>
-            </div>
-            <button type="button">Salvar transação</button>
-          </div>
-        </div>
+      <section className="financeKpis">
+        {kpiMetrics.map((kpi) => (
+          <article key={kpi.id} className="ui-card">
+            <p>{kpi.label}</p>
+            <strong>{kpi.value}</strong>
+            <span>{kpi.helper}</span>
+          </article>
+        ))}
       </section>
 
-      <section className="financeCashflow">
-        <article className="financeTable ui-card">
+      <section className="financeAnalytics">
+        <article className="ui-card financeChart">
           <header>
             <div>
-              <p>Receitas</p>
-              <h3>Entradas confirmadas e previstas</h3>
+              <p>Evolução anual</p>
+              <h2>Receitas x Despesas</h2>
             </div>
-            <button type="button">Nova receita</button>
+            <span>{selectedYear}</span>
           </header>
-          <table>
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Conta</th>
-                <th>Valor</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {REVENUE_DATA.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.title}</td>
-                  <td>{row.date}</td>
-                  <td>{row.account}</td>
-                  <td>{row.amount}</td>
-                  <td>{row.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={CASHFLOW_SERIES} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} labelFormatter={(label) => `Mês ${label}`} />
+              <Legend />
+              <Line type="monotone" dataKey="receita" stroke="#ff4800" strokeWidth={3} dot={false} name="Receitas" />
+              <Line type="monotone" dataKey="despesa" stroke="#1c2a44" strokeWidth={3} dot={false} name="Despesas" />
+            </LineChart>
+          </ResponsiveContainer>
         </article>
 
-        <article className="financeTable ui-card">
+        <article className="ui-card financeChart">
           <header>
             <div>
-              <p>Despesas</p>
-              <h3>Saídas controladas por categoria</h3>
+              <p>Distribuição</p>
+              <h2>Gastos por categoria</h2>
             </div>
-            <button type="button">Nova despesa</button>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setBudgetModalOpen(true)}>
+              Categorias & limites
+            </button>
           </header>
-          <table>
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th>Data</th>
-                <th>Conta</th>
-                <th>Valor</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {EXPENSE_DATA.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.title}</td>
-                  <td>{row.date}</td>
-                  <td>{row.account}</td>
-                  <td>{row.amount}</td>
-                  <td>{row.status}</td>
-                </tr>
+          <div className="financeChart__split">
+            <div className="financeChart__pie">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={CATEGORY_BREAKDOWN}
+                    dataKey="value"
+                    nameKey="label"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={4}
+                  >
+                    {CATEGORY_BREAKDOWN.map((entry, index) => (
+                      <Cell key={entry.id} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [formatCurrency(value), name]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="financeChart__legend">
+              {CATEGORY_BREAKDOWN.map((entry, index) => (
+                <li key={entry.id}>
+                  <span style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                  <div>
+                    <strong>{entry.label}</strong>
+                    <small>{formatCurrency(entry.value)}</small>
+                  </div>
+                </li>
               ))}
-            </tbody>
-          </table>
+            </ul>
+          </div>
+        </article>
+
+        <article className="ui-card financeBudgets">
+          <header>
+            <div>
+              <p>Limites</p>
+              <h2>Budget vs realizado</h2>
+            </div>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setBudgetModalOpen(true)}>
+              Gerenciar limites
+            </button>
+          </header>
+          <div className="financeBudgets__list">
+            {budgets.map((budget) => {
+              const progress = Math.min(100, Math.round((budget.spent / budget.ceiling) * 100))
+              const isAlert = budget.spent >= budget.ceiling
+              return (
+                <article key={budget.id} className={isAlert ? 'is-alert' : ''}>
+                  <div>
+                    <strong>{budget.label}</strong>
+                    <span>
+                      {formatCurrency(budget.spent)} / {formatCurrency(budget.ceiling)}
+                    </span>
+                  </div>
+                  <div className="budgetBar">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
+                </article>
+              )
+            })}
+          </div>
         </article>
       </section>
 
-      <section className="financeCards ui-card">
+      <section className="financeCardsPanel ui-card">
         <header>
           <div>
             <p>Cartões de crédito</p>
-            <h2>Limites, fechamento e uso</h2>
+            <h2>Limites e fechamento</h2>
           </div>
-          <button type="button">Adicionar cartão</button>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCardModalOpen(true)}>
+            Gerenciar cartões
+          </button>
         </header>
-        <div className="financeCards__grid">
-          {CREDIT_CARDS.map((card) => (
-            <article key={card.id}>
-              <div className="financeCard__head">
-                <h3>{card.name}</h3>
-                <span>{card.limit}</span>
-              </div>
-              <div className="financeCard__bar">
-                <span style={{ width: formatPercent(card.used) }} />
-              </div>
-              <div className="financeCard__meta">
-                <div>
-                  <p>Utilizado</p>
-                  <strong>{formatPercent(card.used)}</strong>
+        <div className="financeCardsPanel__grid">
+          {cards.map((card) => {
+            const usedPercent = Math.round(card.used * 100)
+            const available = card.limit - card.limit * card.used
+            return (
+              <article key={card.id}>
+                <div className="financeCard__head">
+                  <h3>{card.name}</h3>
+                  <span>{formatCurrency(card.limit)}</span>
                 </div>
-                <div>
-                  <p>Vencimento</p>
-                  <strong>{card.due}</strong>
+                <div className="financeCard__usage">
+                  <div className="budgetBar">
+                    <span style={{ width: `${usedPercent}%` }} />
+                  </div>
+                  <div className="financeCard__meta">
+                    <small>Utilizado</small>
+                    <strong>{usedPercent}%</strong>
+                    <small>Disponível</small>
+                    <strong>{formatCurrency(available)}</strong>
+                  </div>
                 </div>
-                <div>
-                  <p>Fechamento</p>
-                  <strong>{card.closing}</strong>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="financeCharts">
-        <div className="financeCharts__summary ui-card">
-          {GRAPH_SUMMARY.map((chart) => (
-            <article key={chart.id}>
-              <p>{chart.label}</p>
-              <h4>{chart.detail}</h4>
-              <strong>{chart.value}</strong>
-              <div className="financeCharts__bar">
-                <span style={{ width: formatPercent(chart.progress) }} />
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div className="financeLimits ui-card">
-          <header>
-            <div>
-              <p>Limite por categoria</p>
-              <h3>Configure no modal e acompanhe o uso</h3>
-            </div>
-            <button type="button">Editar limites</button>
-          </header>
-          <div className="financeLimits__list">
-            {CATEGORY_LIMITS.map((category) => (
-              <article key={category.id}>
-                <div>
-                  <strong>{category.label}</strong>
-                  <span>{category.limit}</span>
-                </div>
-                <div className="financeLimits__bar">
-                  <span style={{ width: formatPercent(category.used) }} />
-                </div>
+                <footer>
+                  <div>
+                    <p>Fechamento</p>
+                    <strong>Dia {card.closingDay}</strong>
+                  </div>
+                  <div>
+                    <p>Vencimento</p>
+                    <strong>Dia {card.dueDay}</strong>
+                  </div>
+                </footer>
               </article>
-            ))}
-          </div>
+            )
+          })}
         </div>
       </section>
 
-      <section className="financeBank ui-card">
+      <section className="financeTransactions ui-card">
         <header>
           <div>
-            <p>Movimentação bancária</p>
-            <h2>Entradas e saídas conciliadas</h2>
+            <p>Transações recentes</p>
+            <h2>Últimas movimentações</h2>
           </div>
-          <button type="button">Ver extrato completo</button>
+          <button type="button" className="btn btn--secondary" onClick={() => handleOpenTransactionModal('receita')}>
+            Nova transação
+          </button>
         </header>
-        <div className="financeBank__timeline">
-          {BANK_ACTIVITY.map((movement) => (
-            <article key={movement.id}>
-              <div className="financeBank__type">{movement.type}</div>
-              <div>
-                <h4>{movement.title}</h4>
-                <p>{movement.account}</p>
-              </div>
-              <div className="financeBank__amount">{movement.amount}</div>
-              <div className="financeBank__meta">
-                <span>{movement.time}</span>
-                <small>{movement.status}</small>
-              </div>
-            </article>
-          ))}
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Data</th>
+              <th>Pagamento</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTransactions.slice(0, 8).map((transaction) => (
+              <tr key={transaction.id}>
+                <td>
+                  <div className="cellMain">
+                    <span className={`pill pill--${transaction.type}`}>{transaction.type}</span>
+                    <div>
+                      <strong>{transaction.description}</strong>
+                      {transaction.tags?.length ? (
+                        <div className="tagRow">
+                          {transaction.tags.map((tag) => (
+                            <small key={tag}>#{tag}</small>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </td>
+                <td>{categoryLabelMap[transaction.category]}</td>
+                <td>{formatDate(transaction.date)}</td>
+                <td>{paymentLabelMap[transaction.paymentMethod]}</td>
+                <td className={transaction.type === 'despesa' ? 'negative' : 'positive'}>
+                  {transaction.type === 'despesa' ? '-' : '+'}
+                  {formatCurrency(transaction.amount)}
+                </td>
+                <td>
+                  <span className="statusPill" data-status={transaction.status}>
+                    {transaction.status}
+                  </span>
+                </td>
+                <td>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => handleEditTransaction(transaction)}>
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
+
+      {isTransactionModalOpen && (
+        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
+          <form className="financeModal" onSubmit={handleTransactionSubmit}>
+            <header>
+              <div>
+                <p>Nova transação</p>
+                <h3>Modal inteligente</h3>
+              </div>
+              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={closeTransactionModal}>
+                Fechar
+              </button>
+            </header>
+
+            <div className="financeModal__tabs">
+              {['receita', 'despesa', 'transferencia'].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={activeTab === tab ? 'is-active' : ''}
+                  onClick={() => {
+                    setActiveTab(tab)
+                    handleFormChange('type', tab)
+                  }}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <section className="financeModal__section">
+              <h4>Detalhes</h4>
+              <div className="financeModal__grid">
+                <label>
+                  <span>Valor</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={formData.amount}
+                    onChange={(event) => handleFormChange('amount', event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Descrição</span>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={(event) => handleFormChange('description', event.target.value)}
+                    placeholder="Ex: Pagamento SaaS"
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Categoria</span>
+                  <select value={formData.category} onChange={(event) => handleFormChange('category', event.target.value)}>
+                    {CATEGORY_OPTIONS.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Meta financeira (opcional)</span>
+                  <select value={formData.goalId} onChange={(event) => handleFormChange('goalId', event.target.value)}>
+                    <option value="">Nenhuma</option>
+                    {GOALS.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Data</span>
+                  <input type="date" value={formData.date} onChange={(event) => handleFormChange('date', event.target.value)} />
+                </label>
+                <label className="checkboxField">
+                  <input
+                    type="checkbox"
+                    checked={formData.recurring}
+                    onChange={(event) => handleFormChange('recurring', event.target.checked)}
+                  />
+                  <span>Transação recorrente</span>
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select value={formData.status} onChange={(event) => handleFormChange('status', event.target.value)}>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Conta</span>
+                  <input
+                    type="text"
+                    value={formData.account}
+                    onChange={(event) => handleFormChange('account', event.target.value)}
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="financeModal__section">
+              <h4>Tags & notas</h4>
+              <div className="financeModal__tags">
+                <div className="tagInput">
+                  <input
+                    type="text"
+                    value={tagDraft}
+                    onChange={(event) => setTagDraft(event.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="Adicionar tag e pressione Enter"
+                  />
+                  <button type="button" onClick={handleTagAdd}>
+                    Adicionar
+                  </button>
+                </div>
+                {formData.tags.length ? (
+                  <div className="tagChips">
+                    {formData.tags.map((tag) => (
+                      <span key={tag} onClick={() => handleTagRemove(tag)}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="tagSuggestions">
+                  {TAG_SUGGESTIONS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={formData.tags.includes(tag) ? 'selected' : ''}
+                      onClick={() => {
+                        if (!formData.tags.includes(tag)) {
+                          setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
+                        }
+                      }}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="financeModal__section">
+              <h4>Forma de pagamento</h4>
+              <div className="paymentMethods">
+                {PAYMENT_METHODS.map((method) => (
+                  <button
+                    key={method.id}
+                    type="button"
+                    className={formData.paymentMethod === method.id ? 'is-active' : ''}
+                    onClick={() => handleFormChange('paymentMethod', method.id)}
+                  >
+                    <strong>{method.label}</strong>
+                    <small>{method.helper}</small>
+                  </button>
+                ))}
+              </div>
+
+              {formData.paymentMethod === 'credit' && (
+                <div className="creditFields">
+                  <label>
+                    <span>Qual cartão?</span>
+                    <select value={formData.cardId} onChange={(event) => handleFormChange('cardId', event.target.value)} required>
+                      <option value="">Selecione</option>
+                      {cards.map((card) => (
+                        <option key={card.id} value={card.id}>
+                          {card.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="checkboxField">
+                    <input
+                      type="checkbox"
+                      checked={formData.isInstallment}
+                      onChange={(event) => handleFormChange('isInstallment', event.target.checked)}
+                    />
+                    <span>Compra parcelada?</span>
+                  </label>
+
+                  {formData.isInstallment && (
+                    <div className="installmentGrid">
+                      <label>
+                        <span>Valor total da compra</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={formData.totalAmount}
+                          onChange={(event) => handleFormChange('totalAmount', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Número de parcelas</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={formData.installmentCount}
+                          onChange={(event) => handleFormChange('installmentCount', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {installmentDetails && (
+                    <div className="financeModal__summary">
+                      <p>
+                        Serão criadas <strong>{installmentDetails.installmentCount} parcelas</strong> de{' '}
+                        <strong>{formatCurrency(installmentDetails.valuePerInstallment)}</strong>
+                      </p>
+                      <small>Projeção: {installmentDetails.schedule.join(' · ')}</small>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <footer className="financeModal__footer">
+              <button type="button" className="btn btn--ghostInverse" onClick={closeTransactionModal}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn--primary">
+                Salvar transação
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
+
+      {isCardModalOpen && (
+        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
+          <form className="configModal" onSubmit={handleCardSubmit}>
+            <header>
+              <h3>Gerenciar cartões</h3>
+              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={() => setCardModalOpen(false)}>
+                Fechar
+              </button>
+            </header>
+            <div className="configGrid">
+              <label>
+                <span>Nome do cartão</span>
+                <input value={cardForm.name} onChange={(event) => setCardForm((prev) => ({ ...prev, name: event.target.value }))} />
+              </label>
+              <label>
+                <span>Bandeira</span>
+                <input value={cardForm.brand} onChange={(event) => setCardForm((prev) => ({ ...prev, brand: event.target.value }))} />
+              </label>
+              <label>
+                <span>Dia de fechamento</span>
+                <input
+                  type="number"
+                  value={cardForm.closingDay}
+                  onChange={(event) => setCardForm((prev) => ({ ...prev, closingDay: event.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Dia de vencimento</span>
+                <input
+                  type="number"
+                  value={cardForm.dueDay}
+                  onChange={(event) => setCardForm((prev) => ({ ...prev, dueDay: event.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Limite total</span>
+                <input
+                  type="number"
+                  value={cardForm.limit}
+                  onChange={(event) => setCardForm((prev) => ({ ...prev, limit: event.target.value }))}
+                />
+              </label>
+            </div>
+            <footer>
+              <button type="button" className="btn btn--ghostInverse" onClick={() => setCardModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn--primary">
+                Salvar cartão
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
+
+      {isBudgetModalOpen && (
+        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
+          <form className="configModal" onSubmit={handleBudgetSubmit}>
+            <header>
+              <h3>Categorias & limites</h3>
+              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={() => setBudgetModalOpen(false)}>
+                Fechar
+              </button>
+            </header>
+            <div className="configGrid">
+              <label>
+                <span>Categoria</span>
+                <select
+                  value={budgetForm.category}
+                  onChange={(event) => setBudgetForm((prev) => ({ ...prev, category: event.target.value }))}
+                >
+                  {CATEGORY_OPTIONS.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Teto de gastos</span>
+                <input
+                  type="number"
+                  value={budgetForm.limit}
+                  onChange={(event) => setBudgetForm((prev) => ({ ...prev, limit: event.target.value }))}
+                />
+              </label>
+            </div>
+            <footer>
+              <button type="button" className="btn btn--ghostInverse" onClick={() => setBudgetModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn--primary">
+                Salvar limite
+              </button>
+            </footer>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

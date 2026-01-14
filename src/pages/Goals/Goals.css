@@ -624,23 +624,49 @@
   line-height: 1.6;
 }
 
-.metaDetail__about {
+.metaDetail__summaryCard {
   gap: 16px;
 }
 
-.metaDetail__intent {
-  border-top: 1px solid #f0f0f4;
-  padding-top: 12px;
+.metaDetail__summaryCardHead {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
 }
 
-.metaDetail__intent span {
-  font-size: 12px;
+.metaDetail__summaryCardHead span {
+  font-size: 13px;
+  color: #6a6a78;
+}
+
+.metaDetail__summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metaDetail__summaryItem {
+  border-radius: 18px;
+  border: 1px solid #efeff4;
+  background: #f9f9fb;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metaDetail__summaryItem span {
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #a3a3b2;
+  color: #8a8a9c;
+}
+
+.metaDetail__summaryItem p {
+  margin: 0;
+  color: #1f1f27;
+  line-height: 1.45;
 }
 
 .metaDetail__projects {
@@ -650,7 +676,7 @@
   background: #fff;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 24px;
 }
 
 .metaDetail__projects header {
@@ -686,8 +712,20 @@
 
 .metaDetail__projectsLayout {
   display: grid;
-  grid-template-columns: minmax(260px, 2fr) minmax(320px, 3fr);
-  gap: 18px;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+}
+
+.metaDetail__listHead {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  padding: 0 6px 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a8a9c;
+  border-bottom: 1px solid #ededf2;
+  margin-bottom: 8px;
 }
 
 .metaDetail__projectsList ul {
@@ -701,19 +739,33 @@
 
 .metaProject {
   border: 1px solid #ededf2;
-  border-radius: 20px;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  background: #f9f9fb;
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  align-items: flex-start;
+  gap: 20px;
+  background: #fff;
 }
 
 .metaProject strong {
   display: block;
-  font-size: 16px;
-  margin-bottom: 6px;
+  font-size: 15px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.metaProject__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaProject__statusWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .metaProject__status {
@@ -726,6 +778,8 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  width: 100%;
+  justify-content: center;
 }
 
 .metaProject__status--emcurso {
@@ -754,14 +808,16 @@
   font-size: 13px;
   cursor: pointer;
   color: #1f1f27;
+  width: 100%;
+  text-align: center;
 }
 
 .metaDetail__projectsTimeline {
-  border-radius: 24px;
-  padding: 20px 24px;
-  background: radial-gradient(circle at 10% -20%, rgba(255, 138, 92, 0.35), rgba(11, 11, 17, 0.95));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f5f5f9;
+  border-radius: 18px;
+  padding: 24px 28px 16px;
+  background: #fff;
+  border: 1px solid #ededf2;
+  color: #1f1f27;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -774,59 +830,99 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.7);
+  color: #6a6a78;
 }
 
-.metaTimeline__body {
+.metaTimeline__gantt {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
-.metaTimeline__row {
-  display: grid;
-  grid-template-columns: 80px 18px 1fr;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.metaTimeline__date {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 4px;
-}
-
-.metaTimeline__track {
-  width: 18px;
+.metaTimeline__ganttHeader {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.metaTimeline__track span {
-  display: block;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.35);
-  border-radius: 999px;
+.metaTimeline__ganttHeader strong {
+  font-size: 14px;
+  color: #2a2a32;
 }
 
-.metaTimeline__content {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.metaTimeline__ganttDays {
+  display: grid;
+  grid-template-columns: repeat(23, 1fr);
+  gap: 8px;
+  font-size: 12px;
+  color: #8a8a9c;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.metaTimeline__content strong {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 15px;
+.metaTimeline__ganttBody {
+  overflow-x: auto;
+  padding-bottom: 6px;
 }
 
-.metaTimeline__content p {
+.metaTimeline__ganttTrack {
+  position: relative;
+  min-height: 110px;
+  min-width: 1120px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #fafafa 0%, #f5f5f7 100%);
+  border: 1px solid #ededf2;
+  padding: 32px 40px;
+}
+
+.metaTimeline__ganttBar {
+  position: absolute;
+  top: 28px;
+  min-height: 56px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e6e7ed;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.metaTimeline__ganttBarHeader {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.metaTimeline__ganttIcon {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #ff7a45, #ffb875);
+}
+
+.metaTimeline__ganttBar p {
   margin: 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
+  font-size: 14px;
+  color: #1f1f27;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.metaTimeline__ganttBar small {
+  font-size: 12px;
+  color: #6a6a78;
+  white-space: nowrap;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
@@ -876,6 +972,10 @@
 
   .metaDetail__progress {
     align-items: flex-start;
+  }
+
+  .metaDetail__summaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .metaDetail__projectsTimeline {

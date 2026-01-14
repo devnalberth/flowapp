@@ -272,12 +272,20 @@ function MetaDetail({ meta, onBack }) {
         ))}
       </div>
 
-      <article className="metaDetail__card metaDetail__about">
-        <h3>Sobre essa meta</h3>
-        <p>{meta.reason}</p>
-        <div className="metaDetail__intent">
-          <span>Intenção</span>
-          <p>{meta.intention}</p>
+      <article className="metaDetail__card metaDetail__summaryCard">
+        <header className="metaDetail__summaryCardHead">
+          <h3>Resumo</h3>
+          <span>Objetivo e intenção em 2 blocos</span>
+        </header>
+        <div className="metaDetail__summaryGrid">
+          <div className="metaDetail__summaryItem">
+            <span>Por quê</span>
+            <p>{meta.reason}</p>
+          </div>
+          <div className="metaDetail__summaryItem">
+            <span>Intenção</span>
+            <p>{meta.intention}</p>
+          </div>
         </div>
       </article>
 
@@ -285,12 +293,16 @@ function MetaDetail({ meta, onBack }) {
         <header>
           <div>
             <p>Projetos</p>
-            <h3>Projetos vinculados</h3>
+            <h3>Projetos vinculados e timeline</h3>
           </div>
           <button type="button">Novo projeto</button>
         </header>
         <div className="metaDetail__projectsLayout">
           <div className="metaDetail__projectsList">
+            <div className="metaDetail__listHead">
+              <span>Projeto</span>
+              <span>Status</span>
+            </div>
             <ul>
               {meta.projects.map((project) => {
                 const statusClass = project.status
@@ -301,15 +313,17 @@ function MetaDetail({ meta, onBack }) {
 
                 return (
                   <li key={project.id} className="metaProject">
-                    <div>
+                    <div className="metaProject__info">
                       <strong>{project.name}</strong>
+                    </div>
+                    <div className="metaProject__statusWrap">
                       <span className={`metaProject__status metaProject__status--${statusClass}`}>
                         {project.status}
                       </span>
+                      <button type="button" className="metaProject__cta">
+                        Abrir
+                      </button>
                     </div>
-                    <button type="button" className="metaProject__cta">
-                      Abrir
-                    </button>
                   </li>
                 )
               })}
@@ -320,19 +334,34 @@ function MetaDetail({ meta, onBack }) {
               <p>Linha do tempo</p>
               <span>{meta.timeline.length} marcos</span>
             </div>
-            <div className="metaTimeline__body">
-              {meta.timeline.map((event, index) => (
-                <div key={event.id} className="metaTimeline__row">
-                  <span className="metaTimeline__date">{event.date}</span>
-                  <div className="metaTimeline__track" aria-hidden="true">
-                    <span style={{ height: index === meta.timeline.length - 1 ? '12px' : '100%' }} />
-                  </div>
-                  <div className="metaTimeline__content">
-                    <strong>{event.label}</strong>
-                    <p>{event.description}</p>
-                  </div>
+
+            <div className="metaTimeline__gantt">
+              <div className="metaTimeline__ganttHeader">
+                <strong>janeiro de 2026</strong>
+                <div className="metaTimeline__ganttDays">
+                  {[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day) => (
+                    <span key={day}>{day}</span>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="metaTimeline__ganttBody">
+                <div className="metaTimeline__ganttTrack">
+                  {meta.timeline.map((event, index) => (
+                    <div
+                      key={event.id}
+                      className="metaTimeline__ganttBar"
+                      style={{ left: `${index * 220 + 24}px`, width: '200px' }}
+                    >
+                      <div className="metaTimeline__ganttBarHeader">
+                        <span className="metaTimeline__ganttIcon" aria-hidden="true" />
+                        <p>{event.label}</p>
+                        <small>{event.date}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
