@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useApp } from '../../context/AppContext'
 import {
   ResponsiveContainer,
   LineChart,
@@ -229,9 +230,10 @@ const paymentLabelMap = PAYMENT_METHODS.reduce((acc, method) => ({ ...acc, [meth
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
+  const { finances, loading } = useApp()
   const [selectedMonth, setSelectedMonth] = useState('12')
   const [selectedYear, setSelectedYear] = useState('2025')
-  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS)
+  const [transactions, setTransactions] = useState([])
   const [cards, setCards] = useState(INITIAL_CARDS)
   const [budgets, setBudgets] = useState(INITIAL_BUDGETS)
 

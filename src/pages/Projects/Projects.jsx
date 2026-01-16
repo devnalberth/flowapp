@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateProjectModal from '../../components/CreateProjectModal/CreateProjectModal.jsx'
@@ -43,6 +44,7 @@ const TASK_AREA_OPTIONS = ['Produto', 'Growth', 'Financeiro', 'Pessoal']
 const TASK_GOAL_OPTIONS = ['OKR #1 - Crescimento', 'OKR #2 - Eficiência operacional', 'OKR #3 - Experiência do cliente']
 
 export default function Projects({ onNavigate, onLogout, user }) {
+  const { projects, loading } = useApp()
   const [isModalOpen, setModalOpen] = useState(false)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [taskProject, setTaskProject] = useState('')

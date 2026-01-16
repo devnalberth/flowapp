@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 
@@ -477,6 +478,7 @@ function AreaDetail({ area, onBack }) {
 }
 
 export default function Goals({ onNavigate, onLogout, user }) {
+  const { goals, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [dreamBoard, setDreamBoard] = useState(INITIAL_DREAM_MAP)
   const [dreamMetaName, setDreamMetaName] = useState('')

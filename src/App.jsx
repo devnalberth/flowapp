@@ -209,8 +209,29 @@ function App() {
 
 // Wrap app with Context Provider
 export default function AppWrapper() {
+  const [currentUserId, setCurrentUserId] = useState(null)
+  
+  useEffect(() => {
+    const client = getSupabaseClient(true)
+    
+    const loadUser = async () => {
+      const { data: { session } } = await client.auth.getSession()
+      setCurrentUserId(session?.user?.id || null)
+    }
+    
+    loadUser()
+    
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      setCurrentUserId(session?.user?.id || null)
+    })
+    
+    return () => {
+      listener?.subscription?.unsubscribe()
+    }
+  }, [])
+  
   return (
-    <AppProvider>
+    <AppProvider userId={currentUserId}>
       <App />
     </AppProvider>
   )

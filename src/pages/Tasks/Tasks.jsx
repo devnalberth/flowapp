@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 
@@ -166,9 +167,10 @@ const INITIAL_TASKS = [
 
 export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
+  const { tasks: contextTasks, loading } = useApp()
   const [timelineFilter, setTimelineFilter] = useState('today')
   const [statusFilters, setStatusFilters] = useState(['flow'])
-  const [tasks, setTasks] = useState(INITIAL_TASKS)
+  const [tasks, setTasks] = useState([])
   const [expandedTaskId, setExpandedTaskId] = useState(null)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [celebratingTask, setCelebratingTask] = useState(null)
@@ -184,6 +186,11 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   })
   const [focusedTaskId, setFocusedTaskId] = useState(null)
   const [currentPomodoroIndex, setCurrentPomodoroIndex] = useState(0)
+
+  // Sync tasks from context
+  useEffect(() => {
+    setTasks(contextTasks || [])
+  }, [contextTasks])
 
   const isFlowMode = statusFilters.includes('flow')
   const focusedTask = focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
