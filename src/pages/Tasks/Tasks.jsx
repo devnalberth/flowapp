@@ -164,7 +164,7 @@ const INITIAL_TASKS = [
   },
 ]
 
-export default function Tasks({ onNavigate, user }) {
+export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
   const [timelineFilter, setTimelineFilter] = useState('today')
   const [statusFilters, setStatusFilters] = useState(['flow'])
@@ -389,7 +389,7 @@ export default function Tasks({ onNavigate, user }) {
 
   return (
     <div className="tasksPage">
-      <TopNav user={currentUser} active="Tarefas" onNavigate={onNavigate} />
+      <TopNav user={currentUser} active="Tarefas" onNavigate={onNavigate} onLogout={onLogout} />
 
       <section className="tasksListShell">
         <div className="tasksListShell__filters">

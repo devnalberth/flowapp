@@ -228,7 +228,7 @@ const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? c
 const paymentLabelMap = PAYMENT_METHODS.reduce((acc, method) => ({ ...acc, [method.id]: method.label }), {})
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
-export default function Finance({ user, onNavigate }) {
+export default function Finance({ user, onNavigate, onLogout }) {
   const [selectedMonth, setSelectedMonth] = useState('12')
   const [selectedYear, setSelectedYear] = useState('2025')
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS)
@@ -493,7 +493,7 @@ export default function Finance({ user, onNavigate }) {
 
   return (
     <div className="financePage">
-      <TopNav user={user} active="Financeiro" onNavigate={onNavigate} />
+      <TopNav user={user} active="Financeiro" onNavigate={onNavigate} onLogout={onLogout} />
 
       <div className="financeWrapper">
         <section className="financeHeader ui-card">

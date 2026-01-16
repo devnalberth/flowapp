@@ -42,7 +42,7 @@ const TASK_PRIORITY_OPTIONS = ['Alta', 'Média', 'Baixa']
 const TASK_AREA_OPTIONS = ['Produto', 'Growth', 'Financeiro', 'Pessoal']
 const TASK_GOAL_OPTIONS = ['OKR #1 - Crescimento', 'OKR #2 - Eficiência operacional', 'OKR #3 - Experiência do cliente']
 
-export default function Projects({ onNavigate, user }) {
+export default function Projects({ onNavigate, onLogout, user }) {
   const [isModalOpen, setModalOpen] = useState(false)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [taskProject, setTaskProject] = useState('')
@@ -83,7 +83,7 @@ export default function Projects({ onNavigate, user }) {
 
   return (
     <div className="projects">
-      <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} />
+      <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} onLogout={onLogout} />
 
       <section className="projectsBoard">
         {BOARD_COLUMNS.map((column) => (

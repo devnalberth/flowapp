@@ -28,12 +28,12 @@ const mock = {
   },
 }
 
-export default function Dashboard({ onNavigate, user }) {
+export default function Dashboard({ onNavigate, onLogout, user }) {
   const currentUser = user ?? mock.user
 
   return (
     <div className="dash">
-      <TopNav user={currentUser} active="Dashboard" onNavigate={onNavigate} />
+      <TopNav user={currentUser} active="Dashboard" onNavigate={onNavigate} onLogout={onLogout} />
 
       <div className="dashWrapper">
         <header className="dash__welcome">

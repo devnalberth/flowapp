@@ -150,7 +150,7 @@ function ThinkingBubble() {
   )
 }
 
-export default function AIAssistant({ user, onNavigate }) {
+export default function AIAssistant({ user, onNavigate, onLogout }) {
   const { addTask, addFinance, addHabit, completeHabit } = useApp()
   
   const [messages, setMessages] = useState(initialMessages)
@@ -264,7 +264,7 @@ export default function AIAssistant({ user, onNavigate }) {
 
   return (
     <div className="flowChatPage">
-      <TopNav user={user} active="FlowChat" onNavigate={onNavigate} />
+      <TopNav user={user} active="FlowChat" onNavigate={onNavigate} onLogout={onLogout} />
 
       <div className="flowChatWrapper">
         <section className="flowChatShell">

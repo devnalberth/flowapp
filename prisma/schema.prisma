@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String               @id @default(uuid())
+  email       String               @unique
+  name        String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  transactions FinanceTransaction[]
+  studyItems  StudyItem[]
+}
+
+model FinanceTransaction {
+  id                String                   @id @default(cuid())
+  description       String
+  amount            Decimal                  @db.Decimal(12, 2)
+  type              FinanceTransactionType
+  category          String
+  date              DateTime
+  isInstallment     Boolean                  @default(false)
+  installmentCount  Int?
+  installmentTotal  Decimal?                 @db.Decimal(12, 2)
+  userId            String
+  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+}
+
+model StudyItem {
+  id        String        @id @default(cuid())
+  title     String
+  type      StudyItemType
+  status    StudyStatus   @default(NOT_STARTED)
+  coverUrl  String?
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modules   StudyModule[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model StudyModule {
+  id          String        @id @default(cuid())
+  title       String
+  studyItemId String
+  studyItem   StudyItem     @relation(fields: [studyItemId], references: [id], onDelete: Cascade)
+  lessons     StudyLesson[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model StudyLesson {
+  id        String      @id @default(cuid())
+  title     String
+  videoUrl  String?
+  isCompleted Boolean   @default(false)
+  moduleId  String
+  module    StudyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum FinanceTransactionType {
+  RECEITA
+  DESPESA
+}
+
+enum StudyItemType {
+  COURSE
+  BOOK
+  UNIVERSITY
+}
+
+enum StudyStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}

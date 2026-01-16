@@ -476,7 +476,7 @@ function AreaDetail({ area, onBack }) {
   )
 }
 
-export default function Goals({ onNavigate, user }) {
+export default function Goals({ onNavigate, onLogout, user }) {
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [dreamBoard, setDreamBoard] = useState(INITIAL_DREAM_MAP)
   const [dreamMetaName, setDreamMetaName] = useState('')
@@ -517,7 +517,7 @@ export default function Goals({ onNavigate, user }) {
 
   return (
     <div className="goalsPage">
-      <TopNav user={user} active="Metas" onNavigate={onNavigate} />
+      <TopNav user={user} active="Metas" onNavigate={onNavigate} onLogout={onLogout} />
 
       {selectedArea ? (
         <AreaDetail area={selectedArea} onBack={() => setSelectedAreaId(null)} />

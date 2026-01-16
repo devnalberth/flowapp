@@ -127,7 +127,7 @@ const calcProgress = (modules) => {
   return Math.round((completed / total) * 100)
 }
 
-export default function Studies({ user, onNavigate }) {
+export default function Studies({ user, onNavigate, onLogout }) {
   const [studies, setStudies] = useState(initialStudies)
   const [activeStudyId, setActiveStudyId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
@@ -280,7 +280,7 @@ export default function Studies({ user, onNavigate }) {
 
   return (
     <div className="studiesPage">
-      <TopNav user={user} onNavigate={onNavigate} active="Estudos" />
+      <TopNav user={user} onNavigate={onNavigate} active="Estudos" onLogout={onLogout} />
 
       <div className="studiesWrapper">
         <section className="studiesFilters">

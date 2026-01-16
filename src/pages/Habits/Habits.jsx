@@ -48,7 +48,7 @@ const INITIAL_HABITS = [
   { id: 'leitura', iconId: 'book', label: '30m de Leitura', focus: 'Noite', category: 'learning' },
 ]
 
-export default function Habits({ user, onNavigate }) {
+export default function Habits({ user, onNavigate, onLogout }) {
   const { habits, addHabit, updateHabit, deleteHabit } = useApp()
   
   const [viewMode, setViewMode] = useState('weekly')
@@ -329,7 +329,7 @@ export default function Habits({ user, onNavigate }) {
 
   return (
     <div className="habitsPage">
-      <TopNav user={user} active="Hábitos" onNavigate={onNavigate} />
+      <TopNav user={user} active="Hábitos" onNavigate={onNavigate} onLogout={onLogout} />
       <HabitModal />
 
       <div className="habitsWrapper">
