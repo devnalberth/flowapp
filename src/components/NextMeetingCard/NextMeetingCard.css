@@ -2,12 +2,13 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 08px;
+  height: 143px;
 }
 
 .meeting__header {
   display: flex;
-  align-items: center;
+  align-items: left;
   justify-content: space-between;
 }
 
@@ -17,116 +18,63 @@
   color: #0d0d12;
 }
 
-.meeting__actions {
-  display: inline-flex;
+.meeting__arrow {
+  border: 0;
+  background: #f3f4f6;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.meeting__dot {
-  width: 38px;
-  height: 38px;
-  border-radius: 9999px;
-  background: var(--muted);
+.meeting__arrow:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: translate(2px, -2px);
 }
 
-.meeting__dot--ghost {
-  width: 20px;
-  height: 20px;
-  border-radius: 9999px;
-  background: #fff;
-  border: 1.5px solid #1c274c;
-  position: relative;
-}
-
-.meeting__dotIcon {
-  position: absolute;
-  inset: 6px;
-  border-left: 1.5px solid #1c274c;
-  border-bottom: 1.5px solid #1c274c;
-  transform: rotate(-45deg);
+.meeting__arrow svg {
+  display: block;
 }
 
 .meeting__card {
-  border-radius: 29px;
+  border-radius: 8px;
   background: #0d0d12;
   color: #fff;
-  padding: 20px;
+  padding: 26px 18px;
   position: relative;
-  overflow: visible;
-  min-height: 220px;
+  overflow: hidden;
+  flex: 1;
+  max-width: 92%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
+  justify-content: center;
 }
 
-.meeting__card::before,
-.meeting__card::after {
-  content: '';
-  position: absolute;
-  inset: 12px;
-  border-radius: 26px;
-  background: #f6f6f6;
-  opacity: 0.4;
-  z-index: -1;
-}
-
-.meeting__card::after {
-  inset: 24px;
-  background: #ececec;
-  opacity: 0.8;
-}
+/* Removed ::before and ::after for cleaner design */
 
 .meeting__title {
   position: relative;
   z-index: 1;
-  font-size: 24px;
-  line-height: 26px;
-  font-weight: 500;
-  max-width: 220px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .meeting__time {
   position: relative;
   z-index: 1;
-  font-size: 16px;
-  line-height: 18px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.meeting__cta {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-  align-self: center;
-  width: min(244px, 100%);
-  height: 48px;
-  border-radius: 30px;
-  border: 0;
-  background: var(--grad-primary);
-  color: #000;
-  font-weight: 600;
-  font-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.meeting__ctaIcon {
-  width: 22px;
-  height: 22px;
-  background: #000;
-  border-radius: 9999px;
-  position: relative;
-}
-
-.meeting__ctaIcon::before {
-  content: '';
-  position: absolute;
-  inset: 6px 5px;
-  border-left: 2px solid #ff9500;
-  border-bottom: 2px solid #ff9500;
-  transform: rotate(135deg);
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
 }

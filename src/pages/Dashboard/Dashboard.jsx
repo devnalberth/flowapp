@@ -45,7 +45,7 @@ export default function Dashboard({ onNavigate, user }) {
         </header>
 
         <section className="dash__kpis">
-          <StatCard title="Tarefas Totais" value={mock.kpis.total} variant="total" />
+          <StatCard title="Tarefas da Semana" value={mock.kpis.total} variant="total" />
           <StatCard title="Tarefas Pendentes" value={mock.kpis.pending} variant="pending" />
           <StatCard title="Tarefas Finalizadas" value={mock.kpis.done} variant="done" />
           <NextMeetingCard meeting={mock.nextMeeting} />

@@ -41,6 +41,45 @@
   border: none;
 }
 
+.gh__gauge {
+  position: absolute;
+  inset: 0;
+  width: 118px;
+  height: 118px;
+  overflow: visible;
+}
+
+.gh__gaugeLabel {
+  fill: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.gh__gaugeTick {
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-linecap: round;
+}
+
+.gh__gaugeDashed {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.gh__gaugePointer {
+  stroke: white;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gh__gaugeDot {
+  fill: white;
+}
+
 .gh__habitsMeta {
   display: flex;
   flex-direction: column;
@@ -74,6 +113,11 @@
   height: 10px;
   background: #34c759;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  transition: transform 0.3s ease;
+}
+
+.gh__pill[data-improved="false"] .gh__arrow {
+  background: #ff3b30;
 }
 
 .gh__goals {
@@ -95,23 +139,39 @@
   color: #121212;
 }
 
-.gh__filter {
+.gh__goalFilter {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: #f9fafa;
-  border-radius: 9999px;
-  color: #99a3ad;
-  font-size: 12px;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.gh__chev {
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid #99a3ad;
-  border-bottom: 2px solid #99a3ad;
-  transform: rotate(45deg);
+.gh__goalFilter:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.gh__goalFilter:focus-visible {
+  outline: 2px solid rgba(255, 138, 0, 0.4);
+  outline-offset: 2px;
+}
+
+.gh__goalArrow {
+  color: #6b7280;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+
+.gh__goalFilter:active .gh__goalArrow {
+  transform: rotate(90deg) translateX(1px);
 }
 
 .gh__grid {

@@ -1,9 +1,9 @@
 .statCard {
-  padding: 20px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-height: 168px;
+  gap: 12px;
+  height: 143px;
 }
 
 .statCard__header {
@@ -19,37 +19,30 @@
   color: #666d80;
 }
 
-.statCard__tools {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.statCard__chip {
-  display: inline-flex;
+.statCard__arrow {
+  border: 0;
+  background: #f3f4f6;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.statCard__chip--circle {
-  width: 38px;
-  height: 38px;
-  border-radius: 9999px;
-  background: var(--muted);
+.statCard__arrow:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: translate(2px, -2px);
 }
 
-.statCard__chip--square {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 1.5px solid #1c274c;
-  position: relative;
-}
-
-.statCard__chipArrow {
-  position: absolute;
-  inset: 5px;
-  border: 1.5px solid #1c274c;
+.statCard__arrow svg {
+  display: block;
 }
 
 .statCard__valueRow {
@@ -60,39 +53,61 @@
 }
 
 .statCard__value {
-  font-size: 42px;
-  line-height: 50px;
+  font-size: 48px;
+  line-height: 48px;
   font-weight: 700;
   color: #0d0d12;
+  letter-spacing: -0.03em;
 }
 
 .statCard__spark {
-  width: 140px;
-  height: 28px;
-  border-radius: 40px;
-  background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 6px, transparent 6px 10px);
+  width: 120px;
+  height: 32px;
   position: relative;
-  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 4px;
 }
 
-.statCard__spark::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
-  mix-blend-mode: luminosity;
+/* Total: Barcode style - barras verticais uniformes */
+.statCard[data-variant='total'] .statCard__spark {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 2px,
+    transparent 2px,
+    transparent 4px
+  );
 }
 
+/* Pending: Bar chart - barras com alturas diferentes */
 .statCard[data-variant='pending'] .statCard__spark {
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 106, 0, 0.4) 0 6px, transparent 6px 10px);
+  background: 
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 40%, transparent 40%) 0% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 25%, transparent 25%) 10% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 60%, transparent 60%) 20% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 35%, transparent 35%) 30% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 80%, transparent 80%) 40% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 100%, transparent 100%) 50% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 70%, transparent 70%) 60% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 45%, transparent 45%) 70% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 30%, transparent 30%) 80% 0% / 8% 100%,
+    linear-gradient(to top, rgba(255, 106, 0, 0.3) 0%, rgba(255, 106, 0, 0.3) 50%, transparent 50%) 90% 0% / 8% 100%;
+  background-repeat: no-repeat;
 }
 
+/* Done: Simple bars with emphasis */
 .statCard[data-variant='done'] .statCard__spark {
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 18px, transparent 18px 22px) 0 0 /
-      22px 100%,
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 4px, transparent 4px 8px);
+    linear-gradient(to top, #ff6a00 0%, #ff6a00 100%, transparent 100%) 0% 70% / 10% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 15% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 25% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 35% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 45% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 55% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 65% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 75% 70% / 6% 30%,
+    linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 85% 70% / 6% 30%;
+  background-repeat: no-repeat;
 }
