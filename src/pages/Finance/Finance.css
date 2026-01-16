@@ -2,8 +2,17 @@
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
   background: var(--bg);
+}
+
+.financeWrapper {
+  background: #f3f3f5;
+  border-radius: 36px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .btn {
@@ -62,14 +71,9 @@
 
 .financeHeader {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.financeHeader h1 {
-  margin: 8px 0 0;
-  font-size: 32px;
+  gap: 16px;
 }
 
 .financeHeader__controls {
@@ -77,7 +81,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .financeHeader__carousel {
@@ -91,18 +95,21 @@
   box-shadow: 0 18px 45px rgba(17, 20, 34, 0.12);
 }
 
-.financeHeader__carousel div {
-  text-align: center;
+.financeHeader__period {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.financeHeader__carousel strong {
-  display: block;
+.financeHeader__period strong {
   font-size: 18px;
+  font-weight: 600;
 }
 
-.financeHeader__carousel span {
-  font-size: 13px;
+.financeHeader__period span {
+  font-size: 15px;
   color: var(--subtext);
+  font-weight: 500;
 }
 
 .financeHeader__carousel button {
@@ -143,31 +150,47 @@
 }
 
 .financeKpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
-.financeKpis article {
-  padding: 20px 24px;
-  border-radius: 24px;
+.financeKpi__card {
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 1px solid #f1f1f4;
   background: linear-gradient(180deg, #fff, #f7f7fa);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  min-width: 0;
 }
 
-.financeKpis p {
+.financeKpi__card p {
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-size: 9px;
   color: var(--kpi-label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.financeKpis strong {
-  font-size: 26px;
+.financeKpi__card strong {
+  font-size: 20px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.financeKpi__card span {
+  font-size: 11px;
+  color: var(--subtext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .financeAnalytics {

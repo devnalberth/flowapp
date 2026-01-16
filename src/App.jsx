@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AppProvider } from './context/AppContext.jsx'
 
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
@@ -17,7 +18,7 @@ const USER = {
   avatarUrl: 'https://placehold.co/42x42',
 }
 
-export default function App() {
+function App() {
   const [page, setPage] = useState('Dashboard')
 
   const handleNavigate = (next) => {
@@ -57,4 +58,13 @@ export default function App() {
   }
 
   return <Dashboard {...pageProps} />
+}
+
+// Wrap app with Context Provider
+export default function AppWrapper() {
+  return (
+    <AppProvider>
+      <App />
+    </AppProvider>
+  )
 }

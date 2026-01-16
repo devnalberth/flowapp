@@ -2,7 +2,473 @@
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
+}
+
+.pomodoroCard {
+  background: #000000 !important;
+  border-radius: 36px;
+  padding: 48px 42px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.pomodoroCard__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  align-self: flex-start;
+  opacity: 0.95;
+}
+
+.pomodoroCard__configBtn {
+  position: absolute;
+  top: 36px;
+  right: 42px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+}
+
+.pomodoroCard__configBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.pomodoroCard__quote {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.02em;
+}
+
+.pomodoroCard__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pomodoroCard__logo {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2));
+}
+
+.pomodoroCard__brandText {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.pomodoroCard__brandSub {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.pomodoroCard__timer {
+  font-size: 128px;
+  font-weight: 200;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 24px 0 16px;
+  color: #fff;
+}
+
+.pomodoroCard__message {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 400;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 540px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+.pomodoroCard__controls {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.pomodoroCard__btn {
+  border: 0;
+  border-radius: 9999px;
+  padding: 14px 36px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pomodoroCard__btn--primary {
+  background: #fff;
+  color: #0a0a0a;
+}
+
+.pomodoroCard__btn--primary:hover {
+  transform: translateY(-2px);
+  background: #f8f8f8;
+}
+
+.pomodoroCard__btn--primary:active {
+  transform: translateY(0);
+}
+
+.pomodoroCard__btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.pomodoroCard__btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.pomodoroCard__btn--secondary:active {
+  transform: translateY(0);
+}
+
+.pomodoroCard__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  margin: 8px 0;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pomodoroCard__statsLabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pomodoroCard__statsValue {
+  margin: 0;
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pomodoroCard__statsSubtext {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.01em;
+}
+
+.pomodoroCard__focused {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  margin: 8px 0;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pomodoroCard__focusedLabel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pomodoroCard__focusedTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.pomodoroCard__sequence {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.pomodoroCard__bullet {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.pomodoroCard__bullet--completed {
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.pomodoroCard__bullet--active {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  animation: pulseBullet 2s ease-in-out infinite;
+}
+
+@keyframes pulseBullet {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+.pomodoroConfigModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+}
+
+.pomodoroConfigModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.pomodoroConfigModal__panel {
+  position: relative;
+  max-width: 560px;
+  width: min(560px, 92vw);
+  border-radius: 28px;
+  padding: 32px;
+  background: #fff;
+  color: #0d0d12;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pomodoroConfigModal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pomodoroConfigModal__header h3 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.pomodoroConfigModal__header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.pomodoroConfigModal__close {
+  border: 0;
+  background: rgba(0, 0, 0, 0.05);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pomodoroConfigModal__close:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.pomodoroConfigModal__content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pomodoroConfigModal__section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.pomodoroConfigModal__techniques {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.pomodoroTechnique {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pomodoroTechnique:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.pomodoroTechnique--active {
+  border-color: #111827;
+  background: #f3f4f6;
+}
+
+.pomodoroTechnique strong {
+  display: block;
+  font-size: 15px;
+  color: #111827;
+}
+
+.pomodoroTechnique span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pomodoroConfigModal__inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pomodoroInput {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pomodoroInput label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0;
+}
+
+.pomodoroInput input {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #111827;
+  transition: border 0.2s ease;
+}
+
+.pomodoroInput input:focus {
+  outline: none;
+  border-color: #111827;
+}
+
+.pomodoroConfigModal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.pomodoroConfigModal__btn {
+  border: 0;
+  border-radius: 9999px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pomodoroConfigModal__btn--primary {
+  background: #111827;
+  color: #fff;
+}
+
+.pomodoroConfigModal__btn--primary:hover {
+  background: #1f2937;
+}
+
+.pomodoroConfigModal__btn--secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.pomodoroConfigModal__btn--secondary:hover {
+  background: #e5e7eb;
 }
 
 .tasksListShell__filters {
@@ -36,7 +502,8 @@
 }
 
 .tasksFilters__chip:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: #f0f0f2;
+  border-color: #d8d8dc;
 }
 
 .tasksFilters__chip--active {
@@ -46,24 +513,48 @@
   box-shadow: none;
 }
 
+.tasksFilters__chip--active:hover {
+  background: #2a2b32;
+}
+
 .tasksFilters__chip--active[data-tone='stone'] {
   background: #6b6f7c;
+}
+
+.tasksFilters__chip--active[data-tone='stone']:hover {
+  background: #7a7e8b;
 }
 
 .tasksFilters__chip--active[data-tone='mint'] {
   background: #0f9d92;
 }
 
+.tasksFilters__chip--active[data-tone='mint']:hover {
+  background: #12aea2;
+}
+
 .tasksFilters__chip--active[data-tone='sage'] {
   background: #3c8b5f;
+}
+
+.tasksFilters__chip--active[data-tone='sage']:hover {
+  background: #47a070;
 }
 
 .tasksFilters__chip--active[data-tone='warning'] {
   background: #c2410c;
 }
 
+.tasksFilters__chip--active[data-tone='warning']:hover {
+  background: #dc4a0e;
+}
+
 .tasksFilters__chip--active[data-tone='dawn'] {
   background: #f2c94c;
+}
+
+.tasksFilters__chip--active[data-tone='dawn']:hover {
+  background: #f5d46d;
 }
 
 .tasksFilters__icon {
@@ -178,7 +669,6 @@
 .taskCard__checkbox--checked {
   background: #1c1d24;
   border-color: #1c1d24;
-  box-shadow: 0 12px 26px rgba(12, 13, 24, 0.28);
 }
 
 .taskCard__checkboxGlow {
@@ -194,10 +684,10 @@
 }
 
 .taskCard__checkboxMark {
-  width: 20px;
-  height: 10px;
-  border-left: 3px solid #26262d;
-  border-bottom: 3px solid #26262d;
+  width: 16px;
+  height: 8px;
+  border-left: 2.5px solid #26262d;
+  border-bottom: 2.5px solid #26262d;
   transform: rotate(-45deg) scale(0.4);
   transform-origin: center;
   transition: transform 200ms ease, border-color 200ms ease;
@@ -205,7 +695,7 @@
 
 .taskCard__checkbox--checked .taskCard__checkboxMark {
   border-color: #fff;
-  transform: rotate(-45deg) scale(1);
+  transform: rotate(-45deg) scale(0.85);
 }
 
 .taskCard__body {
@@ -260,6 +750,49 @@
   gap: 8px;
   justify-content: flex-end;
   align-items: center;
+}
+
+.taskCard__focusBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 9999px;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.taskCard__focusBtn:hover {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.85);
+  transform: translateY(-1px);
+}
+
+.taskCard__focusBtn--active {
+  background: #1c1d24;
+  border-color: #1c1d24;
+  color: #fff;
+}
+
+.taskCard__focusBtn--active:hover {
+  background: #2a2b32;
+  border-color: #2a2b32;
+  transform: translateY(-1px);
+}
+
+.taskCard__focusBtn svg {
+  transition: transform 0.3s ease;
+}
+
+.taskCard__focusBtn--active svg {
+  transform: rotate(72deg);
 }
 
 .taskChip {
@@ -376,6 +909,13 @@
   color: rgba(13, 13, 18, 0.6);
 }
 
+.taskCard__pomodoros {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(13, 13, 18, 0.7);
+  font-weight: 600;
+}
+
 .taskCard__energy {
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -388,19 +928,20 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 0;
   opacity: 0;
   max-height: 0;
   overflow: hidden;
   pointer-events: none;
   transform: translateY(-4px);
-  transition: opacity 160ms ease, transform 160ms ease, max-height 160ms ease;
+  transition: opacity 160ms ease, transform 160ms ease, max-height 160ms ease, margin-top 160ms ease;
 }
 
 .taskCard:hover .taskCard__actions,
 .taskCard:focus-within .taskCard__actions {
   opacity: 1;
   max-height: 60px;
+  margin-top: 12px;
   pointer-events: auto;
   transform: translateY(0);
 }

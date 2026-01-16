@@ -84,11 +84,6 @@ export default function Projects({ onNavigate, user }) {
   return (
     <div className="projects">
       <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} />
-      <div className="projects__toolbar">
-        <button className="projects__action" type="button" onClick={openModal}>
-          Novo projeto
-        </button>
-      </div>
 
       <section className="projectsBoard">
         {BOARD_COLUMNS.map((column) => (

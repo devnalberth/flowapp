@@ -35,28 +35,30 @@ export default function Dashboard({ onNavigate, user }) {
     <div className="dash">
       <TopNav user={currentUser} active="Dashboard" onNavigate={onNavigate} />
 
-      <header className="dash__welcome">
-        <div className="txt-h1">Bem-vindo de volta, Nalberth 👋</div>
-        <div className="txt-lead">
-          Você tem {mock.kpis.tasksToday} tarefas para hoje e está com um streak de{' '}
-          {mock.kpis.streakDays} dias!
-        </div>
-      </header>
+      <div className="dashWrapper">
+        <header className="dash__welcome">
+          <div className="txt-h1">Bem-vindo de volta, Nalberth 👋</div>
+          <div className="txt-lead">
+            Você tem {mock.kpis.tasksToday} tarefas para hoje e está com um streak de{' '}
+            {mock.kpis.streakDays} dias!
+          </div>
+        </header>
 
-      <section className="dash__kpis">
-        <StatCard title="Tarefas Totais" value={mock.kpis.total} variant="total" />
-        <StatCard title="Tarefas Pendentes" value={mock.kpis.pending} variant="pending" />
-        <StatCard title="Tarefas Finalizadas" value={mock.kpis.done} variant="done" />
-        <NextMeetingCard meeting={mock.nextMeeting} />
-      </section>
+        <section className="dash__kpis">
+          <StatCard title="Tarefas Totais" value={mock.kpis.total} variant="total" />
+          <StatCard title="Tarefas Pendentes" value={mock.kpis.pending} variant="pending" />
+          <StatCard title="Tarefas Finalizadas" value={mock.kpis.done} variant="done" />
+          <NextMeetingCard meeting={mock.nextMeeting} />
+        </section>
 
-      <main className="dash__grid">
-        <ProjectOverviewCard className="bento bento--project" />
-        <ProductivityCard className="bento bento--productivity" />
-        <ChatbotCard className="bento bento--chat" />
-        <GoalsHabitsCard className="bento bento--goals" />
-        <CalendarCard className="bento bento--calendar" />
-      </main>
+        <main className="dash__grid">
+          <ProjectOverviewCard className="bento bento--project" />
+          <ProductivityCard className="bento bento--productivity" />
+          <ChatbotCard className="bento bento--chat" />
+          <GoalsHabitsCard className="bento bento--goals" />
+          <CalendarCard className="bento bento--calendar" />
+        </main>
+      </div>
     </div>
   )
 }

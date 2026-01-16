@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import { useApp } from '../../context/AppContext.jsx'
+import { processCommandMock } from '../../services/aiService.js'
 
 import './AIAssistant.css'
 
@@ -149,6 +151,8 @@ function ThinkingBubble() {
 }
 
 export default function AIAssistant({ user, onNavigate }) {
+  const { addTask, addFinance, addHabit, completeHabit } = useApp()
+  
   const [messages, setMessages] = useState(initialMessages)
   const [draft, setDraft] = useState('')
   const [isThinking, setThinking] = useState(false)
@@ -169,7 +173,7 @@ export default function AIAssistant({ user, onNavigate }) {
     historyRef.current.scrollTo({ top: historyRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, isThinking])
 
-  const handleSend = (event) => {
+  const handleSend = async (event) => {
     event.preventDefault()
     const value = draft.trim()
     if (!value) return
@@ -179,10 +183,79 @@ export default function AIAssistant({ user, onNavigate }) {
     setDraft('')
     setThinking(true)
 
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { ...widgetResponse, id: uuid() }])
+    try {
+      // Processar comando com IA (usando mock por enquanto)
+      const result = await processCommandMock(value)
+
+      // Executar ações retornadas pela IA
+      const executedBlocks = []
+      
+      for (const action of result.actions) {
+        if (action.type === 'task') {
+          const createdTask = addTask(action.data)
+          executedBlocks.push({
+            type: 'task',
+            title: createdTask.title,
+            schedule: createdTask.dueLabel,
+            cta: 'Editar',
+            status: 'Agendado',
+          })
+        } else if (action.type === 'finance') {
+          const createdFinance = addFinance(action.data)
+          executedBlocks.push({
+            type: 'finance',
+            value: `R$ ${createdFinance.value.toFixed(2).replace('.', ',')}`,
+            category: `${createdFinance.type === 'receita' ? 'Receita' : 'Despesa'} · ${createdFinance.category}`,
+            date: createdFinance.date,
+            status: 'Confirmado',
+          })
+        } else if (action.type === 'habit') {
+          if (action.action === 'complete') {
+            // Mock: assume que o hábito existe
+            executedBlocks.push({
+              type: 'habit',
+              title: action.data.habitName || action.data.title,
+              statusLabel: 'Concluído ✅',
+              streak: 'Série: 1 dia',
+            })
+          } else {
+            const createdHabit = addHabit(action.data)
+            executedBlocks.push({
+              type: 'habit',
+              title: createdHabit.title,
+              statusLabel: 'Criado',
+              streak: 'Série: 0 dias',
+            })
+          }
+        }
+      }
+
+      // Criar mensagem de resposta do assistente
+      const assistantMessage = {
+        id: uuid(),
+        role: 'assistant',
+        text: result.text,
+        blocks: executedBlocks,
+        meta: {
+          status: 'success',
+          label: executedBlocks.length > 0 ? 'Ações sincronizadas com o workspace' : 'Nenhuma ação identificada',
+        },
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('Erro ao processar comando:', error)
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: 'assistant',
+          text: 'Desculpe, ocorreu um erro ao processar seu comando. Tente novamente.',
+        },
+      ])
+    } finally {
       setThinking(false)
-    }, mockThinkingDelay)
+    }
   }
 
   const handlePromptClick = (prompt) => {
@@ -193,32 +266,8 @@ export default function AIAssistant({ user, onNavigate }) {
     <div className="flowChatPage">
       <TopNav user={user} active="FlowChat" onNavigate={onNavigate} />
 
-      <section className="flowChatShell">
-        <header className="flowChatHeader ui-card">
-          <div>
-            <p className="txt-pill">FlowChat</p>
-            <h1>Converse e confirme ações em segundos</h1>
-            <p>Envie comandos curtos para criar tarefas, atualizar finanças ou marcar hábitos. FlowChat valida tudo antes de sincronizar.</p>
-          </div>
-          <div className="flowChatHeader__status">
-            <span className="flowChatHeader__dot" aria-hidden="true" />
-            <strong>Online</strong>
-            <span>Fila limpa há 3 min</span>
-          </div>
-        </header>
-
-        <div className="flowChatActions">
-          {suggestionPrompts.map((prompt) => (
-            <button key={prompt.id} type="button" onClick={() => handlePromptClick(prompt.title)}>
-              <strong>{prompt.title}</strong>
-              <span>{prompt.detail}</span>
-            </button>
-          ))}
-          <button type="button" className="flowChatActions__secondary" onClick={() => handlePromptClick('Resumo geral da semana')}>
-            <span>Resumo geral da semana</span>
-          </button>
-        </div>
-
+      <div className="flowChatWrapper">
+        <section className="flowChatShell">
         <section className="flowChatConversation ui-card">
           <div className="flowChatHistory" ref={historyRef} role="log" aria-live="polite">
             <AnimatePresence initial={false}>
@@ -310,3 +359,9 @@ export default function AIAssistant({ user, onNavigate }) {
             </button>
           </div>
         </form>
+
+      </section>
+      </div>
+    </div>
+  )
+}

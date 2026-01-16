@@ -2,13 +2,35 @@
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
+  background: var(--bg);
+}
+
+.dashWrapper {
+  background: #f3f3f5;
+  border-radius: 36px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .dash__welcome {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.dash__welcome .txt-h1 {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+
+.dash__welcome .txt-lead {
+  font-size: 15px;
+  line-height: 22px;
+  color: #6b7280;
 }
 
 /* KPI row: 3 stats + meeting card */

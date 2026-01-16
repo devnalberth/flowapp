@@ -26,8 +26,8 @@ export default function CalendarCard({ className = '' }) {
       </header>
 
       <div className="cal__week">
-        {weekDays.map((d) => (
-          <span key={d} className="cal__weekDay">
+        {weekDays.map((d, index) => (
+          <span key={`weekday-${index}`} className="cal__weekDay">
             {d}
           </span>
         ))}

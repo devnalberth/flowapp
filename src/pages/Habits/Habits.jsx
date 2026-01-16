@@ -1,194 +1,473 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import { useApp } from '../../context/AppContext.jsx'
+import { 
+  Calendar, 
+  BarChart3, 
+  TrendingUp, 
+  Search, 
+  Sparkles, 
+  Dumbbell, 
+  Brain, 
+  BookOpen, 
+  Book,
+  Plus,
+  X,
+  Trash2
+} from 'lucide-react'
 
 import './Habits.css'
 
 const VIEW_MODES = [
-  { id: 'daily', label: 'Diário' },
-  { id: 'weekly', label: 'Semanal' },
-  { id: 'monthly', label: 'Mensal' },
+  { id: 'daily', label: 'Diário', icon: Calendar },
+  { id: 'weekly', label: 'Semanal', icon: BarChart3 },
+  { id: 'monthly', label: 'Mensal', icon: TrendingUp },
 ]
 
-const HABITS = [
-  { id: 'gratidao', icon: '🙏', label: 'Gratidão', focus: 'Manhã' },
-  { id: 'treino', icon: '🏋️‍♂️', label: 'Treino', focus: 'Corpo' },
-  { id: 'deep-work', icon: '🧠', label: '4h Trabalho focado', focus: 'FlowWork' },
-  { id: 'estudos', icon: '📚', label: '2h de Estudos', focus: 'Trilha' },
-  { id: 'leitura', icon: '📖', label: '30m de Leitura', focus: 'Noite' },
+const CATEGORIES = [
+  { id: 'all', label: 'Todos', color: '#ff4800' },
+  { id: 'health', label: 'Saúde', color: '#0a9463' },
+  { id: 'work', label: 'Trabalho', color: '#ff7a00' },
+  { id: 'learning', label: 'Aprendizado', color: '#4f5bd5' },
+  { id: 'mindfulness', label: 'Mindfulness', color: '#ff4800' },
 ]
 
-const WEEKLY_TRACK = [
-  { day: 'dom.', date: '2', completion: 0.1, done: ['treino'], missed: ['gratidao', 'deep-work', 'estudos', 'leitura'] },
-  { day: 'seg.', date: '3', completion: 0.8, done: ['gratidao', 'treino', 'deep-work', 'estudos', 'leitura'], missed: [] },
-  { day: 'ter.', date: '4', completion: 0.2, done: ['gratidao'], missed: ['treino', 'deep-work', 'estudos', 'leitura'] },
-  { day: 'qua.', date: '5', completion: 0.4, done: ['gratidao', 'deep-work'], missed: ['treino', 'estudos', 'leitura'] },
-  { day: 'qui.', date: '6', completion: 0.6, done: ['gratidao', 'treino', 'deep-work'], missed: ['estudos', 'leitura'] },
-  { day: 'sex.', date: '7', completion: 0.5, done: ['gratidao', 'treino', 'leitura'], missed: ['deep-work', 'estudos'] },
-  { day: 'sáb.', date: '8', completion: 0.3, done: ['gratidao', 'leitura'], missed: ['treino', 'deep-work', 'estudos'] },
+const ICON_OPTIONS = [
+  { id: 'sparkles', icon: Sparkles, label: 'Sparkles' },
+  { id: 'dumbbell', icon: Dumbbell, label: 'Dumbbell' },
+  { id: 'brain', icon: Brain, label: 'Brain' },
+  { id: 'bookopen', icon: BookOpen, label: 'Book Open' },
+  { id: 'book', icon: Book, label: 'Book' },
 ]
 
-const DAILY_TIMELINE = [
-  { time: '06:30', title: 'Check-in de gratidão', description: 'Escrever 3 pontos no Flow Journal', habit: 'Gratidão' },
-  { time: '07:15', title: 'Treino funcional', description: 'Série A · 45 minutos', habit: 'Treino' },
-  { time: '09:00', title: 'Deep work', description: 'Sprint GTD · Projetos FlowApp', habit: '4h Trabalho focado' },
-  { time: '14:30', title: 'Estudos', description: 'Curso Flow Systems · Módulo 02', habit: '2h de Estudos' },
-  { time: '22:00', title: 'Leitura', description: '30 minutos · Atomic Habits', habit: '30m de Leitura' },
-]
-
-const MONTH_MATRIX = [
-  { label: 'Semana 01', days: [
-    { day: 1, inMonth: true, score: 0.7 },
-    { day: 2, inMonth: true, score: 0.2 },
-    { day: 3, inMonth: true, score: 0.8 },
-    { day: 4, inMonth: true, score: 0.3 },
-    { day: 5, inMonth: true, score: 0.4 },
-    { day: 6, inMonth: true, score: 0.6 },
-    { day: 7, inMonth: true, score: 0.5 },
-  ] },
-  { label: 'Semana 02', days: [
-    { day: 8, inMonth: true, score: 0.3 },
-    { day: 9, inMonth: true, score: 0.4 },
-    { day: 10, inMonth: true, score: 0.7 },
-    { day: 11, inMonth: true, score: 0.6 },
-    { day: 12, inMonth: true, score: 0.5 },
-    { day: 13, inMonth: true, score: 0.4 },
-    { day: 14, inMonth: true, score: 0.9 },
-  ] },
-  { label: 'Semana 03', days: [
-    { day: 15, inMonth: true, score: 0.2 },
-    { day: 16, inMonth: true, score: 0.6 },
-    { day: 17, inMonth: true, score: 0.7 },
-    { day: 18, inMonth: true, score: 0.4 },
-    { day: 19, inMonth: true, score: 0.5 },
-    { day: 20, inMonth: true, score: 0.3 },
-    { day: 21, inMonth: true, score: 0.8 },
-  ] },
-  { label: 'Semana 04', days: [
-    { day: 22, inMonth: true, score: 0.6 },
-    { day: 23, inMonth: true, score: 0.7 },
-    { day: 24, inMonth: true, score: 0.4 },
-    { day: 25, inMonth: true, score: 0.5 },
-    { day: 26, inMonth: true, score: 0.3 },
-    { day: 27, inMonth: true, score: 0.2 },
-    { day: 28, inMonth: true, score: 0.9 },
-  ] },
-  { label: 'Semana 05', days: [
-    { day: 29, inMonth: true, score: 0.5 },
-    { day: 30, inMonth: true, score: 0.6 },
-    { day: 31, inMonth: true, score: 0.35 },
-    { day: 1, inMonth: false, score: 0 },
-    { day: 2, inMonth: false, score: 0 },
-    { day: 3, inMonth: false, score: 0 },
-    { day: 4, inMonth: false, score: 0 },
-  ] },
+const INITIAL_HABITS = [
+  { id: 'gratidao', iconId: 'sparkles', label: 'Gratidão', focus: 'Manhã', category: 'mindfulness' },
+  { id: 'treino', iconId: 'dumbbell', label: 'Treino', focus: 'Corpo', category: 'health' },
+  { id: 'deep-work', iconId: 'brain', label: '4h Trabalho focado', focus: 'FlowWork', category: 'work' },
+  { id: 'estudos', iconId: 'bookopen', label: '2h de Estudos', focus: 'Trilha', category: 'learning' },
+  { id: 'leitura', iconId: 'book', label: '30m de Leitura', focus: 'Noite', category: 'learning' },
 ]
 
 export default function Habits({ user, onNavigate }) {
+  const { habits, addHabit, updateHabit, deleteHabit } = useApp()
+  
   const [viewMode, setViewMode] = useState('weekly')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [editingHabit, setEditingHabit] = useState(null)
+  const [completionsByDate, setCompletionsByDate] = useState({})
+  const [initialized, setInitialized] = useState(false)
+
+  // Inicializar hábitos padrão se estiver vazio (apenas uma vez)
+  useEffect(() => {
+    if (!initialized && habits.length === 0) {
+      INITIAL_HABITS.forEach(habit => {
+        addHabit({
+          ...habit,
+          completions: {},
+          streak: 0,
+        })
+      })
+      setInitialized(true)
+    }
+  }, [habits, addHabit, initialized])
+
+  // Obter ícone por ID
+  const getIcon = (iconId) => {
+    const iconOption = ICON_OPTIONS.find(opt => opt.id === iconId)
+    return iconOption ? iconOption.icon : Sparkles
+  }
+
+  // Calcular streak de um hábito
+  const calculateStreak = (habit) => {
+    if (!habit.completions || Object.keys(habit.completions).length === 0) return 0
+    
+    const dates = Object.keys(habit.completions).sort().reverse()
+    let streak = 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    for (let i = 0; i < dates.length; i++) {
+      const checkDate = new Date(dates[i])
+      checkDate.setHours(0, 0, 0, 0)
+      const expectedDate = new Date(today)
+      expectedDate.setDate(expectedDate.getDate() - i)
+      expectedDate.setHours(0, 0, 0, 0)
+      
+      if (checkDate.getTime() === expectedDate.getTime()) {
+        streak++
+      } else {
+        break
+      }
+    }
+    
+    return streak
+  }
+
+  // Habits com ícones e streaks calculados
+  const habitsWithMeta = useMemo(() => {
+    return habits.map(habit => ({
+      ...habit,
+      icon: getIcon(habit.iconId || 'sparkles'),
+      streak: calculateStreak(habit),
+    }))
+  }, [habits])
+
+  // Filtrar hábitos
+  const filteredHabits = useMemo(() => {
+    return habitsWithMeta.filter((habit) => {
+      const matchesCategory = categoryFilter === 'all' || habit.category === categoryFilter
+      const matchesSearch = habit.label.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (habit.focus && habit.focus.toLowerCase().includes(searchTerm.toLowerCase()))
+      return matchesCategory && matchesSearch
+    })
+  }, [habitsWithMeta, categoryFilter, searchTerm])
+
+  // Toggle de completude para um hábito em uma data
+  const toggleHabitCompletion = (habitId, date) => {
+    const habit = habits.find(h => h.id === habitId)
+    if (!habit) return
+
+    const completions = { ...(habit.completions || {}) }
+    
+    if (completions[date]) {
+      delete completions[date]
+    } else {
+      completions[date] = true
+    }
+
+    updateHabit(habitId, { completions })
+  }
+
+  // Verificar se hábito está completo em uma data
+  const isHabitComplete = (habitId, date) => {
+    const habit = habits.find(h => h.id === habitId)
+    return habit?.completions?.[date] || false
+  }
+
+  // Obter data formatada YYYY-MM-DD
+  const getDateString = (daysOffset = 0) => {
+    const date = new Date()
+    date.setDate(date.getDate() + daysOffset)
+    return date.toISOString().split('T')[0]
+  }
+
+  // Gerar dados da semana
+  const weeklyData = useMemo(() => {
+    const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+    const today = new Date()
+    const currentDay = today.getDay()
+    
+    return days.map((day, index) => {
+      const offset = index - currentDay
+      const date = getDateString(offset)
+      const dateObj = new Date(date)
+      
+      const completed = filteredHabits.filter(habit => isHabitComplete(habit.id, date))
+      const completion = filteredHabits.length > 0 ? completed.length / filteredHabits.length : 0
+      
+      return {
+        day,
+        date: dateObj.getDate().toString(),
+        dateString: date,
+        completion,
+        done: completed.map(h => h.id),
+        total: filteredHabits.length,
+      }
+    })
+  }, [filteredHabits, habits])
+
+  // Estatísticas semanais
+  const weeklyStats = useMemo(() => {
+    const total = weeklyData.reduce((acc, day) => acc + day.completion, 0)
+    const average = weeklyData.length > 0 ? total / weeklyData.length : 0
+    const bestDay = weeklyData.reduce((max, day) => day.completion > max.completion ? day : max, weeklyData[0] || { completion: 0 })
+    
+    return { 
+      average, 
+      bestDay: bestDay.day,
+      totalHabits: filteredHabits.length,
+    }
+  }, [weeklyData, filteredHabits])
+
+  // Modal handlers
+  const handleAddHabit = () => {
+    setEditingHabit(null)
+    setShowModal(true)
+  }
+
+  const handleEditHabit = (habit) => {
+    setEditingHabit(habit)
+    setShowModal(true)
+  }
+
+  const handleSaveHabit = (habitData) => {
+    if (editingHabit) {
+      updateHabit(editingHabit.id, habitData)
+    } else {
+      addHabit({
+        ...habitData,
+        completions: {},
+        streak: 0,
+      })
+    }
+    setShowModal(false)
+    setEditingHabit(null)
+  }
+
+  const handleDeleteHabit = (habitId) => {
+    if (confirm('Tem certeza que deseja excluir este hábito?')) {
+      deleteHabit(habitId)
+      setShowModal(false)
+      setEditingHabit(null)
+    }
+  }
+
+  // Modal de adicionar/editar hábito
+  const HabitModal = () => {
+    const [formData, setFormData] = useState(editingHabit || {
+      label: '',
+      focus: '',
+      category: 'health',
+      iconId: 'sparkles',
+    })
+
+    const handleSubmit = (e) => {
+      e.preventDefault()
+      if (!formData.label.trim()) return
+      handleSaveHabit(formData)
+    }
+
+    if (!showModal) return null
+
+    return (
+      <div className="modalOverlay" onClick={() => setShowModal(false)}>
+        <div className="modalContent" onClick={(e) => e.stopPropagation()}>
+          <div className="modalHeader">
+            <h3>{editingHabit ? 'Editar Hábito' : 'Novo Hábito'}</h3>
+            <button onClick={() => setShowModal(false)} className="modalClose">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="modalForm">
+            <div className="formGroup">
+              <label>Nome do hábito</label>
+              <input
+                type="text"
+                value={formData.label}
+                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                placeholder="Ex: Meditação matinal"
+                required
+              />
+            </div>
+            <div className="formGroup">
+              <label>Contexto/Horário</label>
+              <input
+                type="text"
+                value={formData.focus}
+                onChange={(e) => setFormData({ ...formData, focus: e.target.value })}
+                placeholder="Ex: Manhã, Noite, Corpo..."
+              />
+            </div>
+            <div className="formGroup">
+              <label>Categoria</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                {CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="formGroup">
+              <label>Ícone</label>
+              <div className="iconSelector">
+                {ICON_OPTIONS.map(opt => {
+                  const IconComp = opt.icon
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`iconOption ${formData.iconId === opt.id ? 'iconOption--active' : ''}`}
+                      onClick={() => setFormData({ ...formData, iconId: opt.id })}
+                    >
+                      <IconComp size={24} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="modalActions">
+              <div className="modalActions__left">
+                {editingHabit && (
+                  <button 
+                    type="button" 
+                    onClick={() => handleDeleteHabit(editingHabit.id)} 
+                    className="btnDanger"
+                  >
+                    <Trash2 size={16} strokeWidth={2} />
+                    Excluir
+                  </button>
+                )}
+              </div>
+              <div className="modalActions__right">
+                <button type="button" onClick={() => setShowModal(false)} className="btnSecondary">
+                  Cancelar
+                </button>
+                <button type="submit" className="btnPrimary">
+                  {editingHabit ? 'Salvar' : 'Criar Hábito'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="habitsPage">
       <TopNav user={user} active="Hábitos" onNavigate={onNavigate} />
+      <HabitModal />
 
-      <section className="habitsModes ui-card">
-        <div className="habitsModes__intro">
-          <div>
-            <p className="habitsModes__eyebrow">Selecione a visão</p>
-            <h2>Alterne entre diário · semanal · mensal</h2>
-            <p>O checklist permanece igual, apenas mudamos o recorte temporal e a densidade de informação.</p>
-          </div>
-          <div className="habitsModes__toggle">
-            {VIEW_MODES.map((mode) => (
+      <div className="habitsWrapper">
+        {/* Filtros e Controles */}
+        <section className="habitsControls">
+        <div className="habitsControls__modes">
+          {VIEW_MODES.map((mode) => {
+            const IconComponent = mode.icon
+            return (
               <button
                 key={mode.id}
                 type="button"
-                className={viewMode === mode.id ? 'is-active' : ''}
+                className={`modeBtn ${viewMode === mode.id ? 'modeBtn--active' : ''}`}
                 onClick={() => setViewMode(mode.id)}
               >
-                {mode.label}
+                <IconComponent className="modeBtn__icon" size={18} />
+                <span className="modeBtn__label">{mode.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="habitsControls__filters">
+          <div className="searchBox">
+            <Search className="searchBox__icon" size={16} />
+            <input
+              type="text"
+              placeholder="Buscar hábitos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="categoryFilters">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`categoryBtn ${categoryFilter === cat.id ? 'categoryBtn--active' : ''}`}
+                style={{ '--cat-color': cat.color }}
+                onClick={() => setCategoryFilter(cat.id)}
+              >
+                {cat.label}
               </button>
             ))}
           </div>
         </div>
-
-        <div className="habitsModes__legend">
-          {HABITS.map((habit) => (
-            <div key={habit.id}>
-              <span>{habit.icon}</span>
-              <div>
-                <strong>{habit.label}</strong>
-                <small>{habit.focus}</small>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
 
+      {/* Board de conteúdo */}
       <section className="habitsBoard">
         {viewMode === 'daily' && (
-          <article className="habitsDaily ui-card">
-            <header>
+          <div className="habitsDaily">
+            <div className="dailyHeader">
               <div>
-                <p>Hoje · 8 de janeiro</p>
-                <h3>Checklist diário e timeline</h3>
-                <p>Espelhando o bloco "Day Review" do Notion.</p>
+                <h3>Hoje · {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</h3>
+                <p>Checklist diário dos seus hábitos</p>
               </div>
-              <button type="button">Abrir rotina completa</button>
-            </header>
-            <div className="habitsDaily__content">
-              <div className="habitsDaily__checklist">
-                {HABITS.map((habit) => (
-                  <label key={habit.id}>
-                    <input type="checkbox" readOnly checked={habit.id === 'gratidao'} />
-                    <span>
-                      {habit.icon} {habit.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <div className="habitsDaily__timeline">
-                {DAILY_TIMELINE.map((block) => (
-                  <article key={block.time}>
-                    <span>{block.time}</span>
-                    <div>
-                      <strong>{block.title}</strong>
-                      <p>{block.description}</p>
-                      <small>{block.habit}</small>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <button type="button" className="btnPrimary" onClick={handleAddHabit}>
+                <Plus size={18} strokeWidth={2.5} />
+                <span>Adicionar hábito</span>
+              </button>
             </div>
-          </article>
+            <div className="dailyChecklist">
+              {filteredHabits.map((habit) => {
+                const category = CATEGORIES.find(c => c.id === habit.category)
+                const IconComponent = habit.icon
+                const today = getDateString(0)
+                const isChecked = isHabitComplete(habit.id, today)
+                
+                return (
+                  <div 
+                    key={habit.id} 
+                    className="dailyCheckItem" 
+                    style={{ '--item-color': category?.color }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={isChecked}
+                      onChange={() => toggleHabitCompletion(habit.id, today)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div 
+                      className="dailyCheckItem__content"
+                      onClick={() => handleEditHabit(habit)}
+                    >
+                      <IconComponent className="dailyCheckItem__icon" size={20} strokeWidth={2} />
+                      <span className="dailyCheckItem__label">{habit.label}</span>
+                      <span className="dailyCheckItem__focus">{habit.focus}</span>
+                    </div>
+                    <span className="dailyCheckItem__streak">🔥 {habit.streak}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         )}
 
         {viewMode === 'weekly' && (
           <div className="habitsWeekly">
-            {WEEKLY_TRACK.map((slot) => {
+            {weeklyData.map((slot) => {
               const progressPercent = Math.round(slot.completion * 100)
               return (
-                <article key={slot.date} className="habitWeekCard">
-                  <header>
-                    <div>
-                      <p>{slot.day}</p>
-                      <strong>{slot.date} nov</strong>
+                <article key={slot.dateString} className="weekCard">
+                  <div className="weekCard__header">
+                    <div className="weekCard__date">
+                      <span className="weekCard__day">{slot.day}</span>
+                      <span className="weekCard__num">{slot.date} jan</span>
                     </div>
-                    <span>{progressPercent}%</span>
-                  </header>
-                  <div className="habitWeekCard__bar" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100}>
-                    <span style={{ width: `${progressPercent}%` }} />
+                    <span className="weekCard__percent">{progressPercent}%</span>
                   </div>
-                  <ul>
-                    {HABITS.map((habit) => (
-                      <li key={habit.id}>
-                        <label>
-                          <input type="checkbox" readOnly checked={slot.done.includes(habit.id)} />
-                          <span>
-                            {habit.icon} {habit.label}
-                          </span>
-                        </label>
-                      </li>
-                    ))}
+                  <div className="weekCard__progress">
+                    <div className="weekCard__bar" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  <ul className="weekCard__list">
+                    {filteredHabits.map((habit) => {
+                      const isChecked = isHabitComplete(habit.id, slot.dateString)
+                      const category = CATEGORIES.find(c => c.id === habit.category)
+                      const IconComponent = habit.icon
+                      return (
+                        <li key={habit.id} style={{ '--habit-color': category?.color }}>
+                          <div className={`weekCheckbox ${isChecked ? 'weekCheckbox--checked' : ''}`}>
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked}
+                              onChange={() => toggleHabitCompletion(habit.id, slot.dateString)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div 
+                              className="weekCheckbox__content"
+                              onClick={() => handleEditHabit(habit)}
+                            >
+                              <IconComponent className="weekCheckbox__icon" size={16} strokeWidth={2} />
+                              <span className="weekCheckbox__label">{habit.label}</span>
+                            </div>
+                          </div>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </article>
               )
@@ -228,6 +507,7 @@ export default function Habits({ user, onNavigate }) {
           </div>
         )}
       </section>
+      </div>
     </div>
   )
 }

@@ -36,6 +36,9 @@ const INITIAL_TASKS = [
     xp: 24,
     progress: 0.45,
     completed: false,
+    estimatedMinutes: 90,
+    estimatedPomodoros: 4,
+    completedPomodoros: 2,
     subtasks: [
       { id: 'sub-flow-onboarding-1', label: 'Capturar principais dores do usuário em entrevistas', done: false },
       { id: 'sub-flow-onboarding-2', label: 'Clarificar responsabilidades de cada squad', done: false },
@@ -57,6 +60,9 @@ const INITIAL_TASKS = [
     xp: 16,
     progress: 0.25,
     completed: false,
+    estimatedMinutes: 45,
+    estimatedPomodoros: 2,
+    completedPomodoros: 0,
     subtasks: [
       { id: 'sub-flow-brief-1', label: 'Esclarecer objetivos do briefing', done: true },
       { id: 'sub-flow-brief-2', label: 'Mapear dependências externas', done: false },
@@ -78,6 +84,9 @@ const INITIAL_TASKS = [
     xp: 8,
     progress: 0.7,
     completed: false,
+    estimatedMinutes: 15,
+    estimatedPomodoros: 1,
+    completedPomodoros: 0,
     subtasks: [
       { id: 'sub-quick-video-1', label: 'Selecionar CTA do vídeo', done: true },
       { id: 'sub-quick-video-2', label: 'Clarificar roteiro em bullet points', done: false },
@@ -99,6 +108,9 @@ const INITIAL_TASKS = [
     xp: 14,
     progress: 0.8,
     completed: false,
+    estimatedMinutes: 30,
+    estimatedPomodoros: 2,
+    completedPomodoros: 1,
     subtasks: [
       { id: 'sub-late-finance-1', label: 'Enviar lembrete para financeiro', done: false },
       { id: 'sub-late-finance-2', label: 'Registrar follow-up no CRM', done: false },
@@ -119,6 +131,9 @@ const INITIAL_TASKS = [
     xp: 12,
     progress: 1,
     completed: true,
+    estimatedMinutes: 25,
+    estimatedPomodoros: 1,
+    completedPomodoros: 1,
     subtasks: [
       { id: 'sub-done-review-1', label: 'Revisar casos críticos', done: true },
       { id: 'sub-done-review-2', label: 'Documentar regressões', done: true },
@@ -139,6 +154,9 @@ const INITIAL_TASKS = [
     xp: 5,
     progress: 0.1,
     completed: false,
+    estimatedMinutes: 20,
+    estimatedPomodoros: 1,
+    completedPomodoros: 0,
     subtasks: [
       { id: 'sub-unscheduled-1', label: 'Listar hábitos âncora', done: false },
       { id: 'sub-unscheduled-2', label: 'Priorizar gatilhos semanais', done: false },
@@ -154,11 +172,52 @@ export default function Tasks({ onNavigate, user }) {
   const [expandedTaskId, setExpandedTaskId] = useState(null)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [celebratingTask, setCelebratingTask] = useState(null)
+  const [pomodoroTime, setPomodoroTime] = useState(25 * 60)
+  const [pomodoroRunning, setPomodoroRunning] = useState(false)
+  const [showPomodoroConfig, setShowPomodoroConfig] = useState(false)
+  const [pomodoroConfig, setPomodoroConfig] = useState({
+    focusTime: 25,
+    shortBreak: 5,
+    longBreak: 10,
+    sessionsBeforeLongBreak: 4,
+    technique: 'classic'
+  })
+  const [focusedTaskId, setFocusedTaskId] = useState(null)
+  const [currentPomodoroIndex, setCurrentPomodoroIndex] = useState(0)
+
+  const isFlowMode = statusFilters.includes('flow')
+  const focusedTask = focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
+
+  // Função para calcular pomodoros baseado na técnica e duração da tarefa
+  const calculatePomodoros = (estimatedMinutes, technique) => {
+    if (!estimatedMinutes) return 0
+    
+    let focusTime = 25 // default
+    
+    switch (technique) {
+      case 'classic':
+        focusTime = 25
+        break
+      case 'short':
+        focusTime = 15
+        break
+      case 'long':
+        focusTime = 50
+        break
+      case 'custom':
+        focusTime = pomodoroConfig.focusTime
+        break
+      default:
+        focusTime = 25
+    }
+    
+    return Math.ceil(estimatedMinutes / focusTime)
+  }
 
   const activeDetailTask = detailTaskId ? tasks.find((task) => task.id === detailTaskId) : null
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    let filtered = tasks.filter((task) => {
       const matchesTimeline = timelineFilter === 'any' ? true : task.timeline === timelineFilter
 
       const matchesStatus =
@@ -173,7 +232,25 @@ export default function Tasks({ onNavigate, user }) {
 
       return matchesTimeline && matchesStatus
     })
-  }, [tasks, timelineFilter, statusFilters])
+
+    // Filter for urgent and high priority tasks when Flow mode is active
+    if (isFlowMode) {
+      filtered = filtered.filter((task) => 
+        task.priority === 'Urgente' || task.priority === 'Alta'
+      )
+    }
+
+    return filtered
+  }, [tasks, timelineFilter, statusFilters, isFlowMode])
+
+  const totalPomodorosNeeded = useMemo(() => {
+    return filteredTasks
+      .filter((task) => !task.completed && (task.priority === 'Urgente' || task.priority === 'Alta'))
+      .reduce((sum, task) => {
+        const remaining = Math.max(0, (task.estimatedPomodoros || 0) - (task.completedPomodoros || 0))
+        return sum + remaining
+      }, 0)
+  }, [filteredTasks])
 
   const toggleTimeline = (filterId) => {
     setTimelineFilter((current) => (current === filterId ? 'any' : filterId))
@@ -202,6 +279,22 @@ export default function Tasks({ onNavigate, user }) {
     const timer = setTimeout(() => setCelebratingTask(null), 1500)
     return () => clearTimeout(timer)
   }, [celebratingTask])
+
+  useEffect(() => {
+    if (!pomodoroRunning || pomodoroTime <= 0) return
+
+    const interval = setInterval(() => {
+      setPomodoroTime((prev) => {
+        if (prev <= 1) {
+          setPomodoroRunning(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [pomodoroRunning, pomodoroTime])
 
   const toggleTaskCompletion = (taskId) => {
     let shouldCelebrate = false
@@ -263,6 +356,35 @@ export default function Tasks({ onNavigate, user }) {
 
   const handleDetailClose = () => {
     setDetailTaskId(null)
+  }
+
+  const togglePomodoro = () => {
+    setPomodoroRunning((prev) => !prev)
+  }
+
+  const resetPomodoro = () => {
+    setPomodoroTime(pomodoroConfig.focusTime * 60)
+    setPomodoroRunning(false)
+  }
+
+  const handleConfigSave = (newConfig) => {
+    setPomodoroConfig(newConfig)
+    setPomodoroTime(newConfig.focusTime * 60)
+    setPomodoroRunning(false)
+    setShowPomodoroConfig(false)
+  }
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }
+
+  const handleFocusTask = (taskId) => {
+    setFocusedTaskId(taskId)
+    setCurrentPomodoroIndex(0)
+    setPomodoroTime(pomodoroConfig.focusTime * 60)
+    setPomodoroRunning(false)
   }
 
   return (
@@ -369,6 +491,18 @@ export default function Tasks({ onNavigate, user }) {
                     </div>
 
                     <div className="taskCard__badges">
+                      {isFlowMode && (
+                        <button
+                          type="button"
+                          className={focusedTaskId === task.id ? 'taskCard__focusBtn taskCard__focusBtn--active' : 'taskCard__focusBtn'}
+                          onClick={() => handleFocusTask(task.id)}
+                        >
+                          <svg viewBox="0 0 20 20" width="14" height="14">
+                            <path d="M10 2l2.5 5 5.5.7-4 3.9 1 5.4-5-2.6-5 2.6 1-5.4-4-3.9 5.5-.7z" fill="currentColor" />
+                          </svg>
+                          {focusedTaskId === task.id ? 'Em foco' : 'Focar'}
+                        </button>
+                      )}
                       <span className={`taskChip taskChip--priority taskChip--priority-${prioritySlug}`}>
                         Prioridade · {task.priority}
                       </span>
@@ -385,7 +519,11 @@ export default function Tasks({ onNavigate, user }) {
                       <span style={{ width: `${progressPercent}%` }} />
                     </div>
                     <div className="taskCard__xp">{task.xp} XP</div>
-                    <div className="taskCard__energy">{task.energy}</div>
+                    {task.estimatedMinutes && (
+                      <div className="taskCard__pomodoros">
+                        {task.completedPomodoros || 0}/{calculatePomodoros(task.estimatedMinutes, pomodoroConfig.technique)} 🍅
+                      </div>
+                    )}
                   </div>
 
                   <div className="taskCard__actions">
@@ -441,6 +579,78 @@ export default function Tasks({ onNavigate, user }) {
             Nenhuma tarefa para os filtros selecionados. Ajuste as pilulas para ver outras capturas e contextos.
           </div>
         )}
+
+        {isFlowMode && (
+          <section className="pomodoroCard ui-card">
+            <div className="pomodoroCard__brand">
+              <span className="pomodoroCard__logo">⚡</span>
+              <div>
+                <p className="pomodoroCard__brandText">Foco</p>
+                <p className="pomodoroCard__brandSub">BY FLOWAPP</p>
+              </div>
+            </div>
+            <p className="pomodoroCard__quote">"Foco traz abundância"</p>
+            <button 
+              type="button" 
+              className="pomodoroCard__configBtn"
+              onClick={() => setShowPomodoroConfig(true)}
+              aria-label="Configurar Pomodoro"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M12 9.75a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Zm8.25 2.25a6.18 6.18 0 0 0-.094-1.062l2.051-1.6a.75.75 0 0 0 .168-.957l-1.945-3.37a.75.75 0 0 0-.908-.328l-2.414.868a7 7 0 0 0-1.842-1.065l-.368-2.54A.75.75 0 0 0 14.126 2h-4.25a.75.75 0 0 0-.742.641l-.368 2.54a7.002 7.002 0 0 0-1.842 1.065l-2.414-.868a.75.75 0 0 0-.908.328L1.657 9.076a.75.75 0 0 0 .168.956l2.051 1.6A6.23 6.23 0 0 0 3.75 12c0 .358.032.717.094 1.062l-2.05 1.6a.75.75 0 0 0-.169.957l1.946 3.37a.75.75 0 0 0 .908.328l2.414-.868c.555.45 1.176.817 1.842 1.065l.368 2.54a.75.75 0 0 0 .742.641h4.25a.75.75 0 0 0 .742-.641l.368-2.54a7.002 7.002 0 0 0 1.842-1.065l2.414.868a.75.75 0 0 0 .908-.328l1.945-3.37a.75.75 0 0 0-.168-.957l-2.051-1.6A6.2 6.2 0 0 0 20.25 12Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {focusedTask && (
+              <div className="pomodoroCard__focused">
+                <p className="pomodoroCard__focusedLabel">Em foco</p>
+                <p className="pomodoroCard__focusedTitle">{focusedTask.title}</p>
+                <div className="pomodoroCard__sequence">
+                  {Array.from({ length: calculatePomodoros(focusedTask.estimatedMinutes, pomodoroConfig.technique) }).map((_, index) => (
+                    <span
+                      key={index}
+                      className={
+                        index < (focusedTask.completedPomodoros || 0)
+                          ? 'pomodoroCard__bullet pomodoroCard__bullet--completed'
+                          : index === currentPomodoroIndex
+                          ? 'pomodoroCard__bullet pomodoroCard__bullet--active'
+                          : 'pomodoroCard__bullet'
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {!focusedTask && totalPomodorosNeeded > 0 && (
+              <div className="pomodoroCard__stats">
+                <p className="pomodoroCard__statsLabel">Pomodoros necessários</p>
+                <p className="pomodoroCard__statsValue">{totalPomodorosNeeded}</p>
+                <p className="pomodoroCard__statsSubtext">
+                  {filteredTasks.filter(t => !t.completed).length} {filteredTasks.filter(t => !t.completed).length === 1 ? 'tarefa' : 'tarefas'} de alta prioridade
+                </p>
+              </div>
+            )}
+            <div className="pomodoroCard__timer">{formatTime(pomodoroTime)}</div>
+            <p className="pomodoroCard__message">
+              Noites são feitas para sonhos e sonhadores como você, {currentUser.name.split(' ')[0]}!
+            </p>
+            <div className="pomodoroCard__controls">
+              <button 
+                type="button" 
+                className="pomodoroCard__btn pomodoroCard__btn--primary"
+                onClick={togglePomodoro}
+              >
+                {pomodoroRunning ? 'Pausar' : 'Iniciar'}
+              </button>
+              <button 
+                type="button" 
+                className="pomodoroCard__btn pomodoroCard__btn--secondary"
+                onClick={resetPomodoro}
+              >
+                Resetar
+              </button>
+            </div>
+          </section>
+        )}
       </section>
 
       <TaskDetailModal
@@ -451,6 +661,13 @@ export default function Tasks({ onNavigate, user }) {
             handleSubtaskToggle(activeDetailTask.id, subtaskId)
           }
         }}
+      />
+
+      <PomodoroConfigModal
+        show={showPomodoroConfig}
+        config={pomodoroConfig}
+        onClose={() => setShowPomodoroConfig(false)}
+        onSave={handleConfigSave}
       />
     </div>
   )
@@ -566,6 +783,127 @@ function TaskDetailModal({ task, onClose, onToggleSubtask }) {
         <footer className="taskModal__footer">
           <p>Próximo passo do GTD:</p>
           <strong>{task.stage}</strong>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function PomodoroConfigModal({ show, config, onClose, onSave }) {
+  const [localConfig, setLocalConfig] = useState(config)
+
+  useEffect(() => {
+    setLocalConfig(config)
+  }, [config])
+
+  if (!show) return null
+
+  const handleSave = () => {
+    onSave(localConfig)
+  }
+
+  const techniques = [
+    { id: 'classic', name: 'Clássico', description: '25min foco · 5min pausa · 10min após 4 sessões' },
+    { id: 'short', name: 'Curto', description: '15min foco · 3min pausa' },
+    { id: 'long', name: 'Longo', description: '50min foco · 10min pausa · 1h após 4 sessões' },
+    { id: 'custom', name: 'Personalizado', description: 'Configure manualmente' }
+  ]
+
+  const handleTechniqueChange = (technique) => {
+    let newConfig = { ...localConfig, technique }
+    
+    if (technique === 'classic') {
+      newConfig = { ...newConfig, focusTime: 25, shortBreak: 5, longBreak: 10, sessionsBeforeLongBreak: 4 }
+    } else if (technique === 'short') {
+      newConfig = { ...newConfig, focusTime: 15, shortBreak: 3, longBreak: 10, sessionsBeforeLongBreak: 4 }
+    } else if (technique === 'long') {
+      newConfig = { ...newConfig, focusTime: 50, shortBreak: 10, longBreak: 60, sessionsBeforeLongBreak: 4 }
+    }
+    
+    setLocalConfig(newConfig)
+  }
+
+  return (
+    <div className="pomodoroConfigModal" role="dialog" aria-modal="true">
+      <div className="pomodoroConfigModal__backdrop" onClick={onClose} />
+      <section className="pomodoroConfigModal__panel ui-card">
+        <header className="pomodoroConfigModal__header">
+          <div>
+            <h3>Configurar Pomodoro</h3>
+            <p>Escolha sua técnica e ajuste os tempos</p>
+          </div>
+          <button type="button" className="pomodoroConfigModal__close" onClick={onClose} aria-label="Fechar">
+            ×
+          </button>
+        </header>
+
+        <div className="pomodoroConfigModal__content">
+          <div className="pomodoroConfigModal__section">
+            <label>Técnica</label>
+            <div className="pomodoroConfigModal__techniques">
+              {techniques.map((tech) => (
+                <button
+                  key={tech.id}
+                  type="button"
+                  className={localConfig.technique === tech.id ? 'pomodoroTechnique pomodoroTechnique--active' : 'pomodoroTechnique'}
+                  onClick={() => handleTechniqueChange(tech.id)}
+                >
+                  <strong>{tech.name}</strong>
+                  <span>{tech.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {localConfig.technique === 'custom' && (
+            <div className="pomodoroConfigModal__section">
+              <label>Tempos personalizados (minutos)</label>
+              <div className="pomodoroConfigModal__inputs">
+                <div className="pomodoroInput">
+                  <label htmlFor="focusTime">Foco</label>
+                  <input
+                    id="focusTime"
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={localConfig.focusTime}
+                    onChange={(e) => setLocalConfig({ ...localConfig, focusTime: parseInt(e.target.value) || 25 })}
+                  />
+                </div>
+                <div className="pomodoroInput">
+                  <label htmlFor="shortBreak">Pausa curta</label>
+                  <input
+                    id="shortBreak"
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={localConfig.shortBreak}
+                    onChange={(e) => setLocalConfig({ ...localConfig, shortBreak: parseInt(e.target.value) || 5 })}
+                  />
+                </div>
+                <div className="pomodoroInput">
+                  <label htmlFor="longBreak">Pausa longa</label>
+                  <input
+                    id="longBreak"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={localConfig.longBreak}
+                    onChange={(e) => setLocalConfig({ ...localConfig, longBreak: parseInt(e.target.value) || 15 })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <footer className="pomodoroConfigModal__footer">
+          <button type="button" className="pomodoroConfigModal__btn pomodoroConfigModal__btn--secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="button" className="pomodoroConfigModal__btn pomodoroConfigModal__btn--primary" onClick={handleSave}>
+            Salvar configuração
+          </button>
         </footer>
       </section>
     </div>

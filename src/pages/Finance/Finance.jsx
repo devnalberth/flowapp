@@ -495,43 +495,36 @@ export default function Finance({ user, onNavigate }) {
     <div className="financePage">
       <TopNav user={user} active="Financeiro" onNavigate={onNavigate} />
 
-      <section className="financeHeader ui-card">
-        <div>
-          <p>Saúde financeira</p>
-          <h1>Finanças · {periodLabel}</h1>
-        </div>
-        <div className="financeHeader__controls">
-          <div className="financeHeader__carousel" aria-label="Selecionar período">
-            <button type="button" aria-label="Mês anterior" onClick={() => handleShiftMonth(-1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <div>
-              <strong>{currentMonthMeta?.label}</strong>
-              <span>{selectedYear}</span>
+      <div className="financeWrapper">
+        <section className="financeHeader ui-card">
+          <section className="financeKpis">
+            {kpiMetrics.map((kpi) => (
+              <article key={kpi.id} className="financeKpi__card">
+                <p>{kpi.label}</p>
+                <strong>{kpi.value}</strong>
+                <span>{kpi.helper}</span>
+              </article>
+            ))}
+          </section>
+          <div className="financeHeader__controls">
+            <div className="financeHeader__carousel" aria-label="Selecionar período">
+              <button type="button" aria-label="Mês anterior" onClick={() => handleShiftMonth(-1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div className="financeHeader__period">
+                <strong>{currentMonthMeta?.label}</strong>
+                <span>{selectedYear}</span>
+              </div>
+              <button type="button" aria-label="Próximo mês" onClick={() => handleShiftMonth(1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
-            <button type="button" aria-label="Próximo mês" onClick={() => handleShiftMonth(1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
           </div>
-          <button type="button" className="btn btn--primary" onClick={() => handleOpenTransactionModal('receita')}>
-            Nova transação
-          </button>
-        </div>
-      </section>
-
-      <section className="financeKpis">
-        {kpiMetrics.map((kpi) => (
-          <article key={kpi.id} className="ui-card">
-            <p>{kpi.label}</p>
-            <strong>{kpi.value}</strong>
-            <span>{kpi.helper}</span>
-          </article>
-        ))}
-      </section>
+        </section>
 
       <section className="financeAnalytics">
         <article className="ui-card financeChart">
@@ -1074,6 +1067,7 @@ export default function Finance({ user, onNavigate }) {
           </form>
         </div>
       )}
+      </div>
     </div>
   )
 }
