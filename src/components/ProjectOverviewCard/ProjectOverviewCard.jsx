@@ -1,16 +1,45 @@
+import { useMemo } from 'react'
 import './ProjectOverviewCard.css'
-
-const BAR_DATA = [
-  { month: 'Jan', progress: 65 },
-  { month: 'Fev', progress: 40 },
-  { month: 'Mar', progress: 85, active: true },
-  { month: 'Abri', progress: 55 },
-  { month: 'Maio', progress: 48 },
-]
 
 const MAX_VALUE = 100
 
-export default function ProjectOverviewCard({ className = '' }) {
+export default function ProjectOverviewCard({ className = '', projects = [] }) {
+  const stats = useMemo(() => {
+    const totalProjects = projects.length
+    const completedProjects = projects.filter(p => p.status === 'completed' || p.status === 'done').length
+    const completionRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0
+
+    // Agrupar projetos por mês (últimos 5 meses)
+    const now = new Date()
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    const barData = []
+
+    for (let i = 4; i >= 0; i--) {
+      const month = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthName = months[month.getMonth()]
+      const isCurrentMonth = i === 0
+
+      // Calcular progresso médio dos projetos criados nesse mês
+      const monthProjects = projects.filter(p => {
+        const createdDate = new Date(p.created_at)
+        return createdDate.getMonth() === month.getMonth() && 
+               createdDate.getFullYear() === month.getFullYear()
+      })
+
+      const avgProgress = monthProjects.length > 0
+        ? monthProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / monthProjects.length
+        : 0
+
+      barData.push({
+        month: monthName,
+        progress: Math.round(avgProgress),
+        active: isCurrentMonth,
+      })
+    }
+
+    return { totalProjects, completionRate, barData }
+  }, [projects])
+
   return (
     <section className={`proj ui-card ${className}`.trim()}>
       <header className="proj__header">
@@ -32,7 +61,7 @@ export default function ProjectOverviewCard({ className = '' }) {
 
         <div className="proj__plotWrapper">
           <div className="proj__plot" aria-hidden="true">
-            {BAR_DATA.map((bar) => (
+            {stats.barData.map((bar) => (
               <div key={bar.month} className="proj__group" data-active={bar.active || undefined}>
                 <span className="proj__bar proj__bar--bg" />
                 <span
@@ -44,7 +73,7 @@ export default function ProjectOverviewCard({ className = '' }) {
           </div>
 
           <div className="proj__months">
-            {BAR_DATA.map((bar) => (
+            {stats.barData.map((bar) => (
               <span key={bar.month}>{bar.month}</span>
             ))}
           </div>
@@ -54,11 +83,11 @@ export default function ProjectOverviewCard({ className = '' }) {
       <footer className="proj__footer">
         <div>
           <p className="proj__label">Total de Projetos</p>
-          <p className="proj__value">12</p>
+          <p className="proj__value">{stats.totalProjects}</p>
         </div>
         <div className="proj__right">
           <p className="proj__label">Taxa de Conclusão</p>
-          <p className="proj__value">85%</p>
+          <p className="proj__value">{stats.completionRate}%</p>
         </div>
       </footer>
     </section>

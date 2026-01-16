@@ -1,51 +1,59 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import './GoalsHabitsCard.css'
 
 const GOAL_FILTERS = ['Mensal', 'Trimestral', 'Semestral', 'Anual']
 
-const HABIT_DATA = {
-  Dia: { current: 86, total: 100, change: 6.2, improved: true },
-  Semana: { current: 72, total: 100, change: 3.8, improved: true },
-  M\u00eas: { current: 68, total: 100, change: -2.4, improved: false },
-}
-
-const GOAL_DATA = {
-  Mensal: {
-    labels: ['Jan', 'Fev', 'Mar', 'Abr'],
-    grid: [true, false, false, true, false, true, false, false, true, false, false, true, false, true, false, false],
-    progress: 72,
-  },
-  Trimestral: {
-    labels: ['T1', 'T2', 'T3', 'T4'],
-    grid: [true, false, false, false, false, true, true, false, false, true, false, false, false, false, true, true],
-    progress: 68,
-  },
-  Semestral: {
-    labels: ['1\u00b0 Sem', '2\u00b0 Sem', '', ''],
-    grid: [true, true, false, false, true, false, true, false, false, true, false, true, false, false, true, false],
-    progress: 75,
-  },
-  Anual: {
-    labels: ['2023', '2024', '2025', '2026'],
-    grid: [true, false, false, true, false, false, true, false, false, false, true, true, false, true, false, true],
-    progress: 82,
-  },
-}
-
-export default function GoalsHabitsCard({ className = '' }) {
+export default function GoalsHabitsCard({ className = '', goals = [], habits = [] }) {
   const [habitFilter] = useState('Dia')
   const [goalFilter, setGoalFilter] = useState('Mensal')
 
-  const habitData = HABIT_DATA[habitFilter]
-  const goalData = GOAL_DATA[goalFilter]
+  const habitData = useMemo(() => {
+    const totalHabits = habits.length
+    const completedToday = habits.filter(h => {
+      const completedDates = JSON.parse(h.completed_dates || '[]')
+      const today = new Date().toISOString().split('T')[0]
+      return completedDates.includes(today)
+    }).length
+
+    const current = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
+    const avgStreak = habits.reduce((sum, h) => sum + (h.current_streak || 0), 0) / (habits.length || 1)
+
+    return {
+      current,
+      total: 100,
+      change: avgStreak > 5 ? 6.2 : avgStreak > 2 ? 3.8 : -2.4,
+      improved: avgStreak > 2,
+    }
+  }, [habits])
+
+  const goalData = useMemo(() => {
+    const now = new Date()
+    const completedGoals = goals.filter(g => g.progress >= 100).length
+    const totalGoals = goals.length
+    const progress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0
+
+    // Grid de 4x4 representando progresso das metas
+    const grid = Array(16).fill(false).map((_, i) => {
+      return i < Math.round((progress / 100) * 16)
+    })
+
+    let labels = ['Jan', 'Fev', 'Mar', 'Abr']
+    if (goalFilter === 'Trimestral') labels = ['T1', 'T2', 'T3', 'T4']
+    else if (goalFilter === 'Semestral') labels = ['1º Sem', '2º Sem', '', '']
+    else if (goalFilter === 'Anual') labels = ['2023', '2024', '2025', '2026']
+
+    return { labels, grid, progress }
+  }, [goals, goalFilter])
 
   const percentage = (habitData.current / habitData.total) * 100
-  const rotation = (percentage / 100) * 270 - 135 // -135° a 135° (270° range)
+  const rotation = (percentage / 100) * 270 - 135
+
   const handleGoalFilterToggle = () => {
     const currentIndex = GOAL_FILTERS.indexOf(goalFilter)
     const nextFilter = GOAL_FILTERS[(currentIndex + 1) % GOAL_FILTERS.length]
     setGoalFilter(nextFilter)
   }
+
   const handleGoalFilterKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()

@@ -1,13 +1,48 @@
+import { useMemo } from 'react'
 import './CalendarCard.css'
 
-const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-const completedDays = new Set([2, 4, 7, 16, 17, 19, 22])
-const importantDays = new Set([13])
-const today = 18
-const monthLabel = 'Agosto'
+const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
-export default function CalendarCard({ className = '' }) {
-  const days = Array.from({ length: 31 }).map((_, i) => i + 1)
+export default function CalendarCard({ className = '', tasks = [] }) {
+  const { days, completedDays, importantDays, today, monthLabel } = useMemo(() => {
+    const now = new Date()
+    const currentDay = now.getDate()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const daysArray = Array.from({ length: daysInMonth }).map((_, i) => i + 1)
+
+    // Dias com tarefas concluídas
+    const completed = new Set()
+    tasks.filter(t => t.status === 'done' || t.status === 'completed').forEach(t => {
+      const date = new Date(t.updated_at)
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        completed.add(date.getDate())
+      }
+    })
+
+    // Dias com tarefas importantes (prioridade alta)
+    const important = new Set()
+    tasks.filter(t => t.priority === 'high' || t.priority === 'Alta').forEach(t => {
+      if (!t.due_date) return
+      const date = new Date(t.due_date)
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        important.add(date.getDate())
+      }
+    })
+
+    return {
+      days: daysArray,
+      completedDays: completed,
+      importantDays: important,
+      today: currentDay,
+      monthLabel: months[currentMonth],
+    }
+  }, [tasks])
 
   const getDayClass = (day) => {
     if (day === today) return 'cal__day cal__day--today'

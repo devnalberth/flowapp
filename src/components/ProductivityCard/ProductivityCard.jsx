@@ -1,42 +1,105 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import './ProductivityCard.css'
 
-const FILTERS = ['Dia', 'Semana', 'M\u00eas']
+const FILTERS = ['Dia', 'Semana', 'Mês']
 
-const DATA_BY_FILTER = {
-  Dia: [
-    { label: '9h', value: 45 },
-    { label: '10h', value: 70 },
-    { label: '11h', value: 85 },
-    { label: '14h', value: 60, active: true },
-    { label: '15h', value: 75 },
-    { label: '16h', value: 55 },
-    { label: '17h', value: 40 },
-  ],
-  Semana: [
-    { label: 'Dom', value: 20 },
-    { label: 'Seg', value: 75 },
-    { label: 'Ter', value: 80 },
-    { label: 'Qua', value: 70, active: true },
-    { label: 'Qui', value: 65 },
-    { label: 'Sex', value: 85 },
-    { label: 'S\u00e1b', value: 30 },
-  ],
-  M\u00eas: [
-    { label: 'Sem 1', value: 60 },
-    { label: 'Sem 2', value: 75 },
-    { label: 'Sem 3', value: 85, active: true },
-    { label: 'Sem 4', value: 70 },
-  ],
-}
+export default function ProductivityCard({ className = '', tasks = [] }) {
+  const [activeFilter, setActiveFilter] = useState('Semana')
 
-export default function ProductivityCard({ className = '' }) {
-  const [activeFilter, setActiveFilter] = useState('Dia')
-  const currentData = DATA_BY_FILTER[activeFilter]
-  const columnCount = currentData.length
+  const chartData = useMemo(() => {
+    const now = new Date()
+    const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'completed')
 
-  const totalHours = activeFilter === 'Dia' ? '9h 30m' : activeFilter === 'Semana' ? '42h 15m' : '168h 45m'
-  const productivity = activeFilter === 'Dia' ? 'Moderado' : activeFilter === 'Semana' ? 'Alto' : 'Excelente'
+    if (activeFilter === 'Dia') {
+      // Últimas 7 horas do dia
+      const hours = []
+      for (let i = 6; i >= 0; i--) {
+        const hour = now.getHours() - i
+        if (hour < 0) continue
+        
+        const hourTasks = completedTasks.filter(t => {
+          const completedDate = new Date(t.updated_at)
+          return completedDate.getHours() === hour &&
+                 completedDate.toDateString() === now.toDateString()
+        }).length
+
+        hours.push({
+          label: `${hour}h`,
+          value: Math.min(hourTasks * 25, 100),
+          active: i === 0,
+        })
+      }
+      return hours.length > 0 ? hours : [{ label: 'Hoje', value: 0, active: true }]
+    }
+
+    if (activeFilter === 'Semana') {
+      // Últimos 7 dias
+      const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+      const weekData = []
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now)
+        date.setDate(date.getDate() - i)
+        date.setHours(0, 0, 0, 0)
+        
+        const dayTasks = completedTasks.filter(t => {
+          const completedDate = new Date(t.updated_at)
+          completedDate.setHours(0, 0, 0, 0)
+          return completedDate.getTime() === date.getTime()
+        }).length
+
+        weekData.push({
+          label: days[date.getDay()],
+          value: Math.min(dayTasks * 20, 100),
+          active: i === 0,
+        })
+      }
+      return weekData
+    }
+
+    // Mês - últimas 4 semanas
+    const weekData = []
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now)
+      weekStart.setDate(weekStart.getDate() - (i * 7))
+      weekStart.setHours(0, 0, 0, 0)
+      
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      weekEnd.setHours(23, 59, 59, 999)
+
+      const weekTasks = completedTasks.filter(t => {
+        const completedDate = new Date(t.updated_at)
+        return completedDate >= weekStart && completedDate <= weekEnd
+      }).length
+
+      weekData.push({
+        label: `Sem ${4 - i}`,
+        value: Math.min(weekTasks * 10, 100),
+        active: i === 0,
+      })
+    }
+    return weekData
+  }, [tasks, activeFilter])
+
+  const stats = useMemo(() => {
+    const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'completed')
+    const totalHours = completedTasks.length * 2 // Estimativa de 2h por tarefa
+    const hours = Math.floor(totalHours)
+    const minutes = Math.round((totalHours - hours) * 60)
+
+    let productivity = 'Baixo'
+    if (completedTasks.length > 20) productivity = 'Excelente'
+    else if (completedTasks.length > 10) productivity = 'Alto'
+    else if (completedTasks.length > 5) productivity = 'Moderado'
+
+    return {
+      totalHours: `${hours}h ${minutes}m`,
+      productivity,
+    }
+  }, [tasks])
+
+  const columnCount = chartData.length
 
   return (
     <section className={`prod ui-card ${className}`.trim()}>
@@ -63,7 +126,7 @@ export default function ProductivityCard({ className = '' }) {
             aria-hidden="true"
             style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
-            {currentData.map((bar) => (
+            {chartData.map((bar) => (
               <div key={bar.label} className="prod__group" data-active={bar.active || undefined}>
                 <span className="prod__bar prod__bar--bg" />
                 <span
@@ -78,7 +141,7 @@ export default function ProductivityCard({ className = '' }) {
             className="prod__labels"
             style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
           >
-            {currentData.map((bar) => (
+            {chartData.map((bar) => (
               <span key={bar.label}>{bar.label}</span>
             ))}
           </div>
@@ -88,11 +151,11 @@ export default function ProductivityCard({ className = '' }) {
       <footer className="prod__footer">
         <div>
           <p className="prod__label">Horas de Trabalho</p>
-          <p className="prod__value">{totalHours}</p>
+          <p className="prod__value">{stats.totalHours}</p>
         </div>
         <div className="prod__right">
           <p className="prod__label">Nível de Produtividade</p>
-          <p className="prod__value">{productivity}</p>
+          <p className="prod__value">{stats.productivity}</p>
         </div>
       </footer>
     </section>
