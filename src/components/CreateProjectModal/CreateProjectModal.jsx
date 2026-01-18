@@ -72,10 +72,6 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
     }
   }, [open])
 
-  if (!open) {
-    return null
-  }
-
   const updateField = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
   }

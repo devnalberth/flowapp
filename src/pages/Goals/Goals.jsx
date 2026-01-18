@@ -379,6 +379,9 @@ export default function Goals({ onNavigate, onLogout, user }) {
         target: payload.target,
         startDate: payload.startDate,
         endDate: payload.endDate,
+        type: payload.type,
+        trimesters: payload.trimesters,
+        trimester_values: payload.trimesterValues,
       })
       setIsGoalModalOpen(false)
     } catch (error) {
@@ -499,19 +502,23 @@ export default function Goals({ onNavigate, onLogout, user }) {
       )}
 
       {/* Modais */}
-      <CreateGoalModal
-        open={isGoalModalOpen}
-        onClose={() => setIsGoalModalOpen(false)}
-        onSubmit={handleGoalSubmit}
-        areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
-      />
+      {isGoalModalOpen && (
+        <CreateGoalModal
+          open={isGoalModalOpen}
+          onClose={() => setIsGoalModalOpen(false)}
+          onSubmit={handleGoalSubmit}
+          areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
+        />
+      )}
 
-      <DreamMapModal
-        open={isDreamModalOpen}
-        onClose={() => setIsDreamModalOpen(false)}
-        onSubmit={handleDreamSubmit}
-        goals={goals}
-      />
+      {isDreamModalOpen && (
+        <DreamMapModal
+          open={isDreamModalOpen}
+          onClose={() => setIsDreamModalOpen(false)}
+          onSubmit={handleDreamSubmit}
+          goals={goals}
+        />
+      )}
     </div>
   )
 }

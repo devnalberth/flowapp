@@ -287,28 +287,34 @@ export default function Projects({ onNavigate, onLogout, user }) {
           </article>
         ))}
       </section>
-      <CreateProjectModal
-        open={isModalOpen}
-        onClose={closeModal}
-        onSubmit={handleSubmitProject}
-        goalOptions={goals}
-      />
-      <CreateTaskModal
-        open={isTaskModalOpen}
-        onClose={closeTaskModal}
-        onSubmit={handleSubmitTask}
-        projectsOptions={projectOptions}
-        goalOptions={TASK_GOAL_OPTIONS}
-        areaOptions={TASK_AREA_OPTIONS}
-        statusOptions={TASK_STATUS_OPTIONS}
-        priorityOptions={TASK_PRIORITY_OPTIONS}
-        initialProject={taskProject}
-      />
-      <ProjectDetailsModal
-        project={selectedProject}
-        open={isDetailsModalOpen}
-        onClose={closeDetailsModal}
-      />
+      {isModalOpen && (
+        <CreateProjectModal
+          open={isModalOpen}
+          onClose={closeModal}
+          onSubmit={handleSubmitProject}
+          goalOptions={goals}
+        />
+      )}
+      {isTaskModalOpen && (
+        <CreateTaskModal
+          open={isTaskModalOpen}
+          onClose={closeTaskModal}
+          onSubmit={handleSubmitTask}
+          projectsOptions={projectOptions}
+          goalOptions={TASK_GOAL_OPTIONS}
+          areaOptions={TASK_AREA_OPTIONS}
+          statusOptions={TASK_STATUS_OPTIONS}
+          priorityOptions={TASK_PRIORITY_OPTIONS}
+          initialProject={taskProject}
+        />
+      )}
+      {isDetailsModalOpen && (
+        <ProjectDetailsModal
+          project={selectedProject}
+          open={isDetailsModalOpen}
+          onClose={closeDetailsModal}
+        />
+      )}
     </div>
   )
 }
