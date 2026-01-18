@@ -22,8 +22,6 @@ export const projectService = {
       status: project.status || 'todo',
       color: project.color || 'ff9500',
       progress: parseInt(project.progress) || 0,
-      start_date: project.startDate || null,
-      end_date: project.endDate || null,
       goal_id: project.goalId || null,
       user_id: userId,
     };
@@ -53,8 +51,6 @@ export const projectService = {
       ...(updates.status !== undefined && { status: updates.status }),
       ...(updates.color !== undefined && { color: updates.color }),
       ...(updates.progress !== undefined && { progress: parseInt(updates.progress) }),
-      ...(updates.startDate !== undefined && { start_date: updates.startDate }),
-      ...(updates.endDate !== undefined && { end_date: updates.endDate }),
       ...(updates.goalId !== undefined && { goal_id: updates.goalId }),
     };
     

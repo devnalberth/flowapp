@@ -20,8 +20,6 @@ const DEFAULT_FORM = {
   status: 'todo',
   color: COLOR_OPTIONS[0].value,
   description: '',
-  startDate: '',
-  endDate: '',
   goalId: '',
 }
 
@@ -154,31 +152,6 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
               <option value="completed">Concluído</option>
             </select>
           </label>
-
-          <div className="createProjectModal__grid">
-            <label className="createProjectModal__field">
-              <span className="createProjectModal__label">Data de início</span>
-              <input
-                type="date"
-                className="createProjectModal__input"
-                name="startDate"
-                value={form.startDate}
-                onChange={updateField('startDate')}
-              />
-            </label>
-
-            <label className="createProjectModal__field">
-              <span className="createProjectModal__label">Prazo para finalizar</span>
-              <input
-                type="date"
-                className="createProjectModal__input"
-                name="endDate"
-                value={form.endDate}
-                min={form.startDate || undefined}
-                onChange={updateField('endDate')}
-              />
-            </label>
-          </div>
 
           <label className="createProjectModal__field">
             <span className="createProjectModal__label">Meta vinculada</span>
