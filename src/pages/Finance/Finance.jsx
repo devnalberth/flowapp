@@ -14,6 +14,8 @@ import {
   Cell,
 } from 'recharts'
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import CreateFinanceModal from '../../components/CreateFinanceModal/CreateFinanceModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 
 import './Finance.css'
 
@@ -71,19 +73,6 @@ const generateInstallmentSchedule = (dateString, count, dueDay) => {
   return installments
 }
 
-const createDefaultForm = (type = 'receita') => ({
-  type,
-  description: '',
-  amount: '',
-  category: CATEGORY_OPTIONS[0].id,
-  date: new Date().toISOString().slice(0, 10),
-  isInstallment: false,
-  totalAmount: '',
-  installmentCount: '2',
-})
-
-const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
-
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
@@ -92,9 +81,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
   const [selectedYear, setSelectedYear] = useState('2025')
 
   const [isTransactionModalOpen, setTransactionModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('receita')
-  const [formData, setFormData] = useState(createDefaultForm())
-  const [editingTransactionId, setEditingTransactionId] = useState(null)
+  const [editingTransaction, setEditingTransaction] = useState(null)
 
   const currentMonthMeta = useMemo(() => MONTHS.find((month) => month.value === selectedMonth), [selectedMonth])
 
@@ -220,76 +207,32 @@ export default function Finance({ user, onNavigate, onLogout }) {
     return series
   }, [finances, selectedYear])
 
-  const selectedCard = null
-
-  const installmentDetails = useMemo(() => {
-    if (!formData.isInstallment) return null
-    const installmentCount = Math.max(2, Number(formData.installmentCount) || 2)
-    const total = parseNumber(formData.totalAmount || formData.amount)
-    if (!total) return null
-    const valuePerInstallment = total / installmentCount
-    return { total, installmentCount, valuePerInstallment }
-  }, [formData])
-
-  const handleOpenTransactionModal = (type = 'receita') => {
+  const handleOpenTransactionModal = () => {
     setTransactionModalOpen(true)
-    setActiveTab(type)
-    setEditingTransactionId(null)
-    setFormData(createDefaultForm(type))
-    setTagDraft('')
+    setEditingTransaction(null)
   }
 
   const handleEditTransaction = (transaction) => {
     setTransactionModalOpen(true)
-    setActiveTab(transaction.type.toLowerCase())
-    setEditingTransactionId(transaction.id)
-    setFormData({
-      ...createDefaultForm(transaction.type.toLowerCase()),
-      description: transaction.description,
-      amount: transaction.amount.toString(),
-      category: transaction.category,
-      date: transaction.date,
-      isInstallment: transaction.isInstallment || false,
-      installmentCount: transaction.installmentCount ? String(transaction.installmentCount) : '2',
-      totalAmount: transaction.installmentTotal ? transaction.installmentTotal.toString() : '',
-    })
+    setEditingTransaction(transaction)
   }
 
   const closeTransactionModal = () => {
     setTransactionModalOpen(false)
-    setEditingTransactionId(null)
-    setFormData(createDefaultForm(activeTab))
+    setEditingTransaction(null)
   }
 
-  const handleFormChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleTransactionSubmit = async (event) => {
-    event.preventDefault()
-    const amount = parseNumber(formData.amount)
-    if (!amount || !formData.description) return
-
-    const payload = {
-      type: activeTab.toUpperCase(),
-      description: formData.description,
-      category: formData.category,
-      date: formData.date,
-      amount,
-      isInstallment: formData.isInstallment || false,
-      installmentCount: formData.isInstallment ? Math.max(1, Number(formData.installmentCount) || 1) : null,
-      installmentTotal: formData.isInstallment && installmentDetails ? installmentDetails.total : null,
-    }
-
+  const handleTransactionSubmit = async (transactionData) => {
     try {
-      if (editingTransactionId) {
-        await updateFinance(editingTransactionId, payload)
+      if (editingTransaction) {
+        await updateFinance(editingTransaction.id, transactionData)
       } else {
-        await addFinance(payload)
+        await addFinance(transactionData)
       }
       closeTransactionModal()
     } catch (error) {
       console.error('Erro ao salvar transação:', error)
+      alert('Erro ao salvar transação: ' + error.message)
     }
   }
 
@@ -468,239 +411,17 @@ export default function Finance({ user, onNavigate, onLogout }) {
       </section>
 
       {isTransactionModalOpen && (
-        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
-          <form className="financeModal" onSubmit={handleTransactionSubmit}>
-            <header>
-              <div>
-                <p>Nova transação</p>
-                <h3>Modal inteligente</h3>
-              </div>
-              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={closeTransactionModal}>
-                Fechar
-              </button>
-            </header>
-
-            <div className="financeModal__tabs">
-              {['receita', 'despesa', 'transferencia'].map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={activeTab === tab ? 'is-active' : ''}
-                  onClick={() => {
-                    setActiveTab(tab)
-                    handleFormChange('type', tab)
-                  }}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <section className="financeModal__section">
-              <h4>Detalhes</h4>
-              <div className="financeModal__grid">
-                <label>
-                  <span>Valor</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={formData.amount}
-                    onChange={(event) => handleFormChange('amount', event.target.value)}
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Descrição</span>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(event) => handleFormChange('description', event.target.value)}
-                    placeholder="Ex: Pagamento SaaS"
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Categoria</span>
-                  <select value={formData.category} onChange={(event) => handleFormChange('category', event.target.value)}>
-                    {CATEGORY_OPTIONS.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Meta financeira (opcional)</span>
-                  <select value={formData.goalId} onChange={(event) => handleFormChange('goalId', event.target.value)}>
-                    <option value="">Nenhuma</option>
-                    {GOALS.map((goal) => (
-                      <option key={goal.id} value={goal.id}>
-                        {goal.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Data</span>
-                  <input type="date" value={formData.date} onChange={(event) => handleFormChange('date', event.target.value)} />
-                </label>
-                <label className="checkboxField">
-                  <input
-                    type="checkbox"
-                    checked={formData.recurring}
-                    onChange={(event) => handleFormChange('recurring', event.target.checked)}
-                  />
-                  <span>Transação recorrente</span>
-                </label>
-                <label>
-                  <span>Status</span>
-                  <select value={formData.status} onChange={(event) => handleFormChange('status', event.target.value)}>
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Conta</span>
-                  <input
-                    type="text"
-                    value={formData.account}
-                    onChange={(event) => handleFormChange('account', event.target.value)}
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="financeModal__section">
-              <h4>Tags & notas</h4>
-              <div className="financeModal__tags">
-                <div className="tagInput">
-                  <input
-                    type="text"
-                    value={tagDraft}
-                    onChange={(event) => setTagDraft(event.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    placeholder="Adicionar tag e pressione Enter"
-                  />
-                  <button type="button" onClick={handleTagAdd}>
-                    Adicionar
-                  </button>
-                </div>
-                {formData.tags.length ? (
-                  <div className="tagChips">
-                    {formData.tags.map((tag) => (
-                      <span key={tag} onClick={() => handleTagRemove(tag)}>
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="tagSuggestions">
-                  {TAG_SUGGESTIONS.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={formData.tags.includes(tag) ? 'selected' : ''}
-                      onClick={() => {
-                        if (!formData.tags.includes(tag)) {
-                          setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
-                        }
-                      }}
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="financeModal__section">
-              <h4>Forma de pagamento</h4>
-              <div className="paymentMethods">
-                {PAYMENT_METHODS.map((method) => (
-                  <button
-                    key={method.id}
-                    type="button"
-                    className={formData.paymentMethod === method.id ? 'is-active' : ''}
-                    onClick={() => handleFormChange('paymentMethod', method.id)}
-                  >
-                    <strong>{method.label}</strong>
-                    <small>{method.helper}</small>
-                  </button>
-                ))}
-              </div>
-
-              {formData.paymentMethod === 'credit' && (
-                <div className="creditFields">
-                  <label>
-                    <span>Qual cartão?</span>
-                    <select value={formData.cardId} onChange={(event) => handleFormChange('cardId', event.target.value)} required>
-                      <option value="">Selecione</option>
-                      {cards.map((card) => (
-                        <option key={card.id} value={card.id}>
-                          {card.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="checkboxField">
-                    <input
-                      type="checkbox"
-                      checked={formData.isInstallment}
-                      onChange={(event) => handleFormChange('isInstallment', event.target.checked)}
-                    />
-                    <span>Compra parcelada?</span>
-                  </label>
-
-                  {formData.isInstallment && (
-                    <div className="installmentGrid">
-                      <label>
-                        <span>Valor total da compra</span>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={formData.totalAmount}
-                          onChange={(event) => handleFormChange('totalAmount', event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        <span>Número de parcelas</span>
-                        <input
-                          type="number"
-                          min="1"
-                          value={formData.installmentCount}
-                          onChange={(event) => handleFormChange('installmentCount', event.target.value)}
-                        />
-                      </label>
-                    </div>
-                  )}
-
-                  {installmentDetails && (
-                    <div className="financeModal__summary">
-                      <p>
-                        Serão criadas <strong>{installmentDetails.installmentCount} parcelas</strong> de{' '}
-                        <strong>{formatCurrency(installmentDetails.valuePerInstallment)}</strong>
-                      </p>
-                      <small>Projeção: {installmentDetails.schedule.join(' · ')}</small>
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
-
-            <footer className="financeModal__footer">
-              <button type="button" className="btn btn--ghostInverse" onClick={closeTransactionModal}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn--primary">
-                Salvar transação
-              </button>
-            </footer>
-          </form>
-        </div>
+        <CreateFinanceModal
+          onClose={closeTransactionModal}
+          onSubmit={handleTransactionSubmit}
+        />
       )}
+
+      <FloatingCreateButton
+        label="Nova transação"
+        caption="Adicionar"
+        onClick={handleOpenTransactionModal}
+      />
       </div>
     </div>
   )

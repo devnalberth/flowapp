@@ -1,216 +1,299 @@
-:root {
-  --modal-bg: rgba(16, 16, 22, 0.5);
-  --panel-bg: #ffffff;
-  --panel-border: rgba(0, 0, 0, 0.1);
-  --panel-radius: 20px;
-  --surface-elev: 0 18px 60px rgba(0, 0, 0, 0.15);
-}
-
-.createFinanceModal {
+.finance-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Sora', sans-serif;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
 }
 
-.createFinanceModal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--modal-bg);
-  backdrop-filter: blur(6px);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.createFinanceModal__panel {
-  position: relative;
-  width: min(520px, calc(100vw - 32px));
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--panel-radius);
-  padding: 32px;
-  box-shadow: var(--surface-elev);
-  color: #0d0d12;
+.finance-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.finance-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+}
+
+.finance-modal__header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.finance-modal__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.finance-modal__close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.finance-modal__form {
+  padding: 24px;
+}
+
+.finance-modal__field {
+  margin-bottom: 20px;
+}
+
+.finance-modal__field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.finance-modal__field input,
+.finance-modal__field select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.finance-modal__field input:focus,
+.finance-modal__field select:focus {
+  outline: none;
+  border-color: #ff4800;
+}
+
+.finance-modal__types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.finance-modal__type {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.createFinanceModal__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+.finance-modal__type:hover {
+  border-color: var(--type-color);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.finance-modal__type.active {
+  border-color: var(--type-color);
+  background: var(--type-color);
+  color: #ffffff;
+}
+
+.finance-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.createFinanceModal__eyebrow {
-  text-transform: uppercase;
-  color: #ff4800;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-}
-
-.createFinanceModal__header h3 {
-  margin: 4px 0 0;
-  font-size: 1.6rem;
-}
-
-.createFinanceModal__close {
-  border: 1px solid var(--panel-border);
-  background: transparent;
-  color: inherit;
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: border-color 200ms ease;
-}
-
-.createFinanceModal__close:hover {
-  border-color: #8b8da2;
-}
-
-.createFinanceModal__form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.createFinanceModal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: #5b5a64;
-}
-
-.createFinanceModal__field > span {
-  color: #0d0d12;
-  font-weight: 600;
-}
-
-.createFinanceModal__field input,
-.createFinanceModal__field select {
-  background: #f9f9fb;
-  border: 1px solid #e0e0e6;
-  border-radius: 14px;
-  padding: 14px 16px;
-  color: inherit;
-  font: inherit;
-  transition: border-color 200ms ease, background 200ms ease;
-}
-
-.createFinanceModal__field input:focus,
-.createFinanceModal__field select:focus {
-  outline: none;
-  border-color: #ff4800;
-  background: rgba(255, 72, 0, 0.06);
-}
-
-.createFinanceModal__typeGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.typeChip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: #f9f9fb;
-  border: 1px solid #e0e0e6;
-  border-radius: 14px;
-  color: #5b5a64;
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 200ms ease;
-}
-
-.typeChip:hover {
-  border-color: #b0b0b8;
-  background: #ffffff;
-}
-
-.typeChip--receita.typeChip--active {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-}
-
-.typeChip--despesa.typeChip--active {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-}
-
-.typeChip__icon {
-  font-size: 1.3rem;
-}
-
-.createFinanceModal__valueInput {
+.finance-modal__amount-input {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.createFinanceModal__currency {
+.finance-modal__amount-input span {
   position: absolute;
   left: 16px;
-  color: #5b5a64;
   font-weight: 600;
-  pointer-events: none;
+  color: #6b7280;
 }
 
-.createFinanceModal__valueInput input {
+.finance-modal__amount-input input {
   padding-left: 48px;
-  font-size: 1.1rem;
   font-weight: 600;
 }
 
-.createFinanceModal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
+.finance-modal__payment-methods {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-.btn {
-  border-radius: 14px;
-  padding: 12px 18px;
-  font-weight: 600;
-  border: none;
+.finance-modal__payment-method {
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition: all 0.2s;
 }
 
-.btn:active {
-  transform: translateY(1px);
+.finance-modal__payment-method:hover {
+  border-color: #ff4800;
+  background: #fff5f0;
 }
 
-.btn--ghost {
-  background: transparent;
-  color: #5b5a64;
-  border: 1px solid #d0d0d8;
-}
-
-.btn--ghost:hover {
-  border-color: #0d0d12;
-  background: #f9f9fb;
-}
-
-.btn--primary {
-  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+.finance-modal__payment-method.active {
+  border-color: #ff4800;
+  background: #ff4800;
   color: #ffffff;
-  box-shadow: 0 12px 30px rgba(255, 72, 0, 0.32);
 }
 
-.btn--primary:hover {
-  box-shadow: 0 16px 36px rgba(255, 72, 0, 0.4);
+.finance-modal__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 12px 0;
+}
+
+.finance-modal__checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #ff4800;
+}
+
+.finance-modal__checkbox span {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.finance-modal__installment {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: -8px;
+}
+
+.finance-modal__installment-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.finance-modal__installment-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.finance-modal__installment-info strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+.finance-modal__installment-total {
+  margin-top: 4px;
+  font-size: 12px !important;
+  color: #9ca3af !important;
+}
+
+.finance-modal__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.finance-modal__cancel,
+.finance-modal__submit {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.finance-modal__cancel {
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.finance-modal__cancel:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.finance-modal__submit {
+  border: none;
+  background: #ff4800;
+  color: #ffffff;
+}
+
+.finance-modal__submit:hover {
+  background: #e63f00;
+}
+
+.finance-modal__submit:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
 }

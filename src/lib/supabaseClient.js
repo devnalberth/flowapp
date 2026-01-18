@@ -34,6 +34,7 @@ const createAuthClient = (storage, storageKey) =>
   createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
+      autoRefreshToken: true,
       detectSessionInUrl: true,
       storage,
       storageKey,

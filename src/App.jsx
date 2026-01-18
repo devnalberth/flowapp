@@ -57,17 +57,10 @@ function App() {
 
   useEffect(() => {
     let isMounted = true
-    setIsAuthReady(false)
 
     const bootstrap = async () => {
       try {
-        // Timeout de 3 segundos para getSession
-        const sessionPromise = authClient.auth.getSession()
-        const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve({ data: { session: null } }), 3000)
-        })
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
+        const { data: { session } } = await authClient.auth.getSession()
 
         if (!isMounted) return
 
@@ -89,6 +82,8 @@ function App() {
       }
     }
 
+    // Marcar como pronto imediatamente para evitar tela de loading
+    setIsAuthReady(true)
     bootstrap()
 
     const {
@@ -148,9 +143,13 @@ function App() {
       syncUser(data.user)
       setIsAuthenticated(true)
       setAuthInfoMessage('')
+      
+      // Salvar preferência de autenticação
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(AUTH_STORAGE_KEY, targetPref)
       }
+      
+      // Atualizar cliente se necessário
       if (authPreference !== targetPref) {
         setAuthPreference(targetPref)
         setAuthClient(client)
@@ -171,14 +170,6 @@ function App() {
     setAuthInfoMessage(message ?? 'Senha atualizada com sucesso. Faça login novamente.')
     replacePath('/')
     setIsAuthenticated(false)
-  }
-
-  if (!isAuthReady) {
-    return (
-      <div className="app__splash">
-        <p>Carregando workspace...</p>
-      </div>
-    )
   }
 
   if (currentPath === '/recuperar-senha') {

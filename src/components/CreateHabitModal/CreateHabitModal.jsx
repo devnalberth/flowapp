@@ -18,13 +18,13 @@ const FREQUENCY_OPTIONS = [
 ]
 
 const WEEKDAYS = [
-  { value: 'sunday', label: 'Dom' },
-  { value: 'monday', label: 'Seg' },
-  { value: 'tuesday', label: 'Ter' },
-  { value: 'wednesday', label: 'Qua' },
-  { value: 'thursday', label: 'Qui' },
-  { value: 'friday', label: 'Sex' },
-  { value: 'saturday', label: 'Sáb' },
+  { value: 0, label: 'Dom', name: 'Domingo' },
+  { value: 1, label: 'Seg', name: 'Segunda' },
+  { value: 2, label: 'Ter', name: 'Terça' },
+  { value: 3, label: 'Qua', name: 'Quarta' },
+  { value: 4, label: 'Qui', name: 'Quinta' },
+  { value: 5, label: 'Sex', name: 'Sexta' },
+  { value: 6, label: 'Sáb', name: 'Sábado' },
 ]
 
 export default function CreateHabitModal({ open, onClose, onSubmit }) {

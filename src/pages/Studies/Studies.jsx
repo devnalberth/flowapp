@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 
 import './Studies.css'
 
@@ -47,12 +49,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const [expandedModules, setExpandedModules] = useState({})
   const [newModuleTitle, setNewModuleTitle] = useState('')
   const [newLessonInputs, setNewLessonInputs] = useState({})
-  const [formState, setFormState] = useState({
-    title: '',
-    type: 'COURSE',
-    status: 'NOT_STARTED',
-    coverUrl: '',
-  })
 
   const activeStudy = useMemo(() => studies.find((study) => study.id === activeStudyId) ?? null, [studies, activeStudyId])
 
@@ -64,27 +60,13 @@ export default function Studies({ user, onNavigate, onLogout }) {
     })
   }, [studies, statusFilter, typeFilter])
 
-  const statusOptions = statusOptionsByType[formState.type] ?? statusOptionsByType.COURSE
-
   const handleOpenModal = () => {
-    setFormState({
-      title: '',
-      type: 'COURSE',
-      status: 'NOT_STARTED',
-      coverUrl: '',
-    })
     setModalOpen(true)
   }
 
-  const handleCreateStudy = async (event) => {
-    event.preventDefault()
+  const handleCreateStudy = async (studyData) => {
     try {
-      await addStudy({
-        title: formState.title || 'Novo estudo',
-        type: formState.type,
-        status: formState.status,
-        coverUrl: formState.coverUrl,
-      })
+      await addStudy(studyData)
       setModalOpen(false)
     } catch (error) {
       console.error('Error creating study:', error)
@@ -307,83 +289,18 @@ export default function Studies({ user, onNavigate, onLogout }) {
         </section>
       ) : null}
 
-      {isModalOpen ? (
-        <div className="studyModal" role="dialog" aria-modal="true">
-          <div className="studyModal__content">
-            <header>
-              <div>
-                <p className="txt-pill">Novo estudo</p>
-                <h2>Cadastrar estudo</h2>
-                <p>Organize cursos, livros e faculdade em um único lugar.</p>
-              </div>
-              <button type="button" onClick={() => setModalOpen(false)} aria-label="Fechar">
-                ✕
-              </button>
-            </header>
-            <form onSubmit={handleCreateStudy}>
-              <div className="studyModal__upload">
-                <label htmlFor="coverUpload">Imagem de capa</label>
-                <input
-                  id="coverUpload"
-                  type="url"
-                  placeholder="Cole uma URL da capa (ou arraste um link)"
-                  value={formState.coverUrl}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, coverUrl: event.target.value }))}
-                />
-              </div>
-              <div className="studyModal__grid">
-                <label>
-                  Nome
-                  <input
-                    type="text"
-                    placeholder="Ex: React Mastery"
-                    value={formState.title}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Tipo
-                  <select
-                    value={formState.type}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        type: event.target.value,
-                        status: statusOptionsByType[event.target.value][0],
-                      }))
-                    }
-                  >
-                    <option value="COURSE">Curso Online</option>
-                    <option value="UNIVERSITY">Faculdade</option>
-                    <option value="BOOK">Livro</option>
-                  </select>
-                </label>
-                <label>
-                  Status
-                  <select
-                    value={formState.status}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value }))}
-                  >
-                    {statusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {statusLabelMap[status]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="studyModal__actions">
-                <button type="button" className="secondary" onClick={() => setModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="primary">
-                  Salvar estudo
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+      {isModalOpen && (
+        <CreateStudyModal
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleCreateStudy}
+        />
+      )}
+
+      <FloatingCreateButton
+        label="Novo estudo"
+        caption="Criar estudo"
+        onClick={handleOpenModal}
+      />
       </div>
     </div>
   )

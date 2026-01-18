@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import { useApp } from '../../context/AppContext.jsx'
+import CreateHabitModal from '../../components/CreateHabitModal/CreateHabitModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { 
   Calendar, 
   BarChart3, 
@@ -209,7 +211,6 @@ export default function Habits({ user, onNavigate, onLogout }) {
       addHabit({
         ...habitData,
         completions: {},
-        streak: 0,
       })
     }
     setShowModal(false)
@@ -224,113 +225,21 @@ export default function Habits({ user, onNavigate, onLogout }) {
     }
   }
 
-  // Modal de adicionar/editar hábito
-  const HabitModal = () => {
-    const [formData, setFormData] = useState(editingHabit || {
-      label: '',
-      focus: '',
-      category: 'health',
-      iconId: 'sparkles',
-    })
-
-    const handleSubmit = (e) => {
-      e.preventDefault()
-      if (!formData.label.trim()) return
-      handleSaveHabit(formData)
-    }
-
-    if (!showModal) return null
-
-    return (
-      <div className="modalOverlay" onClick={() => setShowModal(false)}>
-        <div className="modalContent" onClick={(e) => e.stopPropagation()}>
-          <div className="modalHeader">
-            <h3>{editingHabit ? 'Editar Hábito' : 'Novo Hábito'}</h3>
-            <button onClick={() => setShowModal(false)} className="modalClose">
-              <X size={20} />
-            </button>
-          </div>
-          <form onSubmit={handleSubmit} className="modalForm">
-            <div className="formGroup">
-              <label>Nome do hábito</label>
-              <input
-                type="text"
-                value={formData.label}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                placeholder="Ex: Meditação matinal"
-                required
-              />
-            </div>
-            <div className="formGroup">
-              <label>Contexto/Horário</label>
-              <input
-                type="text"
-                value={formData.focus}
-                onChange={(e) => setFormData({ ...formData, focus: e.target.value })}
-                placeholder="Ex: Manhã, Noite, Corpo..."
-              />
-            </div>
-            <div className="formGroup">
-              <label>Categoria</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                {CATEGORIES.filter(c => c.id !== 'all').map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="formGroup">
-              <label>Ícone</label>
-              <div className="iconSelector">
-                {ICON_OPTIONS.map(opt => {
-                  const IconComp = opt.icon
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      className={`iconOption ${formData.iconId === opt.id ? 'iconOption--active' : ''}`}
-                      onClick={() => setFormData({ ...formData, iconId: opt.id })}
-                    >
-                      <IconComp size={24} />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div className="modalActions">
-              <div className="modalActions__left">
-                {editingHabit && (
-                  <button 
-                    type="button" 
-                    onClick={() => handleDeleteHabit(editingHabit.id)} 
-                    className="btnDanger"
-                  >
-                    <Trash2 size={16} strokeWidth={2} />
-                    Excluir
-                  </button>
-                )}
-              </div>
-              <div className="modalActions__right">
-                <button type="button" onClick={() => setShowModal(false)} className="btnSecondary">
-                  Cancelar
-                </button>
-                <button type="submit" className="btnPrimary">
-                  {editingHabit ? 'Salvar' : 'Criar Hábito'}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="habitsPage">
       <TopNav user={user} active="Hábitos" onNavigate={onNavigate} onLogout={onLogout} />
-      <HabitModal />
+      
+      {showModal && (
+        <CreateHabitModal
+          habit={editingHabit}
+          onClose={() => {
+            setShowModal(false)
+            setEditingHabit(null)
+          }}
+          onSubmit={handleSaveHabit}
+          onDelete={editingHabit ? () => handleDeleteHabit(editingHabit.id) : undefined}
+        />
+      )}
 
       <div className="habitsWrapper">
         {/* Filtros e Controles */}
@@ -507,6 +416,12 @@ export default function Habits({ user, onNavigate, onLogout }) {
           </div>
         )}
       </section>
+
+      <FloatingCreateButton
+        label="Novo hábito"
+        caption="Criar hábito"
+        onClick={handleAddHabit}
+      />
       </div>
     </div>
   )
