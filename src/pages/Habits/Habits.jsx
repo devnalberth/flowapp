@@ -204,17 +204,22 @@ export default function Habits({ user, onNavigate, onLogout }) {
     setShowModal(true)
   }
 
-  const handleSaveHabit = (habitData) => {
-    if (editingHabit) {
-      updateHabit(editingHabit.id, habitData)
-    } else {
-      addHabit({
-        ...habitData,
-        completions: {},
-      })
+  const handleSaveHabit = async (habitData) => {
+    try {
+      if (editingHabit) {
+        await updateHabit(editingHabit.id, habitData)
+      } else {
+        await addHabit({
+          ...habitData,
+          completions: {},
+        })
+      }
+      setShowModal(false)
+      setEditingHabit(null)
+    } catch (error) {
+      console.error('Erro ao salvar hábito:', error)
+      alert('Erro ao salvar hábito: ' + error.message)
     }
-    setShowModal(false)
-    setEditingHabit(null)
   }
 
   const handleDeleteHabit = (habitId) => {

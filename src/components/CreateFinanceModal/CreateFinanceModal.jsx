@@ -39,7 +39,7 @@ const PAYMENT_METHODS = [
   { id: 'credito', label: 'Crédito' },
 ]
 
-export default function CreateFinanceModal({ isOpen, onClose, onSubmit }) {
+export default function CreateFinanceModal({ onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     type: 'DESPESA',
     description: '',
@@ -51,8 +51,6 @@ export default function CreateFinanceModal({ isOpen, onClose, onSubmit }) {
     isInstallment: false,
     installmentCount: 2,
   })
-
-  if (!isOpen) return null
 
   const handleSubmit = (e) => {
     e.preventDefault()

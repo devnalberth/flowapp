@@ -135,7 +135,7 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
                   key={category.id}
                   type="button"
                   className={`categoryChip ${formData.category === category.id ? 'categoryChip--active' : ''}`}
-                  onClick={() => setForm((prev) => ({ ...prev, category: category.id }))}
+                  onClick={() => setFormData((prev) => ({ ...prev, category: category.id }))}
                 >
                   <span className="categoryChip__icon">{category.icon}</span>
                   <span>{category.label}</span>
