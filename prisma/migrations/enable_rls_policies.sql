@@ -8,40 +8,40 @@
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own data" ON public.users
-    FOR SELECT USING (auth.uid()::text = id);
+    FOR SELECT USING (auth.uid() = id::uuid);
 
 CREATE POLICY "Users can update their own data" ON public.users
-    FOR UPDATE USING (auth.uid()::text = id);
+    FOR UPDATE USING (auth.uid() = id::uuid);
 
 -- ==================== FINANCE_TRANSACTIONS ====================
 ALTER TABLE public.finance_transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own transactions" ON public.finance_transactions
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own transactions" ON public.finance_transactions
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own transactions" ON public.finance_transactions
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own transactions" ON public.finance_transactions
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== STUDY_ITEMS ====================
 ALTER TABLE public.study_items ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own study items" ON public.study_items
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own study items" ON public.study_items
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own study items" ON public.study_items
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own study items" ON public.study_items
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== STUDY_MODULES ====================
 ALTER TABLE public.study_modules ENABLE ROW LEVEL SECURITY;
@@ -51,7 +51,7 @@ CREATE POLICY "Users can view study modules" ON public.study_modules
         EXISTS (
             SELECT 1 FROM public.study_items
             WHERE study_items.id = study_modules.study_item_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -60,7 +60,7 @@ CREATE POLICY "Users can insert study modules" ON public.study_modules
         EXISTS (
             SELECT 1 FROM public.study_items
             WHERE study_items.id = study_modules.study_item_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -69,7 +69,7 @@ CREATE POLICY "Users can update study modules" ON public.study_modules
         EXISTS (
             SELECT 1 FROM public.study_items
             WHERE study_items.id = study_modules.study_item_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -78,7 +78,7 @@ CREATE POLICY "Users can delete study modules" ON public.study_modules
         EXISTS (
             SELECT 1 FROM public.study_items
             WHERE study_items.id = study_modules.study_item_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -91,7 +91,7 @@ CREATE POLICY "Users can view study lessons" ON public.study_lessons
             SELECT 1 FROM public.study_modules
             JOIN public.study_items ON study_items.id = study_modules.study_item_id
             WHERE study_modules.id = study_lessons.module_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -101,7 +101,7 @@ CREATE POLICY "Users can insert study lessons" ON public.study_lessons
             SELECT 1 FROM public.study_modules
             JOIN public.study_items ON study_items.id = study_modules.study_item_id
             WHERE study_modules.id = study_lessons.module_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -111,7 +111,7 @@ CREATE POLICY "Users can update study lessons" ON public.study_lessons
             SELECT 1 FROM public.study_modules
             JOIN public.study_items ON study_items.id = study_modules.study_item_id
             WHERE study_modules.id = study_lessons.module_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -121,7 +121,7 @@ CREATE POLICY "Users can delete study lessons" ON public.study_lessons
             SELECT 1 FROM public.study_modules
             JOIN public.study_items ON study_items.id = study_modules.study_item_id
             WHERE study_modules.id = study_lessons.module_id
-            AND study_items.user_id = auth.uid()::text
+            AND study_items.user_id::uuid = auth.uid()
         )
     );
 
@@ -129,61 +129,61 @@ CREATE POLICY "Users can delete study lessons" ON public.study_lessons
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own projects" ON public.projects
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own projects" ON public.projects
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own projects" ON public.projects
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own projects" ON public.projects
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== TASKS ====================
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own tasks" ON public.tasks
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own tasks" ON public.tasks
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own tasks" ON public.tasks
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own tasks" ON public.tasks
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== GOALS ====================
 ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own goals" ON public.goals
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own goals" ON public.goals
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own goals" ON public.goals
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own goals" ON public.goals
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== HABITS ====================
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own habits" ON public.habits
-    FOR SELECT USING (auth.uid()::text = user_id);
+    FOR SELECT USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can insert their own habits" ON public.habits
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can update their own habits" ON public.habits
-    FOR UPDATE USING (auth.uid()::text = user_id);
+    FOR UPDATE USING (auth.uid() = user_id::uuid);
 
 CREATE POLICY "Users can delete their own habits" ON public.habits
-    FOR DELETE USING (auth.uid()::text = user_id);
+    FOR DELETE USING (auth.uid() = user_id::uuid);
 
 -- ==================== DREAM_MAPS (se existir) ====================
 -- Adicionar RLS para dream_maps também
@@ -193,16 +193,16 @@ BEGIN
         ALTER TABLE public.dream_maps ENABLE ROW LEVEL SECURITY;
         
         CREATE POLICY "Users can view their own dream maps" ON public.dream_maps
-            FOR SELECT USING (auth.uid()::text = user_id);
+            FOR SELECT USING (auth.uid() = user_id::uuid);
         
         CREATE POLICY "Users can insert their own dream maps" ON public.dream_maps
-            FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+            FOR INSERT WITH CHECK (auth.uid() = user_id::uuid);
         
         CREATE POLICY "Users can update their own dream maps" ON public.dream_maps
-            FOR UPDATE USING (auth.uid()::text = user_id);
+            FOR UPDATE USING (auth.uid() = user_id::uuid);
         
         CREATE POLICY "Users can delete their own dream maps" ON public.dream_maps
-            FOR DELETE USING (auth.uid()::text = user_id);
+            FOR DELETE USING (auth.uid() = user_id::uuid);
     END IF;
 END $$;
 
