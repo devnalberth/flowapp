@@ -22,7 +22,6 @@ export const projectService = {
       status: project.status || 'todo',
       color: project.color || 'ff9500',
       progress: parseInt(project.progress) || 0,
-      goal_id: project.goalId || null,
       user_id: userId,
     };
     
@@ -51,7 +50,6 @@ export const projectService = {
       ...(updates.status !== undefined && { status: updates.status }),
       ...(updates.color !== undefined && { color: updates.color }),
       ...(updates.progress !== undefined && { progress: parseInt(updates.progress) }),
-      ...(updates.goalId !== undefined && { goal_id: updates.goalId }),
     };
     
     console.log('Updating project:', projectId, updateData);

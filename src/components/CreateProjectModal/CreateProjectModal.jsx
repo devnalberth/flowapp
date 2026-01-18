@@ -153,22 +153,7 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
             </select>
           </label>
 
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Meta vinculada</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
-              name="goalId"
-              value={form.goalId}
-              onChange={updateField('goalId')}
-            >
-              <option value="">Sem vínculo</option>
-              {goalOptions.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.title}
-                </option>
-              ))}
-            </select>
-          </label>
+
 
           <label className="createProjectModal__field">
             <span className="createProjectModal__label">Descrição do projeto</span>
