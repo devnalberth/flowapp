@@ -2,10 +2,10 @@ const { error } = await supabase
   .from('goals')
   .insert([
     {
-      // Certifique-se de que todos os campos obrigatórios estão presentes e corretos
       title: goal.title,
-      deadline: isValidDate(goal.deadline) ? goal.deadline : null,
-      // ...outros campos...
+      // Remova ou ajuste 'end_date' se não existir
+      // deadline: goal.deadline, // use o nome correto da coluna se existir
+      // ...existing code...
     }
   ]);
 if (error) {

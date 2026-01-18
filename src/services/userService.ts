@@ -6,8 +6,9 @@ async function createUser(userData) {
     .eq('id', userData.id)
     .single();
   if (existingUser) {
-    throw new Error('User already exists');
+    // Trate o erro de usuário já existente
+    throw new Error(`User already exists: ${userData.id}`);
   }
-  // ...criação do usuário...
+  // ...existing code para criar usuário...
 }
 ```
