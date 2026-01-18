@@ -42,6 +42,55 @@ const ICON_OPTIONS = [
   { id: 'book', icon: Book, label: 'Book' },
 ]
 
+// Matriz do mês para visualização mensal
+const MONTH_MATRIX = [
+  { label: 'Semana 1', days: [
+    { day: 1, inMonth: true, score: 0.8 },
+    { day: 2, inMonth: true, score: 0.6 },
+    { day: 3, inMonth: true, score: 0.9 },
+    { day: 4, inMonth: true, score: 0.7 },
+    { day: 5, inMonth: true, score: 0.85 },
+    { day: 6, inMonth: true, score: 0.5 },
+    { day: 7, inMonth: true, score: 0.3 },
+  ]},
+  { label: 'Semana 2', days: [
+    { day: 8, inMonth: true, score: 0.75 },
+    { day: 9, inMonth: true, score: 0.9 },
+    { day: 10, inMonth: true, score: 0.85 },
+    { day: 11, inMonth: true, score: 0.7 },
+    { day: 12, inMonth: true, score: 0.65 },
+    { day: 13, inMonth: true, score: 0.8 },
+    { day: 14, inMonth: true, score: 0.4 },
+  ]},
+  { label: 'Semana 3', days: [
+    { day: 15, inMonth: true, score: 0.9 },
+    { day: 16, inMonth: true, score: 0.85 },
+    { day: 17, inMonth: true, score: 0.7 },
+    { day: 18, inMonth: true, score: 0.75 },
+    { day: 19, inMonth: true, score: 0.8 },
+    { day: 20, inMonth: true, score: 0.6 },
+    { day: 21, inMonth: true, score: 0.5 },
+  ]},
+  { label: 'Semana 4', days: [
+    { day: 22, inMonth: true, score: 0.85 },
+    { day: 23, inMonth: true, score: 0.9 },
+    { day: 24, inMonth: true, score: 0.75 },
+    { day: 25, inMonth: true, score: 0.8 },
+    { day: 26, inMonth: true, score: 0.7 },
+    { day: 27, inMonth: true, score: 0.65 },
+    { day: 28, inMonth: true, score: 0.6 },
+  ]},
+  { label: 'Semana 5', days: [
+    { day: 29, inMonth: true, score: 0.8 },
+    { day: 30, inMonth: true, score: 0.75 },
+    { day: 1, inMonth: false, score: 0 },
+    { day: 2, inMonth: false, score: 0 },
+    { day: 3, inMonth: false, score: 0 },
+    { day: 4, inMonth: false, score: 0 },
+    { day: 5, inMonth: false, score: 0 },
+  ]},
+]
+
 const INITIAL_HABITS = [
   { id: 'gratidao', iconId: 'sparkles', label: 'Gratidão', focus: 'Manhã', category: 'mindfulness' },
   { id: 'treino', iconId: 'dumbbell', label: 'Treino', focus: 'Corpo', category: 'health' },

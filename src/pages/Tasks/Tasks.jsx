@@ -705,16 +705,18 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         onClick={() => setTaskModalOpen(true)}
       />
 
-      <CreateTaskModal
-        open={isTaskModalOpen}
-        onClose={() => setTaskModalOpen(false)}
-        onSubmit={handleTaskModalSubmit}
-        projectsOptions={projectOptions}
-        goalOptions={[]}
-        areaOptions={[]}
-        statusOptions={TASK_MODAL_STATUS}
-        priorityOptions={TASK_MODAL_PRIORITY}
-      />
+      {isTaskModalOpen && (
+        <CreateTaskModal
+          open={isTaskModalOpen}
+          onClose={() => setTaskModalOpen(false)}
+          onSubmit={handleTaskModalSubmit}
+          projectsOptions={projectOptions}
+          goalOptions={[]}
+          areaOptions={[]}
+          statusOptions={TASK_MODAL_STATUS}
+          priorityOptions={TASK_MODAL_PRIORITY}
+        />
+      )}
 
       <PomodoroConfigModal
         show={showPomodoroConfig}
