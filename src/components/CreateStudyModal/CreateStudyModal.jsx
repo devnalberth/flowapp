@@ -8,14 +8,12 @@ const STUDY_TYPES = [
   { id: 'BOOK', label: 'Livro', icon: Book },
 ]
 
-export default function CreateStudyModal({ isOpen, onClose, onSubmit }) {
+export default function CreateStudyModal({ onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     title: '',
     type: 'COURSE',
     coverUrl: '',
   })
-
-  if (!isOpen) return null
 
   const handleSubmit = (e) => {
     e.preventDefault()

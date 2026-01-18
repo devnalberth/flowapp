@@ -27,8 +27,8 @@ const WEEKDAYS = [
   { value: 6, label: 'Sáb', name: 'Sábado' },
 ]
 
-export default function CreateHabitModal({ open, onClose, onSubmit }) {
-  const [form, setForm] = useState({
+export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete }) {
+  const [formData, setFormData] = useState({
     label: '',
     category: HABIT_CATEGORIES[0].id,
     description: '',
@@ -38,11 +38,22 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
   })
   const labelRef = useRef(null)
 
-  const charCount = useMemo(() => `${form.description.length}/${DESCRIPTION_LIMIT}`, [form.description.length])
+  const charCount = useMemo(() => `${formData.description.length}/${DESCRIPTION_LIMIT}`, [formData.description.length])
 
   useEffect(() => {
-    if (open) {
-      setForm({
+    if (habit) {
+      // Modo de edição
+      setFormData({
+        label: habit.label || '',
+        category: habit.category || HABIT_CATEGORIES[0].id,
+        description: habit.description || '',
+        time: habit.time || '',
+        frequency: habit.frequency || 'daily',
+        selectedDays: habit.selectedDays || [],
+      })
+    } else {
+      // Modo de criação
+      setFormData({
         label: '',
         category: HABIT_CATEGORIES[0].id,
         description: '',
@@ -50,17 +61,16 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
         frequency: 'daily',
         selectedDays: [],
       })
-      requestAnimationFrame(() => labelRef.current?.focus())
-      document.body.style.overflow = 'hidden'
     }
+    requestAnimationFrame(() => labelRef.current?.focus())
+    document.body.style.overflow = 'hidden'
 
     return () => {
       document.body.style.overflow = ''
     }
-  }, [open])
+  }, [habit])
 
   useEffect(() => {
-    if (!open) return undefined
     const handleKey = (event) => {
       if (event.key === 'Escape') {
         onClose?.()
@@ -68,18 +78,14 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [open, onClose])
-
-  if (!open) {
-    return null
-  }
+  }, [onClose])
 
   const updateField = (field) => (event) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }))
+    setFormData((prev) => ({ ...prev, [field]: event.target.value }))
   }
 
   const toggleDay = (day) => {
-    setForm((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       selectedDays: prev.selectedDays.includes(day)
         ? prev.selectedDays.filter((d) => d !== day)
@@ -89,10 +95,10 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    onSubmit?.(form)
+    onSubmit?.(formData)
   }
 
-  const selectedCategory = HABIT_CATEGORIES.find((cat) => cat.id === form.category)
+  const selectedCategory = HABIT_CATEGORIES.find((cat) => cat.id === formData.category)
 
   return (
     <div className="createHabitModal" role="dialog" aria-modal="true">
@@ -115,7 +121,7 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
               ref={labelRef}
               type="text"
               placeholder="Ex: Treino Muay Thai"
-              value={form.label}
+              value={formData.label}
               onChange={updateField('label')}
               required
             />
@@ -128,7 +134,7 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
                 <button
                   key={category.id}
                   type="button"
-                  className={`categoryChip ${form.category === category.id ? 'categoryChip--active' : ''}`}
+                  className={`categoryChip ${formData.category === category.id ? 'categoryChip--active' : ''}`}
                   onClick={() => setForm((prev) => ({ ...prev, category: category.id }))}
                 >
                   <span className="categoryChip__icon">{category.icon}</span>
@@ -140,12 +146,12 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
 
           <label className="createHabitModal__field">
             <span>Horário ideal</span>
-            <input type="time" value={form.time} onChange={updateField('time')} />
+            <input type="time" value={formData.time} onChange={updateField('time')} />
           </label>
 
           <label className="createHabitModal__field">
             <span>Frequência</span>
-            <select value={form.frequency} onChange={updateField('frequency')}>
+            <select value={formData.frequency} onChange={updateField('frequency')}>
               {FREQUENCY_OPTIONS.map((freq) => (
                 <option key={freq.value} value={freq.value}>
                   {freq.label}
@@ -154,7 +160,7 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
             </select>
           </label>
 
-          {form.frequency === 'custom' && (
+          {formData.frequency === 'custom' && (
             <div className="createHabitModal__field">
               <span>Dias da semana</span>
               <div className="createHabitModal__weekdayGrid">
@@ -162,7 +168,7 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
                   <button
                     key={day.value}
                     type="button"
-                    className={`weekdayChip ${form.selectedDays.includes(day.value) ? 'weekdayChip--active' : ''}`}
+                    className={`weekdayChip ${formData.selectedDays.includes(day.value) ? 'weekdayChip--active' : ''}`}
                     onClick={() => toggleDay(day.value)}
                   >
                     {day.label}
@@ -178,7 +184,7 @@ export default function CreateHabitModal({ open, onClose, onSubmit }) {
               <textarea
                 placeholder="Por que este hábito é importante? O que você quer alcançar?"
                 maxLength={DESCRIPTION_LIMIT}
-                value={form.description}
+                value={formData.description}
                 onChange={updateField('description')}
               />
               <small>{charCount}</small>
