@@ -17,7 +17,7 @@
 
 .createTaskModal__panel {
   position: relative;
-  width: min(720px, 100%);
+  width: min(680px, 100%);
   max-height: calc(100vh - 48px);
   background: #fff;
   border-radius: 16px;
@@ -88,17 +88,24 @@
 }
 
 .createTaskModal__form {
-  padding: 24px;
+  padding: 20px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   overflow-y: auto;
+  max-height: calc(100vh - 200px);
 }
 
 .createTaskModal__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.createTaskModal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 
 .createTaskModal__label {
@@ -153,10 +160,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 40px 8px 12px;
   border: 1px solid #dfe1e7;
   border-radius: 12px;
   background: #fff;
+  position: relative;
 }
 
 .createTaskModal__dateRange:focus-within {
@@ -173,6 +181,7 @@
   color: rgba(0, 0, 0, 0.8);
   flex: 1;
   min-width: 0;
+  padding: 0;
 }
 
 .createTaskModal__dateInput:focus {
@@ -181,6 +190,11 @@
 
 .createTaskModal__dateInput::-webkit-calendar-picker-indicator {
   opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  cursor: pointer;
 }
 
 .createTaskModal__dateDivider {
@@ -188,40 +202,122 @@
   font-size: 16px;
 }
 
-.createTaskModal__calendarIcon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 1px solid rgba(13, 13, 18, 0.24);
-  position: relative;
-}
-
-.createTaskModal__calendarIcon::before,
-.createTaskModal__calendarIcon::after {
-  content: '';
+.createTaskModal__calendarBtn {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  border: 1.5px solid rgba(13, 13, 18, 0.6);
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dfe1e7;
+  background: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #5b5a64;
+  transition: all 150ms ease;
+  padding: 0;
 }
 
-.createTaskModal__calendarIcon::before {
-  top: 4px;
+.createTaskModal__calendarBtn:hover {
+  background: #f9f9fb;
+  border-color: #ff5100;
+  color: #ff5100;
 }
 
-.createTaskModal__calendarIcon::after {
-  bottom: 4px;
+.createTaskModal__calendarBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.createTaskModal__textarea {
+  min-height: 70px;
+  resize: none;
+  padding-bottom: 32px;
+}
+
+.createTaskModal__counter {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.24px;
+  color: rgba(0, 0, 0, 0.6);
+  font-family: 'Geist', var(--font-sans);
 }
 
 .createTaskModal__textareaWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.createTaskModal__subtasks {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.createTaskModal__textarea {
-  min-height: 120px;
-  resize: vertical;
+.subtaskInput {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.subtaskInput input {
+  border-radius: 10px;
+  border: 1px solid #dfe1e7;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.subtaskInput button {
+  border: none;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.createTaskModal__subtaskList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.createTaskModal__subtaskList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 13px;
+}
+
+.createTaskModal__subtaskList li button {
+  border: none;
+  background: none;
+  color: #5b5a64;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 150ms ease;
+}
+
+.createTaskModal__subtaskList li button:hover {
+  background: #ffffff;
+  color: #ef4444;
 }
 
 .createTaskModal__counter {
@@ -236,9 +332,10 @@
 .createTaskModal__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 14px;
-  padding-top: 8px;
+  gap: 12px;
+  padding: 16px 24px;
   border-top: 1px solid #dfe1e7;
+  background: #fafafa;
 }
 
 .createTaskModal__btn {

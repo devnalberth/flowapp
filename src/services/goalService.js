@@ -1,5 +1,11 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
+const normalizeGoal = (goal) => ({
+  ...goal,
+  startDate: goal.start_date,
+  endDate: goal.end_date,
+});
+
 export const goalService = {
   async getGoals(userId) {
     const supabase = getSupabaseClient(true);
@@ -10,7 +16,7 @@ export const goalService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(normalizeGoal);
   },
 
   async createGoal(userId, goal) {
@@ -23,13 +29,15 @@ export const goalService = {
         target: goal.target,
         current: goal.current || 0,
         progress: goal.progress || 0,
+        start_date: goal.startDate || null,
+        end_date: goal.endDate || null,
         user_id: userId,
       })
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    return normalizeGoal(data);
   },
 
   async updateGoal(goalId, userId, updates) {
@@ -42,6 +50,8 @@ export const goalService = {
         target: updates.target,
         current: updates.current,
         progress: updates.progress,
+        start_date: updates.startDate,
+        end_date: updates.endDate,
         updated_at: new Date().toISOString(),
       })
       .eq('id', goalId)
@@ -50,7 +60,7 @@ export const goalService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return normalizeGoal(data);
   },
 
   async deleteGoal(goalId, userId) {

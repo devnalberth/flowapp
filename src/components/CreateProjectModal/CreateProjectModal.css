@@ -102,6 +102,12 @@
   gap: 8px;
 }
 
+.createProjectModal__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
 .createProjectModal__label {
   font-size: 14px;
   line-height: 21px;

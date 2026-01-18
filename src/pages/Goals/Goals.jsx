@@ -1,234 +1,40 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
+import DreamMapModal from '../../components/DreamMapModal/DreamMapModal.jsx'
 
 import './Goals.css'
 
 const TRIMESTERS = ['1º Trimestre', '2º Trimestre', '3º Trimestre', '4º Trimestre']
 
-const LIFE_AREAS = [
+// Estrutura de áreas de vida padrão
+const DEFAULT_LIFE_AREAS = [
   {
     id: 'profissional',
     label: 'Profissional',
     icon: '💼',
-    status: 'Em foco',
-    northStar: 'Escalar FlowOS para 10 squads ativos',
-    progress: 0.72,
-    review: 'Review semanal',
-    description:
-      'Desenvolva uma operação de produto com squads autônomos, governança leve e decisões orientadas por GTD.',
-    metas: [
-      {
-        id: 'prof-meta-flowos',
-        title: 'Escalar FlowOS para 10 squads ativos',
-        progress: 0.72,
-        status: 'Concluído',
-        trimester: '1º Trimestre',
-        areaLabel: 'Profissional',
-        intention: 'Mapear Growth, Produto e Operações dentro do mesmo cockpit, garantindo autonomia e cadência.',
-        reason: 'Escolho essa meta para criar previsibilidade de entrega e liberar espaço para inovação.',
-        projects: [
-          { id: 'prof-proj-1', name: 'FlowOS Expansion', status: 'Em curso' },
-          { id: 'prof-proj-2', name: 'Labs de Experimentação', status: 'Planejado' },
-          { id: 'prof-proj-3', name: 'Academia de squads', status: 'Concluído' },
-        ],
-        timeline: [
-          { id: 'prof-tl-1', date: 'Jan 12', label: 'Kickoff', description: 'Planejamento tático com core team GTD.' },
-          { id: 'prof-tl-2', date: 'Feb 20', label: 'Deploy 5 squads', description: 'Primeiro ciclo completo em produção.' },
-          { id: 'prof-tl-3', date: 'Mar 30', label: 'Retrospectiva', description: 'Review com aprendizados e próximos bets.' },
-        ],
-      },
-      {
-        id: 'prof-meta-lead',
-        title: 'Criar academia de líderes Flow',
-        progress: 0.35,
-        status: 'Em andamento',
-        trimester: '2º Trimestre',
-        areaLabel: 'Profissional',
-        intention: 'Formar líderes capazes de rodar GTD em qualquer squad da rede.',
-        reason: 'Escalar cultura Flow depende de líderes preparados para orientar decisões e manter cadência.',
-        projects: [
-          { id: 'prof-proj-4', name: 'Trilha de liderança', status: 'Em curso' },
-          { id: 'prof-proj-5', name: 'Mentorias 1:1', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'prof-tl-4', date: 'Apr 05', label: 'Conteúdo', description: 'Blueprint do programa entregue.' },
-          { id: 'prof-tl-5', date: 'May 18', label: '1ª turma', description: 'Ciclo piloto com 8 líderes.' },
-        ],
-      },
-    ],
+    description: 'Desenvolva uma operação de produto com squads autônomos, governança leve e decisões orientadas por GTD.',
   },
   {
     id: 'pessoal',
     label: 'Pessoal',
     icon: '🌱',
-    status: 'Explorando',
-    northStar: 'Desenhar rotina energizante para o semestre',
-    progress: 0.41,
-    review: 'Review quinzenal',
     description: 'Crie rituais pessoais que sustentem energia criativa e espaço para experiências significativas.',
-    metas: [
-      {
-        id: 'pes-meta-ritual',
-        title: 'Meditar diariamente por 10 minutos durante 3 meses',
-        progress: 1,
-        status: 'Concluído',
-        trimester: '1º Trimestre',
-        areaLabel: 'Pessoal',
-        intention: 'Estabelecer uma rotina matinal com journaling, respiração e silêncio consciente.',
-        reason: 'Escolho essa meta para ter uma relação melhor comigo mesma e reduzir ansiedade no semestre.',
-        projects: [
-          { id: 'pes-proj-1', name: 'Estúdio de meditação', status: 'Concluído' },
-          { id: 'pes-proj-2', name: 'Grupo semanal', status: 'Em curso' },
-          { id: 'pes-proj-3', name: 'Flow Journal', status: 'Em curso' },
-        ],
-        timeline: [
-          { id: 'pes-tl-1', date: 'Jan 02', label: 'Preparação', description: 'Montar espaço físico e checklist matinal.' },
-          { id: 'pes-tl-2', date: 'Feb 15', label: 'Checkpoint', description: 'Review com coach sobre energia e foco.' },
-          { id: 'pes-tl-3', date: 'Mar 31', label: 'Celebrar', description: 'Registro no Flow Journal com aprendizados.' },
-        ],
-      },
-      {
-        id: 'pes-meta-explorar',
-        title: 'Planejar micro sabáticos criativos',
-        progress: 0.25,
-        status: 'Em andamento',
-        trimester: '2º Trimestre',
-        areaLabel: 'Pessoal',
-        intention: 'Reservar blocos de 3 dias para explorar hobbies e natureza a cada trimestre.',
-        reason: 'Criar espaço de imaginação mantém o semestre leve e inspirado.',
-        projects: [
-          { id: 'pes-proj-4', name: 'Workbook Vida Essencial', status: 'Em curso' },
-          { id: 'pes-proj-5', name: 'Retiro criativo', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'pes-tl-4', date: 'Apr 10', label: 'Roteiro', description: 'Mapa de experiências essenciais.' },
-          { id: 'pes-tl-5', date: 'Jun 02', label: '1º sabático', description: 'Viagem curta com práticas de presença.' },
-        ],
-      },
-    ],
   },
   {
     id: 'saude',
-    label: 'Saúde & Energia',
-    icon: '⚡️',
-    status: 'Consistente',
-    northStar: 'Completar 16 sessões de treinos FlowFit',
-    progress: 0.58,
-    review: 'Check-in terça/quinta',
-    description: 'Combine treinos FlowFit, nutrição inteligente e descanso profundo para sustentar vitalidade.',
-    metas: [
-      {
-        id: 'sau-meta-flowfit',
-        title: 'Completar 16 sessões FlowFit',
-        progress: 0.58,
-        status: 'Em andamento',
-        trimester: '1º Trimestre',
-        areaLabel: 'Saúde & Energia',
-        intention: 'Fortalecer base metabólica e recuperar energia para os bets importantes.',
-        reason: 'Ao cumprir essa meta, garanto disposição para liderar e criar com clareza.',
-        projects: [
-          { id: 'sau-proj-1', name: 'FlowFit Sprint 02', status: 'Em curso' },
-          { id: 'sau-proj-2', name: 'Plano nutricional', status: 'Em curso' },
-        ],
-        timeline: [
-          { id: 'sau-tl-1', date: 'Jan 05', label: 'Avaliação', description: 'Medições iniciais com coach.' },
-          { id: 'sau-tl-2', date: 'Feb 22', label: 'Metade do ciclo', description: '8 sessões concluídas + ajustes.' },
-          { id: 'sau-tl-3', date: 'Mar 25', label: 'Entrega final', description: 'Apresentar métricas e aprendizados.' },
-        ],
-      },
-      {
-        id: 'sau-meta-sleep',
-        title: 'Garantir sono regenerativo 7h30',
-        progress: 0.4,
-        status: 'Em andamento',
-        trimester: '2º Trimestre',
-        areaLabel: 'Saúde & Energia',
-        intention: 'Sincronizar rotina noturna com hábitos de respiração e digital sunset.',
-        reason: 'Sono profundo melhora clareza mental e reduz carga emocional acumulada.',
-        projects: [
-          { id: 'sau-proj-3', name: 'Protocolo de descanso', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'sau-tl-4', date: 'Apr 01', label: 'Setup', description: 'Rotina noturna desenhada.' },
-          { id: 'sau-tl-5', date: 'May 20', label: 'Biofeedback', description: 'Ajustes com wearable de sono.' },
-        ],
-      },
-    ],
+    label: 'Saúde',
+    icon: '⚡',
+    description: 'Construa rotinas de exercício e nutrição que sustentem performance e bem-estar consistente.',
   },
   {
-    id: 'financas',
-    label: 'Finanças & Patrimônio',
+    id: 'financeiro',
+    label: 'Finanças',
     icon: '💰',
-    status: 'Em revisão',
-    northStar: 'Garantir 6 meses de runway investido',
-    progress: 0.33,
-    review: 'Revisão mensal',
-    description: 'Construa reservas inteligentes e proteja decisões estratégicas com dados em tempo real.',
-    metas: [
-      {
-        id: 'fin-meta-runway',
-        title: 'Garantir 6 meses de runway investido',
-        progress: 0.33,
-        status: 'Em andamento',
-        trimester: '1º Trimestre',
-        areaLabel: 'Finanças & Patrimônio',
-        intention: 'Mapear burn rate, renegociar contratos e consolidar reservas.',
-        reason: 'Segurança financeira libera foco para executar metas ambiciosas sem ansiedade.',
-        projects: [
-          { id: 'fin-proj-1', name: 'Atlas Finance Ops', status: 'Em curso' },
-          { id: 'fin-proj-2', name: 'Carteira conservadora', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'fin-tl-1', date: 'Jan 18', label: 'Radiografia', description: 'Coleta de dados contábeis.' },
-          { id: 'fin-tl-2', date: 'Mar 04', label: 'Implementação', description: 'Dashboard vivo entregue.' },
-          { id: 'fin-tl-3', date: 'Mar 28', label: 'Fechamento', description: 'Reserva formalizada em renda fixa.' },
-        ],
-      },
-      {
-        id: 'fin-meta-diversificar',
-        title: 'Diversificar receitas em +15%',
-        progress: 0.2,
-        status: 'Planejado',
-        trimester: '2º Trimestre',
-        areaLabel: 'Finanças & Patrimônio',
-        intention: 'Criar bundles Flow e novas ofertas premium.',
-        reason: 'Reduzir dependência de uma única linha de receita e construir colchão estratégico.',
-        projects: [
-          { id: 'fin-proj-3', name: 'Sprint de pricing', status: 'Planejado' },
-          { id: 'fin-proj-4', name: 'Programa Atlas+', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'fin-tl-4', date: 'Apr 15', label: 'Discovery', description: 'Entrevistas com clientes chave.' },
-          { id: 'fin-tl-5', date: 'Jun 10', label: 'Lançamento', description: 'Nova oferta ativa no FlowOS.' },
-        ],
-      },
-    ],
-  },
-]
-
-const INITIAL_DREAM_MAP = [
-  {
-    id: 'dream-flowos',
-    title: 'FlowOS vivo e em escala',
-    metaLabel: 'Escalar FlowOS para 10 squads',
-    image:
-      'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: 'dream-retreat',
-    title: 'Retiro criativo no campo',
-    metaLabel: 'Planejar micro sabáticos',
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60',
-  },
-  {
-    id: 'dream-flowfit',
-    title: 'Energia para liderar',
-    metaLabel: 'Completar 16 sessões FlowFit',
-    image:
-      'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=60',
+    description: 'Organize capital, fluxos e investimentos com transparência e previsibilidade.',
   },
 ]
 
@@ -478,11 +284,34 @@ function AreaDetail({ area, onBack }) {
 }
 
 export default function Goals({ onNavigate, onLogout, user }) {
-  const { goals, loading } = useApp()
+  const { goals, dreamMaps, addGoal, addDreamMap, deleteDreamMap, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
-  const [dreamBoard, setDreamBoard] = useState(INITIAL_DREAM_MAP)
-  const [dreamMetaName, setDreamMetaName] = useState('')
-  const dreamUploadRef = useRef(null)
+  const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
+
+  // Agrupar metas por área
+  const LIFE_AREAS = useMemo(() => {
+    return DEFAULT_LIFE_AREAS.map(area => {
+      const areaGoals = goals.filter(goal => 
+        goal.area?.toLowerCase() === area.id || 
+        goal.area?.toLowerCase() === area.label.toLowerCase()
+      )
+      
+      const totalProgress = areaGoals.length > 0
+        ? areaGoals.reduce((sum, goal) => sum + (goal.progress || 0), 0) / areaGoals.length
+        : 0
+      
+      return {
+        ...area,
+        status: areaGoals.length > 0 ? 'Ativo' : 'Sem metas',
+        northStar: areaGoals[0]?.title || 'Nenhuma meta definida',
+        progress: totalProgress / 100,
+        review: 'Review mensal',
+        metas: areaGoals,
+      }
+    })
+  }, [goals])
+
   const selectedArea = LIFE_AREAS.find((area) => area.id === selectedAreaId) ?? null
 
   const handleCardSelect = (areaId) => {
@@ -496,30 +325,46 @@ export default function Goals({ onNavigate, onLogout, user }) {
     }
   }
 
-  const handleDreamUpload = (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      setDreamBoard((current) => [
-        {
-          id: `dream-${Date.now()}`,
-          title: dreamMetaName || 'Visual sem nome',
-          metaLabel: dreamMetaName || 'Meta sem nome',
-          image: reader.result,
-        },
-        ...current,
-      ])
-      setDreamMetaName('')
+  const handleDreamSubmit = async (form, imageFile) => {
+    try {
+      await addDreamMap(form, imageFile)
+      setIsDreamModalOpen(false)
+    } catch (error) {
+      console.error('Erro ao adicionar ao mapa dos sonhos:', error)
+      alert('Não conseguimos adicionar a imagem. Tente novamente.')
     }
-    reader.readAsDataURL(file)
-    event.target.value = ''
+  }
+
+  const handleDeleteDream = async (dreamId) => {
+    if (!window.confirm('Deseja mesmo remover esta imagem do mapa dos sonhos?')) return
+    try {
+      await deleteDreamMap(dreamId)
+    } catch (error) {
+      console.error('Erro ao remover do mapa dos sonhos:', error)
+    }
+  }
+
+  const handleGoalSubmit = async (payload) => {
+    try {
+      await addGoal({
+        title: payload.title,
+        area: payload.area,
+        target: payload.target,
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+      })
+      setIsGoalModalOpen(false)
+    } catch (error) {
+      console.error('Erro ao criar meta:', error)
+      alert('Não conseguimos criar a meta. Tente novamente.')
+    }
   }
 
   return (
     <div className="goalsPage">
       <TopNav user={user} active="Metas" onNavigate={onNavigate} onLogout={onLogout} />
+
+      <FloatingCreateButton label="Nova meta" caption="Adicionar meta" onClick={() => setIsGoalModalOpen(true)} />
 
       {selectedArea ? (
         <AreaDetail area={selectedArea} onBack={() => setSelectedAreaId(null)} />
@@ -576,42 +421,70 @@ export default function Goals({ onNavigate, onLogout, user }) {
                 <h2>Visualize o que quer construir</h2>
                 <p>Suba imagens que representem as suas metas principais e mantenha o quadro sempre visível.</p>
               </div>
-              <form
-                className="dreamMap__form"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  dreamUploadRef.current?.click()
-                }}
+              <button 
+                type="button" 
+                className="dreamMap__addButton"
+                onClick={() => setIsDreamModalOpen(true)}
               >
-                <label className="dreamMap__label">
-                  <span>Meta</span>
-                  <input
-                    type="text"
-                    placeholder="Nome da meta"
-                    value={dreamMetaName}
-                    onChange={(event) => setDreamMetaName(event.target.value)}
-                  />
-                </label>
-                <input ref={dreamUploadRef} type="file" accept="image/*" hidden onChange={handleDreamUpload} />
-                <button type="submit">Adicionar imagem</button>
-              </form>
+                Adicionar imagem
+              </button>
             </header>
 
-            <div className="dreamMap__grid">
-              {dreamBoard.map((dream) => (
-                <figure key={dream.id} className="dreamCard">
-                  <img src={dream.image} alt={dream.title} loading="lazy" />
-                  <figcaption>
-                    <span>{dream.metaLabel}</span>
-                    <strong>{dream.title}</strong>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-                </div>
-              </section>
+            {dreamMaps.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+                <p style={{ fontSize: '18px', marginBottom: '8px' }}>Seu mapa dos sonhos está vazio</p>
+                <p style={{ fontSize: '14px' }}>Clique em "Adicionar imagem" para começar a visualizar seus objetivos</p>
+              </div>
+            ) : (
+              <div className="dreamMap__grid">
+                {dreamMaps.map((dream) => (
+                  <figure key={dream.id} className="dreamCard">
+                    <img src={dream.imageUrl || dream.image_url} alt={dream.title} loading="lazy" />
+                    <figcaption>
+                      <span>{goals.find(g => g.id === dream.goalId || g.id === dream.goal_id)?.title || 'Meta'}</span>
+                      <strong>{dream.title}</strong>
+                    </figcaption>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDream(dream.id)}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
         </>
       )}
+
+      {/* Modais */}
+      <CreateGoalModal
+        open={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        onSubmit={handleGoalSubmit}
+        areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
+      />
+
+      <DreamMapModal
+        open={isDreamModalOpen}
+        onClose={() => setIsDreamModalOpen(false)}
+        onSubmit={handleDreamSubmit}
+        goals={goals}
+      />
     </div>
   )
 }

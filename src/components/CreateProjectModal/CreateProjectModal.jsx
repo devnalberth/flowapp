@@ -3,18 +3,29 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './CreateProjectModal.css'
 
 const AREAS = ['Profissional', 'Pessoal', 'Financeiro', 'Estudos']
-const GOALS = ['Lançar novo produto', 'Quitar dívidas', 'Melhorar hábitos', 'Aprender IA']
+const STATUS_OPTIONS = ['todo', 'in_progress', 'review', 'completed']
+const COLOR_OPTIONS = [
+  { label: 'Laranja', value: 'ff9500' },
+  { label: 'Azul', value: '007aff' },
+  { label: 'Verde', value: '34c759' },
+  { label: 'Rosa', value: 'ff2d55' },
+  { label: 'Roxo', value: 'af52de' },
+  { label: 'Cinza', value: '8e8e93' },
+]
 const DESCRIPTION_LIMIT = 200
 
 const DEFAULT_FORM = {
-  name: '',
+  title: '',
   area: AREAS[0],
-  deadline: '',
+  status: 'todo',
+  color: COLOR_OPTIONS[0].value,
   description: '',
-  goal: '',
+  startDate: '',
+  endDate: '',
+  goalId: '',
 }
 
-export default function CreateProjectModal({ open, onClose, onSubmit }) {
+export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [] }) {
   const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }))
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
@@ -93,10 +104,10 @@ export default function CreateProjectModal({ open, onClose, onSubmit }) {
               ref={nameRef}
               className="createProjectModal__input"
               type="text"
-              name="name"
+              name="title"
               placeholder="Nome do projeto"
-              value={form.name}
-              onChange={updateField('name')}
+              value={form.title}
+              onChange={updateField('title')}
               required
             />
           </label>
@@ -118,14 +129,76 @@ export default function CreateProjectModal({ open, onClose, onSubmit }) {
           </label>
 
           <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Prazo do Projeto</span>
-            <input
-              className="createProjectModal__input"
-              type="date"
-              name="deadline"
-              value={form.deadline}
-              onChange={updateField('deadline')}
-            />
+            <span className="createProjectModal__label">Cor do Projeto</span>
+            <select
+              className="createProjectModal__input createProjectModal__input--select"
+              name="color"
+              value={form.color}
+              onChange={updateField('color')}
+            >
+              {COLOR_OPTIONS.map((color) => (
+                <option key={color.value} value={color.value}>
+                  {color.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="createProjectModal__field">
+            <span className="createProjectModal__label">Status Inicial</span>
+            <select
+              className="createProjectModal__input createProjectModal__input--select"
+              name="status"
+              value={form.status}
+              onChange={updateField('status')}
+            >
+              <option value="todo">A Fazer</option>
+              <option value="in_progress">Em Andamento</option>
+              <option value="review">Em Revisão</option>
+              <option value="completed">Concluído</option>
+            </select>
+          </label>
+
+          <div className="createProjectModal__grid">
+            <label className="createProjectModal__field">
+              <span className="createProjectModal__label">Data de início</span>
+              <input
+                type="date"
+                className="createProjectModal__input"
+                name="startDate"
+                value={form.startDate}
+                onChange={updateField('startDate')}
+              />
+            </label>
+
+            <label className="createProjectModal__field">
+              <span className="createProjectModal__label">Prazo para finalizar</span>
+              <input
+                type="date"
+                className="createProjectModal__input"
+                name="endDate"
+                value={form.endDate}
+                min={form.startDate || undefined}
+                onChange={updateField('endDate')}
+              />
+            </label>
+          </div>
+
+          <label className="createProjectModal__field">
+            <span className="createProjectModal__label">Meta vinculada</span>
+            <select
+              className="createProjectModal__input createProjectModal__input--select"
+              name="goalId"
+              value={form.goalId}
+              onChange={updateField('goalId')}
+            >
+              <option value="">Sem vínculo</option>
+              {goalOptions.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.title}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="createProjectModal__field">
@@ -134,7 +207,7 @@ export default function CreateProjectModal({ open, onClose, onSubmit }) {
               <textarea
                 className="createProjectModal__textarea"
                 name="description"
-                placeholder="Placeholder"
+                placeholder="Descreva o objetivo e escopo do projeto..."
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.description}
                 onChange={updateField('description')}
@@ -143,29 +216,12 @@ export default function CreateProjectModal({ open, onClose, onSubmit }) {
             </div>
           </label>
 
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Meta Vinculada</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
-              name="goal"
-              value={form.goal}
-              onChange={updateField('goal')}
-            >
-              <option value="">Selecione a meta</option>
-              {GOALS.map((goal) => (
-                <option key={goal} value={goal}>
-                  {goal}
-                </option>
-              ))}
-            </select>
-          </label>
-
           <footer className="createProjectModal__footer">
             <button type="button" className="createProjectModal__btn createProjectModal__btn--ghost" onClick={onClose}>
               Cancelar
             </button>
             <button type="submit" className="createProjectModal__btn createProjectModal__btn--primary">
-              Salvar
+              Criar Projeto
             </button>
           </footer>
         </form>

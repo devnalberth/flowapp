@@ -1,121 +1,32 @@
 import { useMemo, useState } from 'react'
+import { useApp } from '../../context/AppContext'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 
 import './Studies.css'
 
-const initialStudies = [
-  {
-    id: 'study-01',
-    title: 'React Mastery',
-    type: 'COURSE',
-    status: 'STUDYING',
-    topic: 'Programação',
-    coverUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop',
-    accessUrl: 'https://www.udemy.com/',
-    modules: [
-      {
-        id: 'module-01',
-        title: 'Setup & Base',
-        lessons: [
-          { id: 'lesson-01', title: 'Instalando Node', completed: true, duration: '12 min' },
-          { id: 'lesson-02', title: 'Configurando Vite', completed: false, duration: '18 min' },
-        ],
-      },
-      {
-        id: 'module-02',
-        title: 'Componentização',
-        lessons: [
-          { id: 'lesson-03', title: 'Componentes inteligentes', completed: false, duration: '24 min' },
-          { id: 'lesson-04', title: 'State management', completed: false, duration: '30 min' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'study-02',
-    title: 'Arquitetura de Informação',
-    type: 'COURSE',
-    status: 'NOT_STARTED',
-    topic: 'Design',
-    coverUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop',
-    accessUrl: 'https://www.coursera.org/',
-    modules: [
-      {
-        id: 'module-03',
-        title: 'Estruturas mentais',
-        lessons: [
-          { id: 'lesson-05', title: 'Mapas de conteúdo', completed: false, duration: '15 min' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'study-03',
-    title: 'FlowApp - Faculdade',
-    type: 'COLLEGE',
-    status: 'STUDYING',
-    topic: 'Engenharia',
-    coverUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1200&auto=format&fit=crop',
-    accessUrl: 'https://www.university.com/',
-    modules: [
-      {
-        id: 'module-04',
-        title: 'Capítulo 1',
-        lessons: [
-          { id: 'lesson-06', title: 'Introdução', completed: true, duration: '20 min' },
-          { id: 'lesson-07', title: 'Atividade prática', completed: false, duration: '35 min' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'study-04',
-    title: 'Pense Rápido, Pense Devagar',
-    type: 'BOOK',
-    status: 'READING',
-    topic: 'Filosofia',
-    coverUrl: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop',
-    accessUrl: 'https://www.amazon.com.br/',
-    modules: [
-      {
-        id: 'module-05',
-        title: 'Capítulo 1',
-        lessons: [
-          { id: 'lesson-08', title: 'Sistema 1', completed: true, duration: '30 páginas' },
-          { id: 'lesson-09', title: 'Sistema 2', completed: false, duration: '28 páginas' },
-        ],
-      },
-    ],
-  },
-]
-
 const statusLabelMap = {
   NOT_STARTED: 'Não iniciado',
-  STUDYING: 'Em andamento',
+  IN_PROGRESS: 'Em andamento',
   COMPLETED: 'Concluído',
-  READING: 'Lendo',
-  READ: 'Lido',
 }
 
 const typeLabelMap = {
   COURSE: 'Curso Online',
-  COLLEGE: 'Faculdade',
+  UNIVERSITY: 'Faculdade',
   BOOK: 'Livro',
 }
 
 const statusOptionsByType = {
-  BOOK: ['NOT_STARTED', 'READING', 'READ'],
-  COURSE: ['NOT_STARTED', 'STUDYING', 'COMPLETED'],
-  COLLEGE: ['NOT_STARTED', 'STUDYING', 'COMPLETED'],
+  BOOK: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
+  COURSE: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
+  UNIVERSITY: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
 }
-
-const makeId = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`
 
 const countLessons = (modules) =>
   modules.reduce(
     (acc, module) => {
       acc.total += module.lessons.length
-      acc.completed += module.lessons.filter((lesson) => lesson.completed).length
+      acc.completed += module.lessons.filter((lesson) => lesson.isCompleted).length
       return acc
     },
     { total: 0, completed: 0 }
@@ -128,7 +39,7 @@ const calcProgress = (modules) => {
 }
 
 export default function Studies({ user, onNavigate, onLogout }) {
-  const [studies, setStudies] = useState(initialStudies)
+  const { studies, addStudy, deleteStudy, addStudyModule, addStudyLesson, toggleStudyLesson, loading } = useApp()
   const [activeStudyId, setActiveStudyId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
@@ -139,9 +50,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const [formState, setFormState] = useState({
     title: '',
     type: 'COURSE',
-    topic: '',
-    tags: '',
-    accessUrl: '',
     status: 'NOT_STARTED',
     coverUrl: '',
   })
@@ -162,59 +70,41 @@ export default function Studies({ user, onNavigate, onLogout }) {
     setFormState({
       title: '',
       type: 'COURSE',
-      topic: '',
-      tags: '',
-      accessUrl: '',
       status: 'NOT_STARTED',
       coverUrl: '',
     })
     setModalOpen(true)
   }
 
-  const handleCreateStudy = (event) => {
+  const handleCreateStudy = async (event) => {
     event.preventDefault()
-    const newStudy = {
-      id: makeId('study'),
-      title: formState.title || 'Novo estudo',
-      type: formState.type,
-      status: formState.status,
-      topic: formState.topic || 'Sem categoria',
-      coverUrl: formState.coverUrl,
-      accessUrl: formState.accessUrl,
-      tags: formState.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      modules: [],
+    try {
+      await addStudy({
+        title: formState.title || 'Novo estudo',
+        type: formState.type,
+        status: formState.status,
+        coverUrl: formState.coverUrl,
+      })
+      setModalOpen(false)
+    } catch (error) {
+      console.error('Error creating study:', error)
+      alert('Erro ao criar estudo: ' + error.message)
     }
-    setStudies((prev) => [newStudy, ...prev])
-    setModalOpen(false)
   }
 
   const handleToggleModule = (moduleId) => {
     setExpandedModules((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }))
   }
 
-  const handleAddModule = () => {
+  const handleAddModule = async () => {
     if (!activeStudy || !newModuleTitle.trim()) return
-    setStudies((prev) =>
-      prev.map((study) =>
-        study.id === activeStudy.id
-          ? {
-              ...study,
-              modules: [
-                ...study.modules,
-                {
-                  id: makeId('module'),
-                  title: newModuleTitle.trim(),
-                  lessons: [],
-                },
-              ],
-            }
-          : study
-      )
-    )
-    setNewModuleTitle('')
+    try {
+      await addStudyModule(activeStudy.id, { title: newModuleTitle.trim() })
+      setNewModuleTitle('')
+    } catch (error) {
+      console.error('Error adding module:', error)
+      alert('Erro ao adicionar módulo: ' + error.message)
+    }
   }
 
   const handleLessonInputChange = (moduleId, field, value) => {
@@ -227,55 +117,29 @@ export default function Studies({ user, onNavigate, onLogout }) {
     }))
   }
 
-  const handleAddLesson = (moduleId) => {
+  const handleAddLesson = async (moduleId) => {
     const input = newLessonInputs[moduleId]
     if (!activeStudy || !input?.title?.trim()) return
-    setStudies((prev) =>
-      prev.map((study) => {
-        if (study.id !== activeStudy.id) return study
-        return {
-          ...study,
-          modules: study.modules.map((module) => {
-            if (module.id !== moduleId) return module
-            return {
-              ...module,
-              lessons: [
-                ...module.lessons,
-                {
-                  id: makeId('lesson'),
-                  title: input.title.trim(),
-                  duration: input.duration?.trim() || '',
-                  accessUrl: input.accessUrl?.trim() || '',
-                  completed: false,
-                },
-              ],
-            }
-          }),
-        }
+    try {
+      await addStudyLesson(moduleId, {
+        title: input.title.trim(),
+        videoUrl: input.videoUrl?.trim() || null,
       })
-    )
-    setNewLessonInputs((prev) => ({ ...prev, [moduleId]: { title: '', duration: '', accessUrl: '' } }))
+      setNewLessonInputs((prev) => ({ ...prev, [moduleId]: { title: '', videoUrl: '' } }))
+    } catch (error) {
+      console.error('Error adding lesson:', error)
+      alert('Erro ao adicionar lição: ' + error.message)
+    }
   }
 
-  const handleToggleLesson = (moduleId, lessonId) => {
+  const handleToggleLesson = async (moduleId, lessonId, currentStatus) => {
     if (!activeStudy) return
-    setStudies((prev) =>
-      prev.map((study) => {
-        if (study.id !== activeStudy.id) return study
-        return {
-          ...study,
-          modules: study.modules.map((module) => {
-            if (module.id !== moduleId) return module
-            return {
-              ...module,
-              lessons: module.lessons.map((lesson) =>
-                lesson.id === lessonId ? { ...lesson, completed: !lesson.completed } : lesson
-              ),
-            }
-          }),
-        }
-      })
-    )
+    try {
+      await toggleStudyLesson(lessonId, !currentStatus)
+    } catch (error) {
+      console.error('Error toggling lesson:', error)
+      alert('Erro ao atualizar lição: ' + error.message)
+    }
   }
 
   return (
@@ -290,8 +154,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
           </button>
           <button
             type="button"
-            className={statusFilter === 'STUDYING' ? 'is-active' : ''}
-            onClick={() => setStatusFilter('STUDYING')}
+            className={statusFilter === 'IN_PROGRESS' ? 'is-active' : ''}
+            onClick={() => setStatusFilter('IN_PROGRESS')}
           >
             Em andamento
           </button>
@@ -313,34 +177,39 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <button type="button" className={typeFilter === 'BOOK' ? 'is-active' : ''} onClick={() => setTypeFilter('BOOK')}>
             Livros
           </button>
-          <button type="button" className={typeFilter === 'COLLEGE' ? 'is-active' : ''} onClick={() => setTypeFilter('COLLEGE')}>
+          <button type="button" className={typeFilter === 'UNIVERSITY' ? 'is-active' : ''} onClick={() => setTypeFilter('UNIVERSITY')}>
             Faculdade
           </button>
         </div>
       </section>
 
       <section className="studiesGrid">
-        {filteredStudies.map((study) => {
-          const progress = calcProgress(study.modules)
-          return (
-            <article key={study.id} className="studyCard" onClick={() => setActiveStudyId(study.id)} role="button">
-              <div className="studyCard__cover">
-                {study.coverUrl ? <img src={study.coverUrl} alt={study.title} /> : <div className="studyCard__coverFallback" />}
-                <div className="studyCard__progress">
-                  <span style={{ width: `${progress}%` }} />
+        {filteredStudies.length === 0 ? (
+          <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1', color: '#999' }}>
+            <p>Nenhum estudo cadastrado. Clique em "Novo Estudo" para começar.</p>
+          </div>
+        ) : (
+          filteredStudies.map((study) => {
+            const progress = calcProgress(study.modules || [])
+            return (
+              <article key={study.id} className="studyCard" onClick={() => setActiveStudyId(study.id)} role="button">
+                <div className="studyCard__cover">
+                  {study.coverUrl ? <img src={study.coverUrl} alt={study.title} /> : <div className="studyCard__coverFallback" />}
+                  <div className="studyCard__progress">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div className="studyCard__content">
-                <div className="studyCard__meta">
-                  <span className="studyCard__badge">{typeLabelMap[study.type]}</span>
-                  <span className="studyCard__tag">{study.topic}</span>
+                <div className="studyCard__content">
+                  <div className="studyCard__meta">
+                    <span className="studyCard__badge">{typeLabelMap[study.type]}</span>
+                  </div>
+                  <h3>{study.title}</h3>
+                  <p>{statusLabelMap[study.status]}</p>
                 </div>
-                <h3>{study.title}</h3>
-                <p>{statusLabelMap[study.status]}</p>
-              </div>
-            </article>
-          )
-        })}
+              </article>
+            )
+          })
+        )}
       </section>
 
       {activeStudy ? (
@@ -393,12 +262,11 @@ export default function Studies({ user, onNavigate, onLogout }) {
                         <label key={lesson.id} className="studyLesson">
                           <input
                             type="checkbox"
-                            checked={lesson.completed}
-                            onChange={() => handleToggleLesson(module.id, lesson.id)}
+                            checked={lesson.isCompleted || false}
+                            onChange={() => handleToggleLesson(module.id, lesson.id, lesson.isCompleted)}
                           />
                           <div>
                             <strong>{lesson.title}</strong>
-                            <span>{lesson.duration || 'Duração livre'}</span>
                           </div>
                           {lesson.accessUrl ? (
                             <a href={lesson.accessUrl} target="_blank" rel="noreferrer">
@@ -486,36 +354,9 @@ export default function Studies({ user, onNavigate, onLogout }) {
                     }
                   >
                     <option value="COURSE">Curso Online</option>
-                    <option value="COLLEGE">Faculdade</option>
+                    <option value="UNIVERSITY">Faculdade</option>
                     <option value="BOOK">Livro</option>
                   </select>
-                </label>
-                <label>
-                  Categoria
-                  <input
-                    type="text"
-                    placeholder="Ex: Programação"
-                    value={formState.topic}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, topic: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  Tópicos (tags)
-                  <input
-                    type="text"
-                    placeholder="UX, Frontend, Filosofia"
-                    value={formState.tags}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, tags: event.target.value }))}
-                  />
-                </label>
-                <label>
-                  URL de acesso
-                  <input
-                    type="url"
-                    placeholder="https://"
-                    value={formState.accessUrl}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, accessUrl: event.target.value }))}
-                  />
                 </label>
                 <label>
                   Status

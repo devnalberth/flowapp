@@ -136,49 +136,6 @@
   color: #991b1b;
 }
 
-.topNav__quickAction {
-  border: 0;
-  width: 46px;
-  height: 46px;
-  border-radius: 9999px;
-  background: var(--grad-primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(255, 72, 0, 0.2);
-}
-
-.topNav__quickAction svg {
-  width: 20px;
-  height: 20px;
-}
-
-.topNav__quickAction:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(255, 72, 0, 0.3);
-}
-
-.topNav__quickAction:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: 3px;
-}
-
-.topNav__gearIcon {
-  width: 28px;
-  height: 28px;
-}
-
-.topNav__gearIcon path {
-  fill: none;
-  stroke: #111;
-  stroke-width: 1.5px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .topNav__user {
   border: 0;
   cursor: pointer;

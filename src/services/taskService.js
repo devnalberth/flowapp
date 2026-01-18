@@ -1,5 +1,13 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
+const normalizeTask = (task) => ({
+  ...task,
+  startDate: task.start_date,
+  dueDate: task.due_date,
+  projectId: task.project_id,
+  clarifyItems: task.clarify_items || [],
+});
+
 export const taskService = {
   async getTasks(userId) {
     const supabase = getSupabaseClient(true);
@@ -10,7 +18,7 @@ export const taskService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(normalizeTask);
   },
 
   async createTask(userId, task) {
@@ -22,15 +30,17 @@ export const taskService = {
         description: task.description,
         status: task.status || 'pending',
         priority: task.priority || 'medium',
-        due_date: task.dueDate,
-        project_id: task.projectId,
+        start_date: task.startDate || null,
+        due_date: task.dueDate || null,
+        project_id: task.projectId || null,
+        clarify_items: task.clarifyItems || [],
         user_id: userId,
       })
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    return normalizeTask(data);
   },
 
   async updateTask(taskId, userId, updates) {
@@ -42,8 +52,10 @@ export const taskService = {
         description: updates.description,
         status: updates.status,
         priority: updates.priority,
+        start_date: updates.startDate,
         due_date: updates.dueDate,
         project_id: updates.projectId,
+        clarify_items: updates.clarifyItems,
         updated_at: new Date().toISOString(),
       })
       .eq('id', taskId)
@@ -52,7 +64,7 @@ export const taskService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return normalizeTask(data);
   },
 
   async deleteTask(taskId, userId) {

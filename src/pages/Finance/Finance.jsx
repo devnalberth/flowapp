@@ -34,15 +34,6 @@ const MONTHS = [
 
 const YEARS = ['2024', '2025', '2026']
 
-const PAYMENT_METHODS = [
-  { id: 'cash', label: 'Dinheiro', helper: 'Pagamentos à vista' },
-  { id: 'pix', label: 'Pix', helper: 'Instantâneo' },
-  { id: 'debit', label: 'Débito', helper: 'Conta corrente' },
-  { id: 'credit', label: 'Cartão de crédito', helper: 'Fatura mensal' },
-]
-
-const STATUS_OPTIONS = ['Conciliado', 'Agendado', 'Em revisão', 'Fatura aberta', 'Liquidado']
-
 const CATEGORY_OPTIONS = [
   { id: 'operacoes', label: 'Operações' },
   { id: 'marketing', label: 'Marketing' },
@@ -51,131 +42,7 @@ const CATEGORY_OPTIONS = [
   { id: 'lazer', label: 'Lazer' },
 ]
 
-const GOALS = [
-  { id: 'meta1', label: 'Reserva 6 meses' },
-  { id: 'meta2', label: 'Meta Q1 Growth' },
-  { id: 'meta3', label: 'Viagem Squad' },
-]
-
-const TAG_SUGGESTIONS = ['fixo', 'software', 'cartao', 'mentoria', 'aluguel']
-
-const CASHFLOW_SERIES = [
-  { month: 'Jan', receita: 22000, despesa: 16800 },
-  { month: 'Fev', receita: 24000, despesa: 17600 },
-  { month: 'Mar', receita: 25500, despesa: 18500 },
-  { month: 'Abr', receita: 26200, despesa: 19100 },
-  { month: 'Mai', receita: 27800, despesa: 20500 },
-  { month: 'Jun', receita: 29000, despesa: 21400 },
-  { month: 'Jul', receita: 30100, despesa: 22200 },
-  { month: 'Ago', receita: 31200, despesa: 22700 },
-  { month: 'Set', receita: 31800, despesa: 23300 },
-  { month: 'Out', receita: 32700, despesa: 24100 },
-  { month: 'Nov', receita: 33400, despesa: 24800 },
-  { month: 'Dez', receita: 34400, despesa: 25900 },
-]
-
-const CATEGORY_BREAKDOWN = [
-  { id: 'operacoes', label: 'Operações', value: 8200 },
-  { id: 'marketing', label: 'Marketing', value: 5400 },
-  { id: 'education', label: 'Educação', value: 3100 },
-  { id: 'pessoal', label: 'Pessoal', value: 2800 },
-  { id: 'lazer', label: 'Lazer', value: 1700 },
-]
-
-const INITIAL_BUDGETS = [
-  { id: 'operacoes', label: 'Operações', ceiling: 8000, spent: 6200 },
-  { id: 'marketing', label: 'Marketing', ceiling: 6000, spent: 4800 },
-  { id: 'education', label: 'Educação', ceiling: 3000, spent: 2950 },
-  { id: 'pessoal', label: 'Pessoal', ceiling: 4000, spent: 2200 },
-]
-
-const INITIAL_TRANSACTIONS = [
-  {
-    id: 't-01',
-    type: 'receita',
-    description: 'Consultoria Flow OS',
-    category: 'operacoes',
-    date: '2025-12-05',
-    amount: 12000,
-    account: 'Banco Inter PJ',
-    paymentMethod: 'pix',
-    status: 'Conciliado',
-    tags: ['software', 'recorrente'],
-    goalId: 'meta2',
-  },
-  {
-    id: 't-02',
-    type: 'receita',
-    description: 'Mentoria Squad 12',
-    category: 'education',
-    date: '2025-12-11',
-    amount: 4800,
-    account: 'Stripe',
-    paymentMethod: 'pix',
-    status: 'Conciliado',
-    tags: ['mentoria'],
-  },
-  {
-    id: 't-03',
-    type: 'despesa',
-    description: 'Infra + SaaS',
-    category: 'operacoes',
-    date: '2025-12-09',
-    amount: 3450,
-    account: 'Flow Visa Infinite',
-    paymentMethod: 'credit',
-    status: 'Fatura aberta',
-    cardId: 'card-flow',
-    tags: ['software'],
-  },
-  {
-    id: 't-04',
-    type: 'despesa',
-    description: 'Marketing performance',
-    category: 'marketing',
-    date: '2025-12-13',
-    amount: 4300,
-    account: 'Nu Empresarial',
-    paymentMethod: 'credit',
-    status: 'Agendado',
-    cardId: 'card-nu',
-    tags: ['paid'],
-  },
-  {
-    id: 't-05',
-    type: 'despesa',
-    description: 'Backup equipe remota',
-    category: 'pessoal',
-    date: '2025-12-18',
-    amount: 2620,
-    account: 'Banco Inter PJ',
-    paymentMethod: 'pix',
-    status: 'Conciliado',
-    tags: ['fixo'],
-    goalId: 'meta1',
-  },
-  {
-    id: 't-06',
-    type: 'receita',
-    description: 'Conteúdo patrocinado',
-    category: 'marketing',
-    date: '2025-12-22',
-    amount: 2920,
-    account: 'PayPal',
-    paymentMethod: 'pix',
-    status: 'Em revisão',
-    tags: ['conteudo'],
-  },
-]
-
-const INITIAL_CARDS = [
-  { id: 'card-flow', name: 'Flow Visa Infinite', brand: 'Visa', limit: 25000, used: 0.58, closingDay: 2, dueDay: 10 },
-  { id: 'card-nu', name: 'Nu Empresarial', brand: 'Mastercard', limit: 18000, used: 0.41, closingDay: 28, dueDay: 5 },
-  { id: 'card-black', name: 'Pessoal Black', brand: 'Visa', limit: 12000, used: 0.73, closingDay: 7, dueDay: 15 },
-]
-
 const PIE_COLORS = ['#ff4800', '#ff8d00', '#ffc241', '#7c88ff', '#5cd1b3']
-const BASE_BALANCE = 148200
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0)
@@ -205,49 +72,29 @@ const generateInstallmentSchedule = (dateString, count, dueDay) => {
 }
 
 const createDefaultForm = (type = 'receita') => ({
-  id: null,
   type,
   description: '',
   amount: '',
   category: CATEGORY_OPTIONS[0].id,
-  tags: [],
-  goalId: '',
   date: new Date().toISOString().slice(0, 10),
-  recurring: false,
-  paymentMethod: 'pix',
-  account: 'Banco Inter PJ',
-  status: STATUS_OPTIONS[0],
-  cardId: '',
   isInstallment: false,
   totalAmount: '',
-  installmentCount: '1',
-  notes: '',
+  installmentCount: '2',
 })
 
 const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
 
-const paymentLabelMap = PAYMENT_METHODS.reduce((acc, method) => ({ ...acc, [method.id]: method.label }), {})
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
-  const { finances, loading } = useApp()
+  const { finances, addFinance, updateFinance, deleteFinance, loading } = useApp()
   const [selectedMonth, setSelectedMonth] = useState('12')
   const [selectedYear, setSelectedYear] = useState('2025')
-  const [transactions, setTransactions] = useState([])
-  const [cards, setCards] = useState(INITIAL_CARDS)
-  const [budgets, setBudgets] = useState(INITIAL_BUDGETS)
 
   const [isTransactionModalOpen, setTransactionModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('receita')
   const [formData, setFormData] = useState(createDefaultForm())
   const [editingTransactionId, setEditingTransactionId] = useState(null)
-  const [tagDraft, setTagDraft] = useState('')
-
-  const [isCardModalOpen, setCardModalOpen] = useState(false)
-  const [cardForm, setCardForm] = useState({ name: '', brand: '', closingDay: '1', dueDay: '10', limit: '' })
-
-  const [isBudgetModalOpen, setBudgetModalOpen] = useState(false)
-  const [budgetForm, setBudgetForm] = useState({ category: CATEGORY_OPTIONS[0].id, limit: '' })
 
   const currentMonthMeta = useMemo(() => MONTHS.find((month) => month.value === selectedMonth), [selectedMonth])
 
@@ -287,10 +134,15 @@ export default function Finance({ user, onNavigate, onLogout }) {
   const periodLabel = `${currentMonthMeta?.label ?? ''} · ${selectedYear}`
 
   const filteredTransactions = useMemo(() => {
-    return transactions
+    return finances
+      .map(t => ({
+        ...t,
+        amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount),
+        date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
+      }))
       .filter((transaction) => transaction.date.startsWith(periodKey))
       .sort((a, b) => new Date(b.date) - new Date(a.date))
-  }, [transactions, periodKey])
+  }, [finances, periodKey])
 
   const monthlyRevenue = useMemo(
     () => filteredTransactions.filter((item) => item.type === 'receita').reduce((sum, item) => sum + item.amount, 0),
@@ -298,69 +150,86 @@ export default function Finance({ user, onNavigate, onLogout }) {
   )
 
   const monthlyExpenses = useMemo(
-    () => filteredTransactions.filter((item) => item.type === 'despesa').reduce((sum, item) => sum + item.amount, 0),
+    () => filteredTransactions.filter((item) => item.type === 'DESPESA').reduce((sum, item) => sum + item.amount, 0),
     [filteredTransactions]
-  )
-
-  const creditUsage = useMemo(() => {
-    const totalLimit = cards.reduce((acc, card) => acc + card.limit, 0)
-    const used = cards.reduce((acc, card) => acc + card.limit * card.used, 0)
-    return { totalLimit, used, available: totalLimit - used }
-  }, [cards])
-
-  const openCardInvoices = useMemo(
-    () => transactions.filter((t) => t.paymentMethod === 'credit' && t.status !== 'Liquidado').reduce((sum, t) => sum + t.amount, 0),
-    [transactions]
   )
 
   const kpiMetrics = useMemo(
     () => [
       {
         id: 'balance',
-        label: 'Saldo atual',
-        value: formatCurrency(BASE_BALANCE + monthlyRevenue - monthlyExpenses),
-        helper: 'Consolidado geral',
+        label: 'Saldo do mês',
+        value: formatCurrency(monthlyRevenue - monthlyExpenses),
+        helper: 'Receitas - Despesas',
       },
       {
         id: 'revenue',
         label: 'Receitas do mês',
         value: formatCurrency(monthlyRevenue),
-        helper: `${filteredTransactions.filter((item) => item.type === 'receita').length} entradas`,
+        helper: `${filteredTransactions.filter((item) => item.type === 'RECEITA').length} entradas`,
       },
       {
         id: 'expense',
         label: 'Despesas do mês',
         value: formatCurrency(monthlyExpenses),
-        helper: `${filteredTransactions.filter((item) => item.type === 'despesa').length} saídas`,
-      },
-      {
-        id: 'invoice',
-        label: 'Faturas abertas',
-        value: formatCurrency(openCardInvoices),
-        helper: 'Cartões em uso',
-      },
-      {
-        id: 'limit',
-        label: 'Limite disponível',
-        value: formatCurrency(creditUsage.available),
-        helper: formatCurrency(creditUsage.totalLimit),
+        helper: `${filteredTransactions.filter((item) => item.type === 'DESPESA').length} saídas`,
       },
     ],
-    [monthlyRevenue, monthlyExpenses, filteredTransactions, openCardInvoices, creditUsage]
+    [monthlyRevenue, monthlyExpenses, filteredTransactions]
   )
 
-  const selectedCard = useMemo(() => cards.find((card) => card.id === formData.cardId), [cards, formData.cardId])
+  const categoryBreakdown = useMemo(() => {
+    const breakdown = {}
+    filteredTransactions
+      .filter(t => t.type === 'DESPESA')
+      .forEach(t => {
+        if (!breakdown[t.category]) {
+          breakdown[t.category] = {
+            id: t.category,
+            label: categoryLabelMap[t.category] || t.category,
+            value: 0
+          }
+        }
+        breakdown[t.category].value += t.amount
+      })
+    return Object.values(breakdown).sort((a, b) => b.value - a.value)
+  }, [filteredTransactions])
+
+  const cashflowSeries = useMemo(() => {
+    const series = []
+    for (let i = 0; i < 12; i++) {
+      const monthValue = String(i + 1).padStart(2, '0')
+      const monthKey = `${selectedYear}-${monthValue}`
+      const monthTransactions = finances
+        .map(t => ({
+          ...t,
+          amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount),
+          date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
+        }))
+        .filter(t => t.date.startsWith(monthKey))
+      
+      const receitas = monthTransactions.filter(t => t.type === 'RECEITA').reduce((sum, t) => sum + t.amount, 0)
+      const despesas = monthTransactions.filter(t => t.type === 'DESPESA').reduce((sum, t) => sum + t.amount, 0)
+      
+      series.push({
+        name: MONTHS[i].label.substring(0, 3),
+        receitas,
+        despesas
+      })
+    }
+    return series
+  }, [finances, selectedYear])
+
+  const selectedCard = null
 
   const installmentDetails = useMemo(() => {
-    if (formData.paymentMethod !== 'credit' || !selectedCard) return null
     if (!formData.isInstallment) return null
-    const installmentCount = Math.max(1, Number(formData.installmentCount) || 1)
+    const installmentCount = Math.max(2, Number(formData.installmentCount) || 2)
     const total = parseNumber(formData.totalAmount || formData.amount)
     if (!total) return null
     const valuePerInstallment = total / installmentCount
-    const schedule = generateInstallmentSchedule(formData.date, installmentCount, selectedCard.dueDay)
-    return { total, installmentCount, valuePerInstallment, schedule }
-  }, [formData, selectedCard])
+    return { total, installmentCount, valuePerInstallment }
+  }, [formData])
 
   const handleOpenTransactionModal = (type = 'receita') => {
     setTransactionModalOpen(true)
@@ -372,125 +241,65 @@ export default function Finance({ user, onNavigate, onLogout }) {
 
   const handleEditTransaction = (transaction) => {
     setTransactionModalOpen(true)
-    setActiveTab(transaction.type)
+    setActiveTab(transaction.type.toLowerCase())
     setEditingTransactionId(transaction.id)
     setFormData({
-      ...createDefaultForm(transaction.type),
-      ...transaction,
+      ...createDefaultForm(transaction.type.toLowerCase()),
+      description: transaction.description,
       amount: transaction.amount.toString(),
-      totalAmount: transaction.installments && transaction.installments > 1 ? (transaction.installmentValue * transaction.installments).toString() : '',
-      installmentCount: transaction.installments ? String(transaction.installments) : '1',
-      isInstallment: Boolean(transaction.installments && transaction.installments > 1),
+      category: transaction.category,
+      date: transaction.date,
+      isInstallment: transaction.isInstallment || false,
+      installmentCount: transaction.installmentCount ? String(transaction.installmentCount) : '2',
+      totalAmount: transaction.installmentTotal ? transaction.installmentTotal.toString() : '',
     })
-    setTagDraft('')
   }
 
   const closeTransactionModal = () => {
     setTransactionModalOpen(false)
     setEditingTransactionId(null)
     setFormData(createDefaultForm(activeTab))
-    setTagDraft('')
   }
 
   const handleFormChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleTagAdd = () => {
-    const value = tagDraft.trim()
-    if (!value || formData.tags.includes(value)) return
-    setFormData((prev) => ({ ...prev, tags: [...prev.tags, value] }))
-    setTagDraft('')
-  }
-
-  const handleTagKeyDown = (event) => {
-    if (event.key === 'Enter' || event.key === ',') {
-      event.preventDefault()
-      handleTagAdd()
-    }
-  }
-
-  const handleTagRemove = (tag) => {
-    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((item) => item !== tag) }))
-  }
-
-  const handleTransactionSubmit = (event) => {
+  const handleTransactionSubmit = async (event) => {
     event.preventDefault()
     const amount = parseNumber(formData.amount)
     if (!amount || !formData.description) return
 
     const payload = {
-      id: editingTransactionId ?? generateId(),
-      type: activeTab,
+      type: activeTab.toUpperCase(),
       description: formData.description,
       category: formData.category,
       date: formData.date,
       amount,
-      account: formData.account,
-      paymentMethod: formData.paymentMethod,
-      status: formData.status,
-      tags: formData.tags,
-      goalId: formData.goalId,
-      recurring: formData.recurring,
-      cardId: formData.paymentMethod === 'credit' ? formData.cardId : undefined,
-      installments:
-        formData.paymentMethod === 'credit' && formData.isInstallment ? Math.max(1, Number(formData.installmentCount) || 1) : 1,
-      installmentValue:
-        formData.paymentMethod === 'credit' && formData.isInstallment && installmentDetails
-          ? installmentDetails.valuePerInstallment
-          : amount,
+      isInstallment: formData.isInstallment || false,
+      installmentCount: formData.isInstallment ? Math.max(1, Number(formData.installmentCount) || 1) : null,
+      installmentTotal: formData.isInstallment && installmentDetails ? installmentDetails.total : null,
     }
 
-    setTransactions((prev) => {
+    try {
       if (editingTransactionId) {
-        return prev.map((transaction) => (transaction.id === editingTransactionId ? payload : transaction))
+        await updateFinance(editingTransactionId, payload)
+      } else {
+        await addFinance(payload)
       }
-      return [payload, ...prev]
-    })
-
-    closeTransactionModal()
+      closeTransactionModal()
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error)
+    }
   }
 
-  const handleCardSubmit = (event) => {
-    event.preventDefault()
-    if (!cardForm.name || !cardForm.limit) return
-    setCards((prev) => [
-      ...prev,
-      {
-        id: generateId(),
-        name: cardForm.name,
-        brand: cardForm.brand || 'Outro',
-        limit: parseNumber(cardForm.limit),
-        used: 0,
-        closingDay: Number(cardForm.closingDay) || 1,
-        dueDay: Number(cardForm.dueDay) || 10,
-      },
-    ])
-    setCardForm({ name: '', brand: '', closingDay: '1', dueDay: '10', limit: '' })
-    setCardModalOpen(false)
-  }
-
-  const handleBudgetSubmit = (event) => {
-    event.preventDefault()
-    if (!budgetForm.limit) return
-    const limitValue = parseNumber(budgetForm.limit)
-    setBudgets((prev) => {
-      const exists = prev.find((item) => item.id === budgetForm.category)
-      if (exists) {
-        return prev.map((item) => (item.id === budgetForm.category ? { ...item, ceiling: limitValue } : item))
-      }
-      return [
-        ...prev,
-        {
-          id: budgetForm.category,
-          label: categoryLabelMap[budgetForm.category] ?? 'Categoria',
-          ceiling: limitValue,
-          spent: 0,
-        },
-      ]
-    })
-    setBudgetForm({ category: CATEGORY_OPTIONS[0].id, limit: '' })
-    setBudgetModalOpen(false)
+  const handleDeleteTransaction = async (transactionId) => {
+    if (!window.confirm('Deseja mesmo excluir esta transação?')) return
+    try {
+      await deleteFinance(transactionId)
+    } catch (error) {
+      console.error('Erro ao excluir transação:', error)
+    }
   }
 
   return (
@@ -538,7 +347,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
             <span>{selectedYear}</span>
           </header>
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={CASHFLOW_SERIES} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+            <LineChart data={cashflowSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
@@ -565,14 +374,14 @@ export default function Finance({ user, onNavigate, onLogout }) {
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
-                    data={CATEGORY_BREAKDOWN}
+                    data={categoryBreakdown}
                     dataKey="value"
                     nameKey="label"
                     innerRadius={60}
                     outerRadius={90}
                     paddingAngle={4}
                   >
-                    {CATEGORY_BREAKDOWN.map((entry, index) => (
+                    {categoryBreakdown.map((entry, index) => (
                       <Cell key={entry.id} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -581,7 +390,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
               </ResponsiveContainer>
             </div>
             <ul className="financeChart__legend">
-              {CATEGORY_BREAKDOWN.map((entry, index) => (
+              {categoryBreakdown.map((entry, index) => (
                 <li key={entry.id}>
                   <span style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
                   <div>
@@ -593,84 +402,6 @@ export default function Finance({ user, onNavigate, onLogout }) {
             </ul>
           </div>
         </article>
-
-        <article className="ui-card financeBudgets">
-          <header>
-            <div>
-              <p>Limites</p>
-              <h2>Budget vs realizado</h2>
-            </div>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setBudgetModalOpen(true)}>
-              Gerenciar limites
-            </button>
-          </header>
-          <div className="financeBudgets__list">
-            {budgets.map((budget) => {
-              const progress = Math.min(100, Math.round((budget.spent / budget.ceiling) * 100))
-              const isAlert = budget.spent >= budget.ceiling
-              return (
-                <article key={budget.id} className={isAlert ? 'is-alert' : ''}>
-                  <div>
-                    <strong>{budget.label}</strong>
-                    <span>
-                      {formatCurrency(budget.spent)} / {formatCurrency(budget.ceiling)}
-                    </span>
-                  </div>
-                  <div className="budgetBar">
-                    <span style={{ width: `${progress}%` }} />
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        </article>
-      </section>
-
-      <section className="financeCardsPanel ui-card">
-        <header>
-          <div>
-            <p>Cartões de crédito</p>
-            <h2>Limites e fechamento</h2>
-          </div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCardModalOpen(true)}>
-            Gerenciar cartões
-          </button>
-        </header>
-        <div className="financeCardsPanel__grid">
-          {cards.map((card) => {
-            const usedPercent = Math.round(card.used * 100)
-            const available = card.limit - card.limit * card.used
-            return (
-              <article key={card.id}>
-                <div className="financeCard__head">
-                  <h3>{card.name}</h3>
-                  <span>{formatCurrency(card.limit)}</span>
-                </div>
-                <div className="financeCard__usage">
-                  <div className="budgetBar">
-                    <span style={{ width: `${usedPercent}%` }} />
-                  </div>
-                  <div className="financeCard__meta">
-                    <small>Utilizado</small>
-                    <strong>{usedPercent}%</strong>
-                    <small>Disponível</small>
-                    <strong>{formatCurrency(available)}</strong>
-                  </div>
-                </div>
-                <footer>
-                  <div>
-                    <p>Fechamento</p>
-                    <strong>Dia {card.closingDay}</strong>
-                  </div>
-                  <div>
-                    <p>Vencimento</p>
-                    <strong>Dia {card.dueDay}</strong>
-                  </div>
-                </footer>
-              </article>
-            )
-          })}
-        </div>
       </section>
 
       <section className="financeTransactions ui-card">
@@ -689,45 +420,45 @@ export default function Finance({ user, onNavigate, onLogout }) {
               <th>Descrição</th>
               <th>Categoria</th>
               <th>Data</th>
-              <th>Pagamento</th>
               <th>Valor</th>
-              <th>Status</th>
               <th />
             </tr>
           </thead>
           <tbody>
+            {filteredTransactions.length === 0 && (
+              <tr>
+                <td colSpan="5" style={{textAlign: 'center', padding: '40px'}}>
+                  Nenhuma transação neste período. Clique em "Nova transação" para adicionar.
+                </td>
+              </tr>
+            )}
             {filteredTransactions.slice(0, 8).map((transaction) => (
               <tr key={transaction.id}>
                 <td>
                   <div className="cellMain">
-                    <span className={`pill pill--${transaction.type}`}>{transaction.type}</span>
+                    <span className={`pill pill--${transaction.type.toLowerCase()}`}>{transaction.type}</span>
                     <div>
                       <strong>{transaction.description}</strong>
-                      {transaction.tags?.length ? (
-                        <div className="tagRow">
-                          {transaction.tags.map((tag) => (
-                            <small key={tag}>#{tag}</small>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
                   </div>
                 </td>
-                <td>{categoryLabelMap[transaction.category]}</td>
+                <td>{categoryLabelMap[transaction.category] || transaction.category}</td>
                 <td>{formatDate(transaction.date)}</td>
-                <td>{paymentLabelMap[transaction.paymentMethod]}</td>
-                <td className={transaction.type === 'despesa' ? 'negative' : 'positive'}>
-                  {transaction.type === 'despesa' ? '-' : '+'}
+                <td className={transaction.type === 'DESPESA' ? 'negative' : 'positive'}>
+                  {transaction.type === 'DESPESA' ? '-' : '+'}
                   {formatCurrency(transaction.amount)}
-                </td>
-                <td>
-                  <span className="statusPill" data-status={transaction.status}>
-                    {transaction.status}
-                  </span>
                 </td>
                 <td>
                   <button type="button" className="btn btn--ghost btn--sm" onClick={() => handleEditTransaction(transaction)}>
                     Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => handleDeleteTransaction(transaction.id)}
+                    style={{marginLeft: '8px', color: '#ef4444'}}
+                  >
+                    Excluir
                   </button>
                 </td>
               </tr>
@@ -965,105 +696,6 @@ export default function Finance({ user, onNavigate, onLogout }) {
               </button>
               <button type="submit" className="btn btn--primary">
                 Salvar transação
-              </button>
-            </footer>
-          </form>
-        </div>
-      )}
-
-      {isCardModalOpen && (
-        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
-          <form className="configModal" onSubmit={handleCardSubmit}>
-            <header>
-              <h3>Gerenciar cartões</h3>
-              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={() => setCardModalOpen(false)}>
-                Fechar
-              </button>
-            </header>
-            <div className="configGrid">
-              <label>
-                <span>Nome do cartão</span>
-                <input value={cardForm.name} onChange={(event) => setCardForm((prev) => ({ ...prev, name: event.target.value }))} />
-              </label>
-              <label>
-                <span>Bandeira</span>
-                <input value={cardForm.brand} onChange={(event) => setCardForm((prev) => ({ ...prev, brand: event.target.value }))} />
-              </label>
-              <label>
-                <span>Dia de fechamento</span>
-                <input
-                  type="number"
-                  value={cardForm.closingDay}
-                  onChange={(event) => setCardForm((prev) => ({ ...prev, closingDay: event.target.value }))}
-                />
-              </label>
-              <label>
-                <span>Dia de vencimento</span>
-                <input
-                  type="number"
-                  value={cardForm.dueDay}
-                  onChange={(event) => setCardForm((prev) => ({ ...prev, dueDay: event.target.value }))}
-                />
-              </label>
-              <label>
-                <span>Limite total</span>
-                <input
-                  type="number"
-                  value={cardForm.limit}
-                  onChange={(event) => setCardForm((prev) => ({ ...prev, limit: event.target.value }))}
-                />
-              </label>
-            </div>
-            <footer>
-              <button type="button" className="btn btn--ghostInverse" onClick={() => setCardModalOpen(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn--primary">
-                Salvar cartão
-              </button>
-            </footer>
-          </form>
-        </div>
-      )}
-
-      {isBudgetModalOpen && (
-        <div className="financeModal__backdrop" role="dialog" aria-modal="true">
-          <form className="configModal" onSubmit={handleBudgetSubmit}>
-            <header>
-              <h3>Categorias & limites</h3>
-              <button type="button" className="btn btn--ghostInverse btn--sm" onClick={() => setBudgetModalOpen(false)}>
-                Fechar
-              </button>
-            </header>
-            <div className="configGrid">
-              <label>
-                <span>Categoria</span>
-                <select
-                  value={budgetForm.category}
-                  onChange={(event) => setBudgetForm((prev) => ({ ...prev, category: event.target.value }))}
-                >
-                  {CATEGORY_OPTIONS.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Teto de gastos</span>
-                <input
-                  type="number"
-                  value={budgetForm.limit}
-                  onChange={(event) => setBudgetForm((prev) => ({ ...prev, limit: event.target.value }))}
-                />
-              </label>
-            </div>
-            <footer>
-              <button type="button" className="btn btn--ghostInverse" onClick={() => setBudgetModalOpen(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn--primary">
-                Salvar limite
               </button>
             </footer>
           </form>

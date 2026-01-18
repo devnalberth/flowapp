@@ -1,0 +1,277 @@
+.projectDetailsModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.projectDetailsModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.projectDetailsModal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.projectDetailsModal__header {
+  padding: 32px 32px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.projectDetailsModal__headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.projectDetailsModal__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.projectDetailsModal__closeBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.projectDetailsModal__closeBtn:hover {
+  background: #e8e8e8;
+  color: #111;
+}
+
+.projectDetailsModal__description {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.projectDetailsModal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px 32px;
+}
+
+.projectDetailsModal__cover {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f8f8;
+}
+
+.projectDetailsModal__cover img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.projectDetailsModal__section {
+  margin-bottom: 32px;
+}
+
+.projectDetailsModal__section:last-child {
+  margin-bottom: 0;
+}
+
+.projectDetailsModal__sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 16px;
+}
+
+.projectDetailsModal__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectDetailsModal__progressInfo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #666;
+}
+
+.projectDetailsModal__progressPercent {
+  font-weight: 600;
+  color: #111;
+}
+
+.projectDetailsModal__progressBar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.projectDetailsModal__progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6a00, #ff9500);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.projectDetailsModal__statusBadge {
+  display: inline-flex;
+  padding: 8px 16px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.projectDetailsModal__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.projectDetailsModal__tag {
+  padding: 6px 14px;
+  background: #ff9500;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.projectDetailsModal__placeholder {
+  padding: 32px 20px;
+  text-align: center;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 1px dashed #ddd;
+}
+
+.projectDetailsModal__placeholder p {
+  margin: 0 0 16px;
+  color: #999;
+  font-size: 14px;
+}
+
+.projectDetailsModal__addBtn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.projectDetailsModal__addBtn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+  color: #333;
+}
+
+.projectDetailsModal__footer {
+  padding: 20px 32px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.projectDetailsModal__btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.projectDetailsModal__btn--secondary {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.projectDetailsModal__btn--secondary:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.projectDetailsModal__btn--primary {
+  background: linear-gradient(135deg, #ff6a00, #ff9500);
+  color: #fff;
+}
+
+.projectDetailsModal__btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .projectDetailsModal__panel {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .projectDetailsModal__header,
+  .projectDetailsModal__content,
+  .projectDetailsModal__footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .projectDetailsModal__title {
+    font-size: 24px;
+  }
+}

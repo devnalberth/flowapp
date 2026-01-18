@@ -4,6 +4,8 @@ import { projectService } from '../services/projectService'
 import { goalService } from '../services/goalService'
 import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
+import { studyService } from '../services/studyService'
+import { dreamMapService } from '../services/dreamMapService'
 
 const AppContext = createContext()
 
@@ -22,6 +24,8 @@ export function AppProvider({ children, userId }) {
   const [goals, setGoals] = useState([])
   const [habits, setHabits] = useState([])
   const [finances, setFinances] = useState([])
+  const [studies, setStudies] = useState([])
+  const [dreamMaps, setDreamMaps] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Load all data when userId changes
@@ -35,6 +39,8 @@ export function AppProvider({ children, userId }) {
       setGoals([])
       setHabits([])
       setFinances([])
+      setStudies([])
+      setDreamMaps([])
       setLoading(false)
     }
   }, [userId])
@@ -44,12 +50,14 @@ export function AppProvider({ children, userId }) {
     
     try {
       setLoading(true)
-      const [tasksData, projectsData, goalsData, habitsData, financesData] = await Promise.all([
+      const [tasksData, projectsData, goalsData, habitsData, financesData, studiesData, dreamMapsData] = await Promise.all([
         taskService.getTasks(userId),
         projectService.getProjects(userId),
         goalService.getGoals(userId),
         habitService.getHabits(userId),
         financeService.getTransactions(userId),
+        studyService.getStudies(userId),
+        dreamMapService.getDreamMaps(userId),
       ])
       
       setTasks(tasksData)
@@ -57,6 +65,8 @@ export function AppProvider({ children, userId }) {
       setGoals(goalsData)
       setHabits(habitsData)
       setFinances(financesData)
+      setStudies(studiesData)
+      setDreamMaps(dreamMapsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -268,6 +278,122 @@ export function AppProvider({ children, userId }) {
     }
   }
 
+  // Study Actions
+  const addStudy = async (study) => {
+    if (!userId) return
+    try {
+      const newStudy = await studyService.createStudy(userId, study)
+      // Reload para pegar com modules
+      const allStudies = await studyService.getStudies(userId)
+      setStudies(allStudies)
+      return newStudy
+    } catch (error) {
+      console.error('Error adding study:', error)
+      throw error
+    }
+  }
+
+  const updateStudy = async (id, updates) => {
+    if (!userId) return
+    try {
+      await studyService.updateStudy(id, updates)
+      const allStudies = await studyService.getStudies(userId)
+      setStudies(allStudies)
+    } catch (error) {
+      console.error('Error updating study:', error)
+      throw error
+    }
+  }
+
+  const deleteStudy = async (id) => {
+    if (!userId) return
+    try {
+      await studyService.deleteStudy(id)
+      setStudies((prev) => prev.filter((s) => s.id !== id))
+    } catch (error) {
+      console.error('Error deleting study:', error)
+      throw error
+    }
+  }
+
+  const addStudyModule = async (studyItemId, moduleData) => {
+    if (!userId) return
+    try {
+      await studyService.createModule(studyItemId, moduleData)
+      const allStudies = await studyService.getStudies(userId)
+      setStudies(allStudies)
+    } catch (error) {
+      console.error('Error adding module:', error)
+      throw error
+    }
+  }
+
+  const addStudyLesson = async (moduleId, lessonData) => {
+    if (!userId) return
+    try {
+      await studyService.createLesson(moduleId, lessonData)
+      const allStudies = await studyService.getStudies(userId)
+      setStudies(allStudies)
+    } catch (error) {
+      console.error('Error adding lesson:', error)
+      throw error
+    }
+  }
+
+  const toggleStudyLesson = async (lessonId, isCompleted) => {
+    if (!userId) return
+    try {
+      await studyService.toggleLessonComplete(lessonId, isCompleted)
+      const allStudies = await studyService.getStudies(userId)
+      setStudies(allStudies)
+    } catch (error) {
+      console.error('Error toggling lesson:', error)
+      throw error
+    }
+  }
+
+  // Dream Map Actions
+  const addDreamMap = async (dreamMap, imageFile) => {
+    if (!userId) return
+    try {
+      // Upload image first
+      const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
+      
+      // Create dream map with image URL
+      const newDreamMap = await dreamMapService.createDreamMap(userId, {
+        ...dreamMap,
+        imageUrl,
+      })
+      setDreamMaps([newDreamMap, ...dreamMaps])
+      return newDreamMap
+    } catch (error) {
+      console.error('Error adding dream map:', error)
+      throw error
+    }
+  }
+
+  const updateDreamMap = async (id, updates) => {
+    if (!userId) return
+    try {
+      const updated = await dreamMapService.updateDreamMap(id, userId, updates)
+      setDreamMaps(dreamMaps.map((dm) => (dm.id === id ? updated : dm)))
+    } catch (error) {
+      console.error('Error updating dream map:', error)
+      throw error
+    }
+  }
+
+  const deleteDreamMap = async (id) => {
+    if (!userId) return
+    try {
+      await dreamMapService.deleteDreamMap(id, userId)
+      setDreamMaps(dreamMaps.filter((dm) => dm.id !== id))
+    } catch (error) {
+      console.error('Error deleting dream map:', error)
+      throw error
+    }
+  }
+
   const value = {
     // State
     tasks,
@@ -275,6 +401,8 @@ export function AppProvider({ children, userId }) {
     goals,
     habits,
     finances,
+    studies,
+    dreamMaps,
     loading,
     // Task Actions
     addTask,
@@ -297,6 +425,17 @@ export function AppProvider({ children, userId }) {
     addFinance,
     updateFinance,
     deleteFinance,
+    // Study Actions
+    addStudy,
+    updateStudy,
+    deleteStudy,
+    addStudyModule,
+    addStudyLesson,
+    toggleStudyLesson,
+    // Dream Map Actions
+    addDreamMap,
+    updateDreamMap,
+    deleteDreamMap,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

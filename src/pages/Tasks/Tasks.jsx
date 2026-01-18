@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
+import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 
 import './Tasks.css'
 
@@ -165,9 +167,12 @@ const INITIAL_TASKS = [
   },
 ]
 
+const TASK_MODAL_STATUS = ['Capturar', 'Clarificar', 'Executar', 'Rever']
+const TASK_MODAL_PRIORITY = ['Alta', 'Média', 'Baixa']
+
 export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, loading } = useApp()
+  const { tasks: contextTasks, projects, addTask, loading } = useApp()
   const [timelineFilter, setTimelineFilter] = useState('today')
   const [statusFilters, setStatusFilters] = useState(['flow'])
   const [tasks, setTasks] = useState([])
@@ -186,6 +191,11 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   })
   const [focusedTaskId, setFocusedTaskId] = useState(null)
   const [currentPomodoroIndex, setCurrentPomodoroIndex] = useState(0)
+  const [isTaskModalOpen, setTaskModalOpen] = useState(false)
+
+  const projectOptions = useMemo(() => {
+    return projects.map((project) => ({ id: project.id, label: project.title }))
+  }, [projects])
 
   // Sync tasks from context
   useEffect(() => {
@@ -392,6 +402,25 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     setCurrentPomodoroIndex(0)
     setPomodoroTime(pomodoroConfig.focusTime * 60)
     setPomodoroRunning(false)
+  }
+
+  const handleTaskModalSubmit = async (payload) => {
+    try {
+      await addTask({
+        title: payload.title,
+        description: payload.description,
+        startDate: payload.startDate,
+        dueDate: payload.dueDate,
+        priority: payload.priority,
+        status: payload.status,
+        projectId: payload.projectId,
+        clarifyItems: payload.subtasks?.map((item) => item.title) || [],
+      })
+      setTaskModalOpen(false)
+    } catch (error) {
+      console.error('Erro ao criar tarefa', error)
+      alert('Não foi possível criar a tarefa. Tente novamente.')
+    }
   }
 
   return (
@@ -668,6 +697,23 @@ export default function Tasks({ onNavigate, onLogout, user }) {
             handleSubtaskToggle(activeDetailTask.id, subtaskId)
           }
         }}
+      />
+
+      <FloatingCreateButton
+        label="Nova tarefa"
+        caption="Capturar tarefa"
+        onClick={() => setTaskModalOpen(true)}
+      />
+
+      <CreateTaskModal
+        open={isTaskModalOpen}
+        onClose={() => setTaskModalOpen(false)}
+        onSubmit={handleTaskModalSubmit}
+        projectsOptions={projectOptions}
+        goalOptions={[]}
+        areaOptions={[]}
+        statusOptions={TASK_MODAL_STATUS}
+        priorityOptions={TASK_MODAL_PRIORITY}
       />
 
       <PomodoroConfigModal

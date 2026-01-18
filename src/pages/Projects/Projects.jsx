@@ -1,53 +1,62 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateProjectModal from '../../components/CreateProjectModal/CreateProjectModal.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
+import ProjectDetailsModal from '../../components/ProjectDetailsModal/ProjectDetailsModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 
 import './Projects.css'
 
-const PROJECT_LIBRARY = [
-  {
-    title: 'FlowOS Expansion',
-    description: 'Squads focados na jornada completa do cliente digital.',
-    cover: 'https://placehold.co/233x166/0d0d12/e8e8e8?text=FlowOS',
-    progress: 0.64,
-    tags: ['Profissional', 'Meta'],
-  },
-  {
-    title: 'Atlas Insights',
-    description: 'Dashboard único para priorizar iniciativas estratégicas.',
-    cover: 'https://placehold.co/233x166/ff9500/111111?text=Atlas',
-    progress: 0.32,
-    tags: ['Profissional'],
-  },
+const COLUMN_DEFINITIONS = [
+  { id: 'todo', title: 'Todo list', helper: 'Iniciativas recém-priorizadas', tone: 'todo', status: 'todo' },
+  { id: 'doing', title: 'Em andamento', helper: 'Times focados na entrega', tone: 'doing', status: 'in_progress' },
+  { id: 'closing', title: 'Em Finalização', helper: 'Aguardando validações', tone: 'closing', status: 'review' },
+  { id: 'done', title: 'Concluído', helper: 'Resultados prontos para revisar', tone: 'done', status: 'completed' },
 ]
 
-const BOARD_COLUMNS = [
-  { id: 'todo', title: 'Todo list', helper: 'Iniciativas recém-priorizadas', tone: 'todo' },
-  { id: 'doing', title: 'Em andamento', helper: 'Times focados na entrega', tone: 'doing' },
-  { id: 'closing', title: 'Em Finalização', helper: 'Aguardando validações', tone: 'closing' },
-  { id: 'done', title: 'Concluído', helper: 'Resultados prontos para revisar', tone: 'done' },
-].map((column) => ({
-  ...column,
-  items: PROJECT_LIBRARY.map((project, index) => ({
-    id: `${column.id}-${index + 1}`,
-    ...project,
-  })),
-}))
-
-const PROJECT_OPTIONS = [...new Set(PROJECT_LIBRARY.map((project) => project.title))]
 const TASK_STATUS_OPTIONS = ['A fazer', 'Em andamento', 'Em revisão', 'Concluído']
 const TASK_PRIORITY_OPTIONS = ['Alta', 'Média', 'Baixa']
 const TASK_AREA_OPTIONS = ['Produto', 'Growth', 'Financeiro', 'Pessoal']
 const TASK_GOAL_OPTIONS = ['OKR #1 - Crescimento', 'OKR #2 - Eficiência operacional', 'OKR #3 - Experiência do cliente']
 
 export default function Projects({ onNavigate, onLogout, user }) {
-  const { projects, loading } = useApp()
+  const { projects, goals, loading, addProject, updateProject } = useApp()
   const [isModalOpen, setModalOpen] = useState(false)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [taskProject, setTaskProject] = useState('')
+  const [draggedProject, setDraggedProject] = useState(null)
+  const [dragOverColumn, setDragOverColumn] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [isDetailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [clickStartPos, setClickStartPos] = useState({ x: 0, y: 0 })
+
+  // Organizar projetos por colunas com base no status
+  const boardColumns = useMemo(() => {
+    return COLUMN_DEFINITIONS.map((column) => ({
+      ...column,
+      items: projects
+        .filter((project) => {
+          const status = project.status || 'todo'
+          return status === column.status || (column.status === 'todo' && status === 'active')
+        })
+        .map((project) => ({
+          id: project.id,
+          title: project.title,
+          description: project.description || '',
+          cover: project.cover_image || `https://placehold.co/233x166/${project.color || 'ff9500'}/111111?text=${encodeURIComponent(project.title)}`,
+          progress: project.progress || 0,
+          tags: project.tags ? JSON.parse(project.tags) : [],
+        })),
+    }))
+  }, [projects])
+
+  // Opções de projetos para o modal de tarefas
+  const projectOptions = useMemo(() => {
+    return projects.map((p) => p.title)
+  }, [projects])
 
   const currentUser =
     user ?? {
@@ -73,9 +82,21 @@ export default function Projects({ onNavigate, onLogout, user }) {
     setTaskProject('')
   }
 
-  const handleSubmitProject = (payload) => {
-    console.table(payload)
-    closeModal()
+  const closeDetailsModal = () => {
+    setDetailsModalOpen(false)
+    setSelectedProject(null)
+  }
+
+  const handleSubmitProject = async (payload) => {
+    try {
+      console.log('Submitting project:', payload)
+      await addProject(payload)
+      closeModal()
+    } catch (error) {
+      console.error('Erro ao criar projeto:', error)
+      const errorMessage = error?.message || 'Erro desconhecido ao criar projeto'
+      alert(`Erro ao criar projeto: ${errorMessage}`)
+    }
   }
 
   const handleSubmitTask = (payload) => {
@@ -83,13 +104,112 @@ export default function Projects({ onNavigate, onLogout, user }) {
     closeTaskModal()
   }
 
+  // Funções de Drag and Drop
+  const handleMouseDown = (e, project) => {
+    // Salvar posição inicial do click
+    setClickStartPos({ x: e.clientX, y: e.clientY })
+    setIsDragging(false)
+  }
+
+  const handleDragStart = (e, project) => {
+    setIsDragging(true)
+    setDraggedProject(project)
+    e.dataTransfer.effectAllowed = 'move'
+    
+    setTimeout(() => {
+      e.currentTarget.classList.add('projectsCard--dragging')
+    }, 0)
+  }
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.classList.remove('projectsCard--dragging')
+    
+    // Pequeno delay para permitir o drop antes de resetar
+    setTimeout(() => {
+      setDraggedProject(null)
+      setDragOverColumn(null)
+      setIsDragging(false)
+    }, 50)
+  }
+
+  const handleCardClick = (e, project) => {
+    // Não abrir se clicou no botão de adicionar tarefa
+    if (e.target.closest('.projectsCard__add')) return
+    
+    // Verificar se houve movimento (drag) - se moveu mais de 5px, é drag
+    const moveDistance = Math.sqrt(
+      Math.pow(e.clientX - clickStartPos.x, 2) + 
+      Math.pow(e.clientY - clickStartPos.y, 2)
+    )
+    
+    // Se moveu muito ou está arrastando, não abrir modal
+    if (isDragging || moveDistance > 5) return
+    
+    setSelectedProject(project)
+    setDetailsModalOpen(true)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDragEnter = (e, columnStatus) => {
+    e.preventDefault()
+    setDragOverColumn(columnStatus)
+  }
+
+  const handleDragLeave = (e) => {
+    // Verifica se realmente saiu da coluna (não apenas de um filho)
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverColumn(null)
+    }
+  }
+
+  const handleDrop = async (e, targetStatus) => {
+    e.preventDefault()
+    setDragOverColumn(null)
+
+    if (!draggedProject || draggedProject.status === targetStatus) {
+      return
+    }
+
+    try {
+      // Atualizar o status do projeto no banco
+      await updateProject(draggedProject.id, { status: targetStatus })
+    } catch (error) {
+      console.error('Erro ao atualizar status do projeto:', error)
+      alert('Erro ao mover projeto. Tente novamente.')
+    }
+
+    setDraggedProject(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="projects">
+        <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} onLogout={onLogout} />
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Carregando projetos...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="projects">
       <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} onLogout={onLogout} />
 
+      <FloatingCreateButton label="Criar novo projeto" caption="Novo projeto" onClick={openModal} />
+
       <section className="projectsBoard">
-        {BOARD_COLUMNS.map((column) => (
-          <article key={column.id} className="projectsColumn">
+        {boardColumns.map((column) => (
+          <article 
+            key={column.id} 
+            className={`projectsColumn ${dragOverColumn === column.status ? 'projectsColumn--dragOver' : ''}`}
+            onDragOver={handleDragOver}
+            onDragEnter={(e) => handleDragEnter(e, column.status)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, column.status)}
+          >
             <header className="projectsColumn__header">
               <div className="projectsColumn__title">
                 <span className={`projectsColumn__icon projectsColumn__icon--${column.tone}`} aria-hidden="true" />
@@ -97,11 +217,29 @@ export default function Projects({ onNavigate, onLogout, user }) {
               </div>
             </header>
 
-            {column.items.map((project) => {
-              const progressPercent = Math.min(Math.max(Math.round(project.progress * 100), 0), 100)
+            {column.items.length === 0 ? (
+              <div className="projectsColumn__empty">
+                <p>Nenhum projeto nesta coluna</p>
+                {column.id === 'todo' && (
+                  <button type="button" className="projectsColumn__addButton" onClick={openModal}>
+                    + Criar primeiro projeto
+                  </button>
+                )}
+              </div>
+            ) : (
+              column.items.map((project) => {
+                const progressPercent = Math.min(Math.max(Math.round(project.progress * 100), 0), 100)
 
               return (
-                <div key={project.id} className="projectsCard">
+                <div 
+                  key={project.id} 
+                  className="projectsCard"
+                  draggable={true}
+                  onMouseDown={(e) => handleMouseDown(e, { ...project, status: column.status })}
+                  onDragStart={(e) => handleDragStart(e, { ...project, status: column.status })}
+                  onDragEnd={handleDragEnd}
+                  onClick={(e) => handleCardClick(e, { ...project, status: column.status })}
+                >
                   <div className="projectsCard__text">
                     <div className="projectsCard__title">{project.title}</div>
                     <p className="projectsCard__description">{project.description}</p>
@@ -144,21 +282,32 @@ export default function Projects({ onNavigate, onLogout, user }) {
                   </div>
                 </div>
               )
-            })}
+            })
+            )}
           </article>
         ))}
       </section>
-      <CreateProjectModal open={isModalOpen} onClose={closeModal} onSubmit={handleSubmitProject} />
+      <CreateProjectModal
+        open={isModalOpen}
+        onClose={closeModal}
+        onSubmit={handleSubmitProject}
+        goalOptions={goals}
+      />
       <CreateTaskModal
         open={isTaskModalOpen}
         onClose={closeTaskModal}
         onSubmit={handleSubmitTask}
-        projectsOptions={PROJECT_OPTIONS}
+        projectsOptions={projectOptions}
         goalOptions={TASK_GOAL_OPTIONS}
         areaOptions={TASK_AREA_OPTIONS}
         statusOptions={TASK_STATUS_OPTIONS}
         priorityOptions={TASK_PRIORITY_OPTIONS}
         initialProject={taskProject}
+      />
+      <ProjectDetailsModal
+        project={selectedProject}
+        open={isDetailsModalOpen}
+        onClose={closeDetailsModal}
       />
     </div>
   )

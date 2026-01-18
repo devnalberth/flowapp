@@ -1,0 +1,220 @@
+:root {
+  --modal-bg: rgba(16, 16, 22, 0.5);
+  --panel-bg: #ffffff;
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --panel-radius: 20px;
+  --surface-elev: 0 18px 60px rgba(0, 0, 0, 0.15);
+}
+
+.dreamMapModal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+}
+
+.dreamMapModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--modal-bg);
+  backdrop-filter: blur(6px);
+}
+
+.dreamMapModal__panel {
+  position: relative;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  padding: 32px;
+  box-shadow: var(--surface-elev);
+  color: #0d0d12;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dreamMapModal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dreamMapModal__eyebrow {
+  text-transform: uppercase;
+  color: #ff4800;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+}
+
+.dreamMapModal__header h3 {
+  margin: 4px 0 0;
+  font-size: 1.6rem;
+}
+
+.dreamMapModal__close {
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+}
+
+.dreamMapModal__close:hover {
+  border-color: #8b8da2;
+}
+
+.dreamMapModal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dreamMapModal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #5b5a64;
+}
+
+.dreamMapModal__field > span {
+  color: #0d0d12;
+  font-weight: 600;
+}
+
+.dreamMapModal__field input:not([type='file']),
+.dreamMapModal__field select {
+  background: #f9f9fb;
+  border: 1px solid #e0e0e6;
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: inherit;
+  font: inherit;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.dreamMapModal__field input:focus,
+.dreamMapModal__field select:focus {
+  outline: none;
+  border-color: #ff4800;
+  background: rgba(255, 72, 0, 0.06);
+}
+
+.dreamMapModal__uploadButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  background: #f9f9fb;
+  border: 2px dashed #d0d0d8;
+  border-radius: 16px;
+  color: #5b5a64;
+  font: inherit;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.dreamMapModal__uploadButton:hover {
+  border-color: #ff4800;
+  background: rgba(255, 72, 0, 0.05);
+  color: #0d0d12;
+}
+
+.dreamMapModal__uploadIcon {
+  font-size: 2.5rem;
+}
+
+.dreamMapModal__imagePreview {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f9f9fb;
+  border: 1px solid #e0e0e6;
+}
+
+.dreamMapModal__imagePreview img {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+.dreamMapModal__changeImage {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid #e0e0e6;
+  border-radius: 10px;
+  color: #0d0d12;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 200ms ease;
+}
+
+.dreamMapModal__changeImage:hover {
+  background: #ffffff;
+  border-color: #ff4800;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.dreamMapModal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn {
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: #5b5a64;
+  border: 1px solid #d0d0d8;
+}
+
+.btn--ghost:hover {
+  border-color: #0d0d12;
+  background: #f9f9fb;
+}
+
+.btn--primary {
+  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 30px rgba(255, 72, 0, 0.32);
+}
+
+.btn--primary:hover {
+  box-shadow: 0 16px 36px rgba(255, 72, 0, 0.4);
+}

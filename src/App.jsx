@@ -12,6 +12,7 @@ import AIAssistant from './pages/AIAssistant/AIAssistant.jsx'
 import Login from './pages/Login/Login.jsx'
 import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import { getSupabaseClient } from './lib/supabaseClient.js'
+import { userService } from './services/userService.js'
 
 const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'AI Assistant']
 const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
@@ -59,19 +60,33 @@ function App() {
     setIsAuthReady(false)
 
     const bootstrap = async () => {
-      const {
-        data: { session },
-      } = await authClient.auth.getSession()
+      try {
+        // Timeout de 3 segundos para getSession
+        const sessionPromise = authClient.auth.getSession()
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve({ data: { session: null } }), 3000)
+        })
+        
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
 
-      if (!isMounted) return
+        if (!isMounted) return
 
-      if (session?.user) {
-        syncUser(session.user)
-        setIsAuthenticated(true)
-      } else {
-        setIsAuthenticated(false)
+        if (session?.user) {
+          syncUser(session.user)
+          setIsAuthenticated(true)
+        } else {
+          setIsAuthenticated(false)
+        }
+      } catch (error) {
+        console.error('Error loading session:', error)
+        if (isMounted) {
+          setIsAuthenticated(false)
+        }
+      } finally {
+        if (isMounted) {
+          setIsAuthReady(true)
+        }
       }
-      setIsAuthReady(true)
     }
 
     bootstrap()
@@ -216,13 +231,35 @@ export default function AppWrapper() {
     
     const loadUser = async () => {
       const { data: { session } } = await client.auth.getSession()
-      setCurrentUserId(session?.user?.id || null)
+      if (session?.user) {
+        try {
+          // Garantir que o usuário existe na tabela users
+          await userService.ensureUser(session.user)
+          setCurrentUserId(session.user.id)
+        } catch (error) {
+          console.error('Error ensuring user:', error)
+          setCurrentUserId(null)
+        }
+      } else {
+        setCurrentUserId(null)
+      }
     }
     
     loadUser()
     
-    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
-      setCurrentUserId(session?.user?.id || null)
+    const { data: listener } = client.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        try {
+          // Garantir que o usuário existe na tabela users
+          await userService.ensureUser(session.user)
+          setCurrentUserId(session.user.id)
+        } catch (error) {
+          console.error('Error ensuring user:', error)
+          setCurrentUserId(null)
+        }
+      } else {
+        setCurrentUserId(null)
+      }
     })
     
     return () => {

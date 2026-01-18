@@ -15,41 +15,64 @@ export const projectService = {
 
   async createProject(userId, project) {
     const supabase = getSupabaseClient(true);
+    
+    const projectData = {
+      title: project.title,
+      description: project.description || null,
+      status: project.status || 'todo',
+      color: project.color || 'ff9500',
+      progress: parseInt(project.progress) || 0,
+      start_date: project.startDate || null,
+      end_date: project.endDate || null,
+      goal_id: project.goalId || null,
+      user_id: userId,
+    };
+    
+    console.log('Creating project with data:', projectData);
+    
     const { data, error } = await supabase
       .from('projects')
-      .insert({
-        title: project.title,
-        description: project.description,
-        status: project.status || 'active',
-        color: project.color,
-        progress: project.progress || 0,
-        user_id: userId,
-      })
+      .insert(projectData)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
     return data;
   },
 
   async updateProject(projectId, userId, updates) {
     const supabase = getSupabaseClient(true);
+    
+    const updateData = {
+      ...(updates.title !== undefined && { title: updates.title }),
+      ...(updates.description !== undefined && { description: updates.description }),
+      ...(updates.status !== undefined && { status: updates.status }),
+      ...(updates.color !== undefined && { color: updates.color }),
+      ...(updates.progress !== undefined && { progress: parseInt(updates.progress) }),
+      ...(updates.startDate !== undefined && { start_date: updates.startDate }),
+      ...(updates.endDate !== undefined && { end_date: updates.endDate }),
+      ...(updates.goalId !== undefined && { goal_id: updates.goalId }),
+    };
+    
+    console.log('Updating project:', projectId, updateData);
+    
     const { data, error } = await supabase
       .from('projects')
-      .update({
-        title: updates.title,
-        description: updates.description,
-        status: updates.status,
-        color: updates.color,
-        progress: updates.progress,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', projectId)
       .eq('user_id', userId)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
+    
     return data;
   },
 

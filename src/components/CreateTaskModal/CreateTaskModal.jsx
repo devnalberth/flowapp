@@ -9,37 +9,54 @@ export default function CreateTaskModal({
   onClose,
   onSubmit,
   projectsOptions = [],
-  goalOptions = [],
-  areaOptions = [],
   statusOptions = [],
   priorityOptions = [],
   initialProject = '',
 }) {
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
+  const startDateRef = useRef(null)
+  const dueDateRef = useRef(null)
+
+  const normalizedProjects = useMemo(() => {
+    return projectsOptions.map((option) =>
+      typeof option === 'string'
+        ? { id: option, label: option }
+        : option
+    )
+  }, [projectsOptions])
+
+  const defaultProjectId = useMemo(() => {
+    if (!initialProject) return ''
+    const found = normalizedProjects.find(
+      (option) => option.id === initialProject || option.label === initialProject,
+    )
+    return found?.id || ''
+  }, [initialProject, normalizedProjects])
 
   const defaultForm = useMemo(
     () => ({
-      name: '',
+      title: '',
       startDate: '',
       dueDate: '',
       status: statusOptions[0] ?? '',
       priority: priorityOptions[0] ?? '',
       description: '',
-      project: initialProject || '',
-      goal: '',
-      area: '',
+      projectId: defaultProjectId,
+      subtasks: [],
     }),
-    [initialProject, priorityOptions, statusOptions],
+    [defaultProjectId, priorityOptions, statusOptions],
   )
 
   const [form, setForm] = useState(defaultForm)
+  const [subtaskDraft, setSubtaskDraft] = useState('')
 
   const charCounter = useMemo(() => `${form.description.length}/${DESCRIPTION_LIMIT}`, [form.description.length])
 
   useEffect(() => {
     if (open) {
       setForm(defaultForm)
+      setSubtaskDraft('')
     }
   }, [open, defaultForm])
 
@@ -107,11 +124,11 @@ export default function CreateTaskModal({
             <input
               ref={nameRef}
               type="text"
-              name="name"
+              name="title"
               className="createTaskModal__input"
               placeholder="Nome da tarefa"
-              value={form.name}
-              onChange={updateField('name')}
+              value={form.title}
+              onChange={updateField('title')}
               required
             />
           </label>
@@ -122,6 +139,7 @@ export default function CreateTaskModal({
             </span>
             <div className="createTaskModal__dateRange">
               <input
+                ref={startDateRef}
                 type="date"
                 name="startDate"
                 value={form.startDate}
@@ -133,6 +151,7 @@ export default function CreateTaskModal({
                 —
               </span>
               <input
+                ref={dueDateRef}
                 type="date"
                 name="dueDate"
                 value={form.dueDate}
@@ -140,47 +159,61 @@ export default function CreateTaskModal({
                 className="createTaskModal__dateInput"
                 required
               />
-              <span className="createTaskModal__calendarIcon" aria-hidden="true" />
+              <button
+                type="button"
+                className="createTaskModal__calendarBtn"
+                onClick={() => dueDateRef.current?.showPicker?.()}
+                aria-label="Abrir calendário"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </button>
             </div>
           </label>
 
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Status <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="createTaskModal__input createTaskModal__input--select"
-              name="status"
-              value={form.status}
-              onChange={updateField('status')}
-              required
-            >
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="createTaskModal__grid">
+            <label className="createTaskModal__field">
+              <span className="createTaskModal__label">
+                Status <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
+              </span>
+              <select
+                className="createTaskModal__input createTaskModal__input--select"
+                name="status"
+                value={form.status}
+                onChange={updateField('status')}
+                required
+              >
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Prioridade <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="createTaskModal__input createTaskModal__input--select"
-              name="priority"
-              value={form.priority}
-              onChange={updateField('priority')}
-              required
-            >
-              {priorityOptions.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="createTaskModal__field">
+              <span className="createTaskModal__label">
+                Prioridade <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
+              </span>
+              <select
+                className="createTaskModal__input createTaskModal__input--select"
+                name="priority"
+                value={form.priority}
+                onChange={updateField('priority')}
+                required
+              >
+                {priorityOptions.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <label className="createTaskModal__field">
             <span className="createTaskModal__label">
@@ -194,6 +227,7 @@ export default function CreateTaskModal({
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.description}
                 onChange={updateField('description')}
+                rows="3"
                 required
               />
               <span className="createTaskModal__counter">{charCounter}</span>
@@ -202,68 +236,96 @@ export default function CreateTaskModal({
 
           <label className="createTaskModal__field">
             <span className="createTaskModal__label">
-              Projeto <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
+              Projeto vinculado <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
             </span>
             <select
               className="createTaskModal__input createTaskModal__input--select"
-              name="project"
-              value={form.project}
-              onChange={updateField('project')}
+              name="projectId"
+              value={form.projectId}
+              onChange={updateField('projectId')}
               required
             >
               <option value="" disabled>
-                Selecione o projeto da tarefa
+                Selecione o projeto
               </option>
-              {projectsOptions.map((project) => (
-                <option key={project} value={project}>
-                  {project}
+              {normalizedProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.label}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Meta <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="createTaskModal__input createTaskModal__input--select"
-              name="goal"
-              value={form.goal}
-              onChange={updateField('goal')}
-              required
-            >
-              <option value="" disabled>
-                Selecione a meta da tarefa
-              </option>
-              {goalOptions.map((goal) => (
-                <option key={goal} value={goal}>
-                  {goal}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Área <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="createTaskModal__input createTaskModal__input--select"
-              name="area"
-              value={form.area}
-              onChange={updateField('area')}
-              required
-            >
-              <option value="" disabled>
-                Selecione a área da tarefa
-              </option>
-              {areaOptions.map((area) => (
-                <option key={area} value={area}>
-                  {area}
-                </option>
-              ))}
-            </select>
+            <span className="createTaskModal__label">Subtarefas para clarificar</span>
+            <div className="createTaskModal__subtasks">
+              <div className="subtaskInput">
+                <input
+                  type="text"
+                  placeholder="Ex: Definir próximo passo"
+                  value={subtaskDraft}
+                  onChange={(event) => setSubtaskDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      if (!subtaskDraft.trim()) return
+                      const newSubtask = {
+                        id:
+                          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                            ? crypto.randomUUID()
+                            : String(Date.now()),
+                        title: subtaskDraft.trim(),
+                      }
+                      setForm((prev) => ({
+                        ...prev,
+                        subtasks: [...prev.subtasks, newSubtask],
+                      }))
+                      setSubtaskDraft('')
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!subtaskDraft.trim()) return
+                    const newSubtask = {
+                      id:
+                        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                          ? crypto.randomUUID()
+                          : String(Date.now()),
+                      title: subtaskDraft.trim(),
+                    }
+                    setForm((prev) => ({
+                      ...prev,
+                      subtasks: [...prev.subtasks, newSubtask],
+                    }))
+                    setSubtaskDraft('')
+                  }}
+                >
+                  Adicionar
+                </button>
+              </div>
+              {form.subtasks.length > 0 && (
+                <ul className="createTaskModal__subtaskList">
+                  {form.subtasks.map((subtask, index) => (
+                    <li key={subtask.id || index}>
+                      <span>{subtask.title}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            subtasks: prev.subtasks.filter((_, i) => i !== index),
+                          }))
+                        }
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </label>
 
           <footer className="createTaskModal__footer">

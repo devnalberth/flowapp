@@ -1,0 +1,101 @@
+.floatingCreateButton {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 68px;
+  height: 68px;
+  border-radius: 9999px;
+  border: none;
+  background: #ff5100;
+  box-shadow:
+    0 10px 35px rgba(255, 81, 0, 0.45),
+    inset 0 1px 4px rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  z-index: 120;
+  isolation: isolate;
+}
+
+.floatingCreateButton svg {
+  width: 26px;
+  height: 26px;
+  stroke: #fff;
+  stroke-width: 2.25px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.floatingCreateButton__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floatingCreateButton__glow {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 193, 79, 0.4), transparent 60%);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.floatingCreateButton__caption {
+  position: absolute;
+  right: 80px;
+  background: #111;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  font-size: 14px;
+  box-shadow: 0 12px 30px rgba(17, 17, 17, 0.25);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.floatingCreateButton:hover,
+.floatingCreateButton:focus-visible {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow:
+    0 16px 40px rgba(255, 81, 0, 0.5),
+    inset 0 1px 6px rgba(255, 255, 255, 0.5);
+}
+
+.floatingCreateButton:hover .floatingCreateButton__glow,
+.floatingCreateButton:focus-visible .floatingCreateButton__glow {
+  opacity: 1;
+}
+
+.floatingCreateButton:hover .floatingCreateButton__caption,
+.floatingCreateButton:focus-visible .floatingCreateButton__caption {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.floatingCreateButton:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 4px;
+}
+
+@media (max-width: 640px) {
+  .floatingCreateButton {
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .floatingCreateButton__caption {
+    display: none;
+  }
+}
