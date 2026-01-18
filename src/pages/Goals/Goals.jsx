@@ -292,10 +292,37 @@ export default function Goals({ onNavigate, onLogout, user }) {
   // Agrupar metas por área
   const LIFE_AREAS = useMemo(() => {
     return DEFAULT_LIFE_AREAS.map(area => {
-      const areaGoals = goals.filter(goal => 
-        goal.area?.toLowerCase() === area.id || 
-        goal.area?.toLowerCase() === area.label.toLowerCase()
-      )
+      const areaGoals = goals
+        .filter(goal => 
+          goal.area?.toLowerCase() === area.id || 
+          goal.area?.toLowerCase() === area.label.toLowerCase()
+        )
+        .map(goal => {
+          // Calcular trimestres se não estiver definido
+          let trimester = '1º Trimestre'
+          
+          if (goal.trimesters) {
+            trimester = goal.trimesters
+          } else if (goal.startDate) {
+            const start = new Date(goal.startDate)
+            const startMonth = start.getMonth() + 1
+            const quarterIndex = Math.ceil(startMonth / 3)
+            trimester = TRIMESTERS[quarterIndex - 1]
+          }
+          
+          return {
+            ...goal,
+            trimester,
+            areaLabel: area.label,
+            status: goal.progress >= 1 ? 'Concluída' : goal.progress > 0 ? 'Em progresso' : 'Não iniciada',
+            reason: goal.target || 'Sem descrição',
+            intention: goal.target || 'Sem intenção definida',
+            timeline: [
+              { id: 1, label: 'Início', date: goal.startDate ? new Date(goal.startDate).toLocaleDateString('pt-BR') : 'A definir' },
+              { id: 2, label: 'Fim', date: goal.endDate ? new Date(goal.endDate).toLocaleDateString('pt-BR') : 'A definir' },
+            ],
+          }
+        })
       
       const totalProgress = areaGoals.length > 0
         ? areaGoals.reduce((sum, goal) => sum + (goal.progress || 0), 0) / areaGoals.length
