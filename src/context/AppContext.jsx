@@ -24,6 +24,7 @@ export function AppProvider({ children, userId }) {
       console.debug('AppProvider: userId changed =>', userId)
     } catch (err) {
       console.debug('AppProvider: failed to log userId change', err)
+    }
   }, [userId])
   // State for all entities
   const [tasks, setTasks] = useState([])
