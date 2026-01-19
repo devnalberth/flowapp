@@ -18,6 +18,9 @@ export function useApp() {
 }
 
 export function AppProvider({ children, userId }) {
+  useEffect(() => {
+    console.debug('AppProvider: userId changed ->', userId)
+  }, [userId])
   // State for all entities
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
