@@ -8,16 +8,18 @@ export const studyService = {
     }
 
     const { data, error } = await supabase
-      .from('StudyItem')
-      .select(`
+      .from('study_items')
+      .select(
+        `
         *,
-        modules:StudyModule(
+        modules:study_modules(
           *,
-          lessons:StudyLesson(*)
+          lessons:study_lessons(*)
         )
-      `)
-      .eq('userId', userId)
-      .order('createdAt', { ascending: false })
+      `,
+      )
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching studies:', error)
@@ -29,7 +31,7 @@ export const studyService = {
 
   async createStudy(userId, studyData) {
     const { data, error } = await supabase
-      .from('StudyItem')
+      .from('study_items')
       .insert([
         {
           user_id: userId,
@@ -52,7 +54,7 @@ export const studyService = {
 
   async updateStudy(studyId, updates) {
     const { data, error } = await supabase
-      .from('StudyItem')
+      .from('study_items')
       .update({
         title: updates.title,
         type: updates.type,
@@ -72,7 +74,7 @@ export const studyService = {
   },
 
   async deleteStudy(studyId) {
-    const { error } = await supabase.from('StudyItem').delete().eq('id', studyId)
+    const { error } = await supabase.from('study_items').delete().eq('id', studyId)
 
     if (error) {
       console.error('Error deleting study:', error)
@@ -82,7 +84,7 @@ export const studyService = {
 
   async createModule(studyItemId, moduleData) {
     const { data, error } = await supabase
-      .from('StudyModule')
+      .from('study_modules')
       .insert([
         {
           study_item_id: studyItemId,
@@ -102,7 +104,7 @@ export const studyService = {
 
   async createLesson(moduleId, lessonData) {
     const { data, error } = await supabase
-      .from('StudyLesson')
+      .from('study_lessons')
       .insert([
         {
           module_id: moduleId,
@@ -124,7 +126,7 @@ export const studyService = {
 
   async toggleLessonComplete(lessonId, isCompleted) {
     const { data, error } = await supabase
-      .from('StudyLesson')
+      .from('study_lessons')
       .update({ is_completed: isCompleted })
       .eq('id', lessonId)
       .select()
