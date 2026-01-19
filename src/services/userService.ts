@@ -38,8 +38,12 @@ export async function ensureUser(authUser: any) {
     if (insertError) throw insertError
     return newUser
   } catch (err) {
-    console.error('ensureUser error:', err)
-    return null
+    try {
+      console.error('ensureUser error:', (err as any)?.message ?? err, err)
+    } catch (logErr) {
+      console.error('ensureUser error (fallback log):', logErr)
+    }
+    throw err
   }
 }
 
