@@ -1,11 +1,22 @@
-import { getSupabaseClient } from '../lib/supabaseClient';
+import { getSupabaseClient, supabasePersistent, supabaseSession } from '../lib/supabaseClient';
 
 export const userService = {
   async ensureUser(authUser, options = { createIfMissing: true }) {
     if (!authUser || !authUser.id) return null;
 
     const { createIfMissing } = options
-    const supabase = getSupabaseClient(true);
+    // Choose a client that currently has a session: prefer persistent, then session, then default
+    let supabase = supabasePersistent
+    try {
+      const { data: p } = await supabasePersistent.auth.getSession()
+      if (!p || !p.session) {
+        const { data: s } = await supabaseSession.auth.getSession()
+        if (s && s.session) supabase = supabaseSession
+      }
+    } catch (e) {
+      // fallback to getSupabaseClient
+      supabase = getSupabaseClient(true)
+    }
 
     try {
       const { data: existingUser, error: fetchError } = await supabase
@@ -48,7 +59,17 @@ export const userService = {
   },
 
   async getUser(userId) {
-    const supabase = getSupabaseClient(true);
+      // pick authenticated client if available
+      let supabase = supabasePersistent
+      try {
+        const { data: p } = await supabasePersistent.auth.getSession()
+        if (!p || !p.session) {
+          const { data: s } = await supabaseSession.auth.getSession()
+          if (s && s.session) supabase = supabaseSession
+        }
+      } catch (e) {
+        supabase = getSupabaseClient(true)
+      }
     const { data, error } = await supabase
       .from('users')
       .select('*')

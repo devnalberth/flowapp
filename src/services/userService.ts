@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase, supabasePersistent, supabaseSession, getSupabaseClient } from '../lib/supabaseClient'
 
 export type UserData = {
   id: string
@@ -13,7 +13,19 @@ export async function ensureUser(authUser: any, options: { createIfMissing?: boo
   const { createIfMissing = true } = options
 
   try {
-    const { data: existingUser, error: fetchError } = await supabase
+    // pick client that has session (prefer persistent then session)
+    let client = supabasePersistent
+    try {
+      const { data: p } = await supabasePersistent.auth.getSession()
+      if (!p || !p.session) {
+        const { data: s } = await supabaseSession.auth.getSession()
+        if (s && s.session) client = supabaseSession
+      }
+    } catch (e) {
+      client = getSupabaseClient(true)
+    }
+
+    const { data: existingUser, error: fetchError } = await client
       .from('users')
       .select('*')
       .eq('id', authUser.id)
@@ -35,7 +47,7 @@ export async function ensureUser(authUser: any, options: { createIfMissing?: boo
       name: authUser.user_metadata?.name || authUser.email?.split('@')?.[0] || null,
     }
 
-    const { data: newUser, error: insertError } = await supabase
+    const { data: newUser, error: insertError } = await client
       .from('users')
       .insert(payload)
       .select()
@@ -54,7 +66,18 @@ export async function ensureUser(authUser: any, options: { createIfMissing?: boo
 }
 
 export async function getUser(userId: string) {
-  const { data, error } = await supabase
+  let client = supabasePersistent
+  try {
+    const { data: p } = await supabasePersistent.auth.getSession()
+    if (!p || !p.session) {
+      const { data: s } = await supabaseSession.auth.getSession()
+      if (s && s.session) client = supabaseSession
+    }
+  } catch (e) {
+    client = getSupabaseClient(true)
+  }
+
+  const { data, error } = await client
     .from('users')
     .select('*')
     .eq('id', userId)
