@@ -11,7 +11,7 @@ import Finance from './pages/Finance/Finance.jsx'
 import AIAssistant from './pages/AIAssistant/AIAssistant.jsx'
 import Login from './pages/Login/Login.jsx'
 import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
-import { getSupabaseClient } from './lib/supabaseClient.js'
+import { getSupabaseClient, supabasePersistent, supabaseSession } from './lib/supabaseClient.js'
 import { userService } from './services/userService'
 
 const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'AI Assistant']
@@ -218,28 +218,17 @@ export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
   
   useEffect(() => {
-    const resolveClient = () => {
-      if (typeof window === 'undefined') return getSupabaseClient(true)
-      const storedPref = window.localStorage.getItem(AUTH_STORAGE_KEY) === 'session' ? 'session' : 'local'
-      return getSupabaseClient(storedPref !== 'session')
-    }
+    // Listen on both persistent and session clients so we detect auth changes
+    // regardless of the storage preference used at login.
+    const clients = [supabasePersistent, supabaseSession]
 
-    const client = resolveClient()
-
-    const loadUser = async () => {
+    const loadFromClient = async (client) => {
       try {
         const { data: { session } } = await client.auth.getSession()
         if (session?.user) {
-          // Garantir que o usuário existe na tabela users
           const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
           if (!ensured) {
-            // User was deleted server-side — sign out locally to avoid re-creating it
-            try {
-              await client.auth.signOut()
-            } catch (e) {
-              console.error('Failed to sign out after missing user:', e)
-            }
-            // Clear auth-related storage keys to avoid stale sessions
+            try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
             try {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('flowapp-auth')
@@ -251,51 +240,62 @@ export default function AppWrapper() {
               console.error('Failed to clear auth storage:', e)
             }
             setCurrentUserId(null)
-          } else {
-            setCurrentUserId(session.user.id)
+            return true
+          }
+          setCurrentUserId(session.user.id)
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('Error ensuring user:', error)
+        return false
+      }
+    }
+
+    let mounted = true
+
+    ;(async () => {
+      for (const client of clients) {
+        if (!mounted) return
+        const found = await loadFromClient(client)
+        if (found) break
+      }
+    })()
+
+    const listeners = clients.map((client) =>
+      client.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user) {
+          try {
+            const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+            if (!ensured) {
+              try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
+              try {
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('flowapp-auth')
+                  localStorage.removeItem('flowapp-auth-session')
+                  localStorage.removeItem('flowapp-auth-storage')
+                  sessionStorage.clear()
+                }
+              } catch (e) {
+                console.error('Failed to clear auth storage:', e)
+              }
+              setCurrentUserId(null)
+            } else {
+              setCurrentUserId(session.user.id)
+            }
+          } catch (error) {
+            console.error('Error ensuring user:', error)
+            setCurrentUserId(null)
           }
         } else {
           setCurrentUserId(null)
         }
-      } catch (error) {
-        console.error('Error ensuring user:', error)
-        setCurrentUserId(null)
-      }
-    }
-
-    loadUser()
-
-    const { data: listener } = client.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        try {
-          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
-          if (!ensured) {
-            try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
-            try {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('flowapp-auth')
-                localStorage.removeItem('flowapp-auth-session')
-                localStorage.removeItem('flowapp-auth-storage')
-                sessionStorage.clear()
-              }
-            } catch (e) {
-              console.error('Failed to clear auth storage:', e)
-            }
-            setCurrentUserId(null)
-          } else {
-            setCurrentUserId(session.user.id)
-          }
-        } catch (error) {
-          console.error('Error ensuring user:', error)
-          setCurrentUserId(null)
-        }
-      } else {
-        setCurrentUserId(null)
-      }
-    })
+      }),
+    )
 
     return () => {
-      listener?.subscription?.unsubscribe()
+      mounted = false
+      listeners.forEach((l) => l?.subscription?.unsubscribe())
     }
   }, [])
   
