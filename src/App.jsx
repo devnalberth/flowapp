@@ -234,7 +234,7 @@ export default function AppWrapper() {
           console.debug('AppWrapper: failed to log session debug info', dbgErr)
         }
         if (session?.user) {
-          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+          const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
           if (!ensured) {
             try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
             try {
@@ -282,7 +282,7 @@ export default function AppWrapper() {
 
         if (session?.user) {
           try {
-            const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+            const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
             if (!ensured) {
               try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
               try {
