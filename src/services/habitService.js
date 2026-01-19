@@ -30,7 +30,11 @@ export const habitService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('habitService.createHabit supabase response:', { data, error });
+      throw error;
+    }
+    console.debug('habitService.createHabit inserted:', data);
     return data;
   },
 

@@ -39,7 +39,11 @@ export const goalService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('goalService.createGoal supabase response:', { data, error });
+      throw error;
+    }
+    console.debug('goalService.createGoal inserted:', data);
     return normalizeGoal(data);
   },
 

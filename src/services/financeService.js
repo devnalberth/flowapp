@@ -31,7 +31,11 @@ export const financeService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('financeService.createTransaction supabase response:', { data, error });
+      throw error;
+    }
+    console.debug('financeService.createTransaction inserted:', data);
     return data;
   },
 

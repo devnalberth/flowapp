@@ -372,6 +372,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
   }
 
   const handleGoalSubmit = async (payload) => {
+    console.debug('Goals.handleGoalSubmit payload:', payload)
     try {
       await addGoal({
         title: payload.title,
@@ -383,6 +384,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
         trimesters: payload.trimesters,
         trimester_values: payload.trimesterValues,
       })
+      console.debug('Goals.handleGoalSubmit: addGoal resolved')
       setIsGoalModalOpen(false)
     } catch (error) {
       console.error('Erro ao criar meta:', error)

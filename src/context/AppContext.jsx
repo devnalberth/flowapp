@@ -76,7 +76,11 @@ export function AppProvider({ children, userId }) {
 
   // Task Actions
   const addTask = async (task) => {
-    if (!userId) return
+    if (!userId) {
+      console.warn('addTask aborted: no userId')
+      return
+    }
+    console.debug('addTask called for userId:', userId, 'task:', task)
     try {
       const newTask = await taskService.createTask(userId, task)
       setTasks((prev) => [newTask, ...prev])
@@ -111,7 +115,11 @@ export function AppProvider({ children, userId }) {
 
   // Project Actions
   const addProject = async (project) => {
-    if (!userId) return
+    if (!userId) {
+      console.warn('addProject aborted: no userId')
+      return
+    }
+    console.debug('addProject called for userId:', userId, 'project:', project)
     try {
       const newProject = await projectService.createProject(userId, project)
       setProjects((prev) => [newProject, ...prev])
@@ -146,7 +154,11 @@ export function AppProvider({ children, userId }) {
 
   // Goal Actions
   const addGoal = async (goal) => {
-    if (!userId) return
+    if (!userId) {
+      console.warn('addGoal aborted: no userId')
+      return
+    }
+    console.debug('addGoal called for userId:', userId, 'goal:', goal)
     try {
       const newGoal = await goalService.createGoal(userId, goal)
       setGoals((prev) => [newGoal, ...prev])
@@ -181,7 +193,11 @@ export function AppProvider({ children, userId }) {
 
   // Habit Actions
   const addHabit = async (habit) => {
-    if (!userId) return
+    if (!userId) {
+      console.warn('addHabit aborted: no userId')
+      return
+    }
+    console.debug('addHabit called for userId:', userId, 'habit:', habit)
     try {
       const newHabit = await habitService.createHabit(userId, habit)
       setHabits((prev) => [newHabit, ...prev])
@@ -245,7 +261,11 @@ export function AppProvider({ children, userId }) {
 
   // Finance Actions
   const addFinance = async (finance) => {
-    if (!userId) return
+    if (!userId) {
+      console.warn('addFinance aborted: no userId')
+      return
+    }
+    console.debug('addFinance called for userId:', userId, 'finance:', finance)
     try {
       const newFinance = await financeService.createTransaction(userId, finance)
       setFinances((prev) => [newFinance, ...prev])

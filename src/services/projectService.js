@@ -34,10 +34,10 @@ export const projectService = {
       .single();
     
     if (error) {
-      console.error('Supabase error:', error);
+      console.error('projectService.createProject supabase response:', { data, error });
       throw error;
     }
-    
+    console.debug('projectService.createProject inserted:', data);
     return data;
   },
 

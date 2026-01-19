@@ -39,7 +39,11 @@ export const taskService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('taskService.createTask supabase response:', { data, error });
+      throw error;
+    }
+    console.debug('taskService.createTask inserted:', data);
     return normalizeTask(data);
   },
 

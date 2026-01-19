@@ -185,11 +185,15 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
     // Calcular trimestres automaticamente
     const trimesters = calculatedTrimesters || []
     
-    onSubmit?.({
+    const payload = {
       ...form,
       trimesters: trimesters.map(t => t.label).join(', '),
       trimesterValues: trimesters.map(t => t.value),
-    })
+    }
+
+    console.debug('CreateGoalModal submit payload:', payload)
+
+    onSubmit?.(payload)
   }
 
   return (
