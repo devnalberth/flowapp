@@ -239,6 +239,17 @@ export default function AppWrapper() {
             } catch (e) {
               console.error('Failed to sign out after missing user:', e)
             }
+            // Clear auth-related storage keys to avoid stale sessions
+            try {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('flowapp-auth')
+                localStorage.removeItem('flowapp-auth-session')
+                localStorage.removeItem('flowapp-auth-storage')
+                sessionStorage.clear()
+              }
+            } catch (e) {
+              console.error('Failed to clear auth storage:', e)
+            }
             setCurrentUserId(null)
           } else {
             setCurrentUserId(session.user.id)
@@ -260,6 +271,16 @@ export default function AppWrapper() {
           const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
           if (!ensured) {
             try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
+            try {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('flowapp-auth')
+                localStorage.removeItem('flowapp-auth-session')
+                localStorage.removeItem('flowapp-auth-storage')
+                sessionStorage.clear()
+              }
+            } catch (e) {
+              console.error('Failed to clear auth storage:', e)
+            }
             setCurrentUserId(null)
           } else {
             setCurrentUserId(session.user.id)
