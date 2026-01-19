@@ -218,30 +218,35 @@ export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
   
   useEffect(() => {
-    const client = getSupabaseClient(true)
-    
+    const resolveClient = () => {
+      if (typeof window === 'undefined') return getSupabaseClient(true)
+      const storedPref = window.localStorage.getItem(AUTH_STORAGE_KEY) === 'session' ? 'session' : 'local'
+      return getSupabaseClient(storedPref !== 'session')
+    }
+
+    const client = resolveClient()
+
     const loadUser = async () => {
-      const { data: { session } } = await client.auth.getSession()
-      if (session?.user) {
-        try {
+      try {
+        const { data: { session } } = await client.auth.getSession()
+        if (session?.user) {
           // Garantir que o usuário existe na tabela users
           await userService.ensureUser(session.user)
           setCurrentUserId(session.user.id)
-        } catch (error) {
-          console.error('Error ensuring user:', error)
+        } else {
           setCurrentUserId(null)
         }
-      } else {
+      } catch (error) {
+        console.error('Error ensuring user:', error)
         setCurrentUserId(null)
       }
     }
-    
+
     loadUser()
-    
-    const { data: listener } = client.auth.onAuthStateChange(async (event, session) => {
+
+    const { data: listener } = client.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         try {
-          // Garantir que o usuário existe na tabela users
           await userService.ensureUser(session.user)
           setCurrentUserId(session.user.id)
         } catch (error) {
@@ -252,7 +257,7 @@ export default function AppWrapper() {
         setCurrentUserId(null)
       }
     })
-    
+
     return () => {
       listener?.subscription?.unsubscribe()
     }
