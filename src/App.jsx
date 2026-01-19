@@ -225,6 +225,14 @@ export default function AppWrapper() {
     const loadFromClient = async (client) => {
       try {
         const { data: { session } } = await client.auth.getSession()
+        // TEMP DEBUG: print session object and tokens — remove after debugging
+        try {
+          console.debug('AppWrapper: loadFromClient - clientType=', client === supabasePersistent ? 'persistent' : 'session', 'session=', session)
+          if (session?.access_token) console.debug('AppWrapper: access_token=', session.access_token)
+          if (session?.refresh_token) console.debug('AppWrapper: refresh_token=', session.refresh_token)
+        } catch (dbgErr) {
+          console.debug('AppWrapper: failed to log session debug info', dbgErr)
+        }
         if (session?.user) {
           const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
           if (!ensured) {
@@ -264,6 +272,14 @@ export default function AppWrapper() {
 
     const listeners = clients.map((client) =>
       client.auth.onAuthStateChange(async (_event, session) => {
+        // TEMP DEBUG: log auth state change session and tokens
+        try {
+          console.debug('AppWrapper: onAuthStateChange - clientType=', client === supabasePersistent ? 'persistent' : 'session', 'session=', session)
+          if (session?.access_token) console.debug('AppWrapper: onAuthStateChange access_token=', session.access_token)
+        } catch (dbgErr) {
+          console.debug('AppWrapper: onAuthStateChange logging failed', dbgErr)
+        }
+
         if (session?.user) {
           try {
             const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
@@ -295,7 +311,7 @@ export default function AppWrapper() {
 
     return () => {
       mounted = false
-      listeners.forEach((l) => l?.subscription?.unsubscribe())
+      listeners.forEach((l) => l?.data?.subscription?.unsubscribe())
     }
   }, [])
   

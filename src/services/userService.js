@@ -18,6 +18,13 @@ export const userService = {
       supabase = getSupabaseClient(true)
     }
 
+    // TEMP DEBUG: log which client was selected for DB operations
+    try {
+      console.debug('userService.ensureUser: selected client=', supabase === supabasePersistent ? 'persistent' : supabase === supabaseSession ? 'session' : 'default')
+    } catch (dbgErr) {
+      console.debug('userService.ensureUser: debug log failed', dbgErr)
+    }
+
     try {
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')

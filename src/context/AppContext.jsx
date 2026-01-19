@@ -19,7 +19,11 @@ export function useApp() {
 
 export function AppProvider({ children, userId }) {
   useEffect(() => {
-    console.debug('AppProvider: userId changed ->', userId)
+    // TEMP DEBUG: log userId changes to help trace aborted creates
+    try {
+      console.debug('AppProvider: userId changed =>', userId)
+    } catch (err) {
+      console.debug('AppProvider: failed to log userId change', err)
   }, [userId])
   // State for all entities
   const [tasks, setTasks] = useState([])

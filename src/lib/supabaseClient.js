@@ -51,3 +51,19 @@ export const supabaseSession = createAuthClient(sessionStorage, 'flowapp-auth-se
 export const getSupabaseClient = (remember = true) => (remember ? supabasePersistent : supabaseSession)
 
 export const supabase = supabasePersistent
+
+// TEMP DEBUG: log when client is requested to help trace which storage is active
+try {
+  const orig = getSupabaseClient
+  export const _getSupabaseClientDebug = (remember = true) => {
+    const c = orig(remember)
+    try {
+      console.debug('getSupabaseClient called with remember=', remember, 'returning=', c === supabasePersistent ? 'persistent' : 'session')
+    } catch (e) {
+      // ignore
+    }
+    return c
+  }
+} catch (e) {
+  // ignore in non-module contexts
+}
