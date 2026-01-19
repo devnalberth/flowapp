@@ -1,4 +1,5 @@
 import './FloatingCreateButton.css'
+import { isValidElement } from 'react'
 
 /**
  * @typedef {{label?: string, caption?: string, onClick?: ()=>void, icon?: any, ariaLabel?: string}} FloatingCreateButtonProps
@@ -11,13 +12,27 @@ export default function FloatingCreateButton(props) {
   const { label, caption, onClick, icon, ariaLabel } = props
 
   const renderIcon = () => {
-    if (icon) return icon
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-    )
+    if (!icon) {
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      )
+    }
+
+    // If `icon` is already a React element, render it
+    if (isValidElement(icon)) return icon
+
+    // If `icon` is a component (function or object like forwardRef), render as element
+    const IconComponent = icon
+    try {
+      return <IconComponent />
+    } catch (err) {
+      // Fallback: render it as-is (may show nothing) and log for debugging
+      console.error('FloatingCreateButton: failed to render icon', err, icon)
+      return null
+    }
   }
 
   return (
