@@ -1,9 +1,10 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
 export const userService = {
-  async ensureUser(authUser) {
+  async ensureUser(authUser, options = { createIfMissing: true }) {
     if (!authUser || !authUser.id) return null;
 
+    const { createIfMissing } = options
     const supabase = getSupabaseClient(true);
 
     try {
@@ -16,6 +17,11 @@ export const userService = {
       if (existingUser) return existingUser;
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      if (!createIfMissing) {
+        // Do not recreate deleted users — signal caller to handle logout
+        return null
+      }
 
       const payload = {
         id: authUser.id,

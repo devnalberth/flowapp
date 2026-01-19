@@ -7,8 +7,10 @@ export type UserData = {
   [key: string]: any
 }
 
-export async function ensureUser(authUser: any) {
+export async function ensureUser(authUser: any, options: { createIfMissing?: boolean } = { createIfMissing: true }) {
   if (!authUser || !authUser.id) return null
+
+  const { createIfMissing = true } = options
 
   try {
     const { data: existingUser, error: fetchError } = await supabase
@@ -21,6 +23,10 @@ export async function ensureUser(authUser: any) {
 
     if (fetchError && (fetchError as any).code !== 'PGRST116') {
       throw fetchError
+    }
+
+    if (!createIfMissing) {
+      return null
     }
 
     const payload: UserData = {

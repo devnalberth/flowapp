@@ -231,8 +231,18 @@ export default function AppWrapper() {
         const { data: { session } } = await client.auth.getSession()
         if (session?.user) {
           // Garantir que o usuário existe na tabela users
-          await userService.ensureUser(session.user)
-          setCurrentUserId(session.user.id)
+          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+          if (!ensured) {
+            // User was deleted server-side — sign out locally to avoid re-creating it
+            try {
+              await client.auth.signOut()
+            } catch (e) {
+              console.error('Failed to sign out after missing user:', e)
+            }
+            setCurrentUserId(null)
+          } else {
+            setCurrentUserId(session.user.id)
+          }
         } else {
           setCurrentUserId(null)
         }
@@ -247,8 +257,13 @@ export default function AppWrapper() {
     const { data: listener } = client.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         try {
-          await userService.ensureUser(session.user)
-          setCurrentUserId(session.user.id)
+          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+          if (!ensured) {
+            try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
+            setCurrentUserId(null)
+          } else {
+            setCurrentUserId(session.user.id)
+          }
         } catch (error) {
           console.error('Error ensuring user:', error)
           setCurrentUserId(null)
