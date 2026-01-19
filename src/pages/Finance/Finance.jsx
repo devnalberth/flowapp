@@ -127,8 +127,8 @@ export default function Finance({ user, onNavigate, onLogout }) {
         amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount),
         date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
       }))
-      .filter((transaction) => transaction.date.startsWith(periodKey))
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .filter((transaction) => transaction.date.startsWith(periodKey))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [finances, periodKey])
 
   const monthlyRevenue = useMemo(
@@ -207,7 +207,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
     return series
   }, [finances, selectedYear])
 
-  const handleOpenTransactionModal = () => {
+  const handleOpenTransactionModal = (type) => {
     setTransactionModalOpen(true)
     setEditingTransaction(null)
   }
@@ -308,7 +308,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
               <p>Distribuição</p>
               <h2>Gastos por categoria</h2>
             </div>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setBudgetModalOpen(true)}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => {}}>
               Categorias & limites
             </button>
           </header>
@@ -370,7 +370,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
           <tbody>
             {filteredTransactions.length === 0 && (
               <tr>
-                <td colSpan="5" style={{textAlign: 'center', padding: '40px'}}>
+                <td colSpan={5} style={{textAlign: 'center', padding: '40px'}}>
                   Nenhuma transação neste período. Clique em "Nova transação" para adicionar.
                 </td>
               </tr>
@@ -420,6 +420,8 @@ export default function Finance({ user, onNavigate, onLogout }) {
       <FloatingCreateButton
         label="Nova transação"
         caption="Adicionar"
+        icon={null}
+        ariaLabel="Adicionar transação"
         onClick={handleOpenTransactionModal}
       />
       </div>

@@ -36,13 +36,10 @@ const DEFAULT_LIFE_AREAS = [
           { id: 'pes-proj-4', name: 'Workbook Vida Essencial', status: 'Em curso' },
           { id: 'pes-proj-5', name: 'Retiro criativo', status: 'Planejado' },
         ],
-        timeline: [
+        timeline [
           { id: 'pes-tl-4', date: 'Apr 10', label: 'Roteiro', description: 'Mapa de experiências essenciais.' },
           { id: 'pes-tl-5', date: 'Jun 02', label: '1º sabático', description: 'Viagem curta com práticas de presença.' },
         ],
-      },
-    ],
-  },
   {
     id: 'saude',
     label: 'Saúde & Energia',

@@ -121,7 +121,8 @@ const AVAILABLE_FUNCTIONS = [
  * @returns {Promise<object>} Resposta estruturada com texto e ações executadas
  */
 export async function processCommand(userMessage, actions) {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+  const importMeta = /** @type {any} */ (import.meta)
+  const apiKey = importMeta?.env?.VITE_OPENAI_API_KEY || process?.env?.VITE_OPENAI_API_KEY
 
   if (!apiKey) {
     return {

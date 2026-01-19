@@ -53,9 +53,7 @@ export const userService = {
       // Não lançar erro, apenas retornar null para permitir que o app continue
       return null;
     }
-  },
-
-  async getUser(userId) {
+  };
     const supabase = getSupabaseClient(true);
     const { data, error } = await supabase
       .from('users')
