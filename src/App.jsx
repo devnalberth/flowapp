@@ -12,7 +12,7 @@ import AIAssistant from './pages/AIAssistant/AIAssistant.jsx'
 import Login from './pages/Login/Login.jsx'
 import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import { getSupabaseClient } from './lib/supabaseClient.js'
-import { userService } from './services/userService.js'
+import { userService } from './services/userService'
 
 const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'AI Assistant']
 const AUTH_STORAGE_KEY = 'flowapp-auth-storage'

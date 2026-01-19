@@ -125,12 +125,12 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
               {TRANSACTION_TYPES.map((type) => {
                 const Icon = type.icon
                 return (
-                  <button
+                    <button
                     key={type.id}
                     type="button"
                     className={`finance-modal__type ${formData.type === type.id ? 'active' : ''}`}
                     onClick={() => handleChange('type', type.id)}
-                    style={{ '--type-color': type.color }}
+                    style={/** @type {any} */ ({ '--type-color': type.color })}
                   >
                     <Icon size={18} />
                     <span>{type.label}</span>

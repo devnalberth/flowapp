@@ -21,30 +21,41 @@ export const goalService = {
 
   async createGoal(userId, goal) {
     const supabase = getSupabaseClient(true);
-    const { data, error } = await supabase
-      .from('goals')
-      .insert({
-        title: goal.title,
-        area: goal.area,
-        type: goal.type || 'custom',
-        target: goal.target,
-        current: goal.current || 0,
-        progress: goal.progress || 0,
-        start_date: goal.startDate || null,
-        end_date: goal.endDate || null,
-        trimesters: goal.trimesters || null,
-        trimester_values: goal.trimesterValues || null,
-        user_id: userId,
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('goalService.createGoal supabase response:', { data, error });
-      throw error;
+    const payload = {
+      title: goal.title,
+      area: goal.area,
+      type: goal.type || 'custom',
+      target: goal.target,
+      current: goal.current || 0,
+      progress: goal.progress || 0,
+      start_date: goal.startDate || null,
+      end_date: goal.endDate || null,
+      trimesters: goal.trimesters || null,
+      trimester_values: goal.trimesterValues || null,
+      user_id: userId,
     }
-    console.debug('goalService.createGoal inserted:', data);
-    return normalizeGoal(data);
+
+    try {
+      console.debug('[goalService.createGoal] payload:', payload)
+      const { data, error } = await supabase
+        .from('goals')
+        .insert(payload)
+        .select()
+        .single()
+
+      console.debug('[goalService.createGoal] response data:', data, 'error:', error)
+
+      if (error) {
+        console.error('goalService.createGoal supabase response:', { data, error })
+        throw error
+      }
+
+      console.debug('goalService.createGoal inserted:', data)
+      return normalizeGoal(data)
+    } catch (err) {
+      console.error('[goalService.createGoal] Error creating goal:', err)
+      throw err
+    }
   },
 
   async updateGoal(goalId, userId, updates) {

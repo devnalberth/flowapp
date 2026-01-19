@@ -396,7 +396,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
     <div className="goalsPage">
       <TopNav user={user} active="Metas" onNavigate={onNavigate} onLogout={onLogout} />
 
-      <FloatingCreateButton label="Nova meta" caption="Adicionar meta" onClick={() => setIsGoalModalOpen(true)} />
+      <FloatingCreateButton label="Nova meta" caption="Adicionar meta" icon={null} ariaLabel="Adicionar meta" onClick={() => setIsGoalModalOpen(true)} />
 
       {selectedArea ? (
         <AreaDetail area={selectedArea} onBack={() => setSelectedAreaId(null)} />

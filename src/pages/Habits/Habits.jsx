@@ -233,7 +233,10 @@ export default function Habits({ user, onNavigate, onLogout }) {
   const weeklyStats = useMemo(() => {
     const total = weeklyData.reduce((acc, day) => acc + day.completion, 0)
     const average = weeklyData.length > 0 ? total / weeklyData.length : 0
-    const bestDay = weeklyData.reduce((max, day) => day.completion > max.completion ? day : max, weeklyData[0] || { completion: 0 })
+    const bestDay = weeklyData.reduce(
+      (max, day) => day.completion > max.completion ? day : max,
+      weeklyData[0] || { day: '', date: '', dateString: '', completion: 0, done: [], total: 0 }
+    )
     
     return { 
       average, 
@@ -326,12 +329,12 @@ export default function Habits({ user, onNavigate, onLogout }) {
             />
           </div>
           <div className="categoryFilters">
-            {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 className={`categoryBtn ${categoryFilter === cat.id ? 'categoryBtn--active' : ''}`}
-                style={{ '--cat-color': cat.color }}
+                style={/** @type {any} */ ({ '--cat-color': cat.color })}
                 onClick={() => setCategoryFilter(cat.id)}
               >
                 {cat.label}
@@ -366,7 +369,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
                   <div 
                     key={habit.id} 
                     className="dailyCheckItem" 
-                    style={{ '--item-color': category?.color }}
+                    style={/** @type {any} */ ({ '--item-color': category?.color })}
                   >
                     <input 
                       type="checkbox" 
@@ -412,7 +415,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
                       const category = CATEGORIES.find(c => c.id === habit.category)
                       const IconComponent = habit.icon
                       return (
-                        <li key={habit.id} style={{ '--habit-color': category?.color }}>
+                        <li key={habit.id} style={/** @type {any} */ ({ '--habit-color': category?.color })}>
                           <div className={`weekCheckbox ${isChecked ? 'weekCheckbox--checked' : ''}`}>
                             <input 
                               type="checkbox" 
@@ -475,6 +478,8 @@ export default function Habits({ user, onNavigate, onLogout }) {
         label="Novo hábito"
         caption="Criar hábito"
         onClick={handleAddHabit}
+        icon={Plus}
+        ariaLabel="Criar novo hábito"
       />
       </div>
     </div>
