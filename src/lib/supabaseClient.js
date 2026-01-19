@@ -52,18 +52,13 @@ export const getSupabaseClient = (remember = true) => (remember ? supabasePersis
 
 export const supabase = supabasePersistent
 
-// TEMP DEBUG: log when client is requested to help trace which storage is active
-try {
-  const orig = getSupabaseClient
-  export const _getSupabaseClientDebug = (remember = true) => {
-    const c = orig(remember)
-    try {
-      console.debug('getSupabaseClient called with remember=', remember, 'returning=', c === supabasePersistent ? 'persistent' : 'session')
-    } catch (e) {
-      // ignore
-    }
-    return c
+// TEMP DEBUG: helper to log which client is returned (safe top-level export)
+export const _getSupabaseClientDebug = (remember = true) => {
+  const c = getSupabaseClient(remember)
+  try {
+    console.debug('getSupabaseClient called with remember=', remember, 'returning=', c === supabasePersistent ? 'persistent' : 'session')
+  } catch (e) {
+    // ignore
   }
-} catch (e) {
-  // ignore in non-module contexts
+  return c
 }
