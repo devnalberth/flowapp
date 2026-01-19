@@ -7,7 +7,7 @@ import { financeService } from '../services/financeService'
 import { studyService } from '../services/studyService'
 import { dreamMapService } from '../services/dreamMapService'
 
-const AppContext = createContext()
+const AppContext = createContext(null)
 
 export function useApp() {
   const context = useContext(AppContext)

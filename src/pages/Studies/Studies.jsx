@@ -299,6 +299,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
       <FloatingCreateButton
         label="Novo estudo"
         caption="Criar estudo"
+        icon={<span aria-hidden="true">+</span>}
+        ariaLabel="Criar novo estudo"
         onClick={handleOpenModal}
       />
       </div>

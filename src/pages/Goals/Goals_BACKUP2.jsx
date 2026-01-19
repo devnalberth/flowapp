@@ -31,116 +31,7 @@ const DEFAULT_LIFE_AREAS = [
     icon: '💰',
     description: 'Organize capital, fluxos e investimentos com transparência e previsibilidade.',
   },
-]
-        projects: [
-          { id: 'pes-proj-4', name: 'Workbook Vida Essencial', status: 'Em curso' },
-          { id: 'pes-proj-5', name: 'Retiro criativo', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'pes-tl-4', date: 'Apr 10', label: 'Roteiro', description: 'Mapa de experiências essenciais.' },
-          { id: 'pes-tl-5', date: 'Jun 02', label: '1º sabático', description: 'Viagem curta com práticas de presença.' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'saude',
-    label: 'Saúde & Energia',
-    icon: '⚡️',
-    status: 'Consistente',
-    northStar: 'Completar 16 sessões de treinos FlowFit',
-    progress: 0.58,
-    review: 'Check-in terça/quinta',
-    description: 'Combine treinos FlowFit, nutrição inteligente e descanso profundo para sustentar vitalidade.',
-    metas: [
-      {
-        id: 'sau-meta-flowfit',
-        title: 'Completar 16 sessões FlowFit',
-        progress: 0.58,
-        status: 'Em andamento',
-        trimester: '1º Trimestre',
-        areaLabel: 'Saúde & Energia',
-        intention: 'Fortalecer base metabólica e recuperar energia para os bets importantes.',
-        reason: 'Ao cumprir essa meta, garanto disposição para liderar e criar com clareza.',
-        projects: [
-          { id: 'sau-proj-1', name: 'FlowFit Sprint 02', status: 'Em curso' },
-          { id: 'sau-proj-2', name: 'Plano nutricional', status: 'Em curso' },
-        ],
-        timeline: [
-          { id: 'sau-tl-1', date: 'Jan 05', label: 'Avaliação', description: 'Medições iniciais com coach.' },
-          { id: 'sau-tl-2', date: 'Feb 22', label: 'Metade do ciclo', description: '8 sessões concluídas + ajustes.' },
-          { id: 'sau-tl-3', date: 'Mar 25', label: 'Entrega final', description: 'Apresentar métricas e aprendizados.' },
-        ],
-      },
-      {
-        id: 'sau-meta-sleep',
-        title: 'Garantir sono regenerativo 7h30',
-        progress: 0.4,
-        status: 'Em andamento',
-        trimester: '2º Trimestre',
-        areaLabel: 'Saúde & Energia',
-        intention: 'Sincronizar rotina noturna com hábitos de respiração e digital sunset.',
-        reason: 'Sono profundo melhora clareza mental e reduz carga emocional acumulada.',
-        projects: [
-          { id: 'sau-proj-3', name: 'Protocolo de descanso', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'sau-tl-4', date: 'Apr 01', label: 'Setup', description: 'Rotina noturna desenhada.' },
-          { id: 'sau-tl-5', date: 'May 20', label: 'Biofeedback', description: 'Ajustes com wearable de sono.' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'financas',
-    label: 'Finanças & Patrimônio',
-    icon: '💰',
-    status: 'Em revisão',
-    northStar: 'Garantir 6 meses de runway investido',
-    progress: 0.33,
-    review: 'Revisão mensal',
-    description: 'Construa reservas inteligentes e proteja decisões estratégicas com dados em tempo real.',
-    metas: [
-      {
-        id: 'fin-meta-runway',
-        title: 'Garantir 6 meses de runway investido',
-        progress: 0.33,
-        status: 'Em andamento',
-        trimester: '1º Trimestre',
-        areaLabel: 'Finanças & Patrimônio',
-        intention: 'Mapear burn rate, renegociar contratos e consolidar reservas.',
-        reason: 'Segurança financeira libera foco para executar metas ambiciosas sem ansiedade.',
-        projects: [
-          { id: 'fin-proj-1', name: 'Atlas Finance Ops', status: 'Em curso' },
-          { id: 'fin-proj-2', name: 'Carteira conservadora', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'fin-tl-1', date: 'Jan 18', label: 'Radiografia', description: 'Coleta de dados contábeis.' },
-          { id: 'fin-tl-2', date: 'Mar 04', label: 'Implementação', description: 'Dashboard vivo entregue.' },
-          { id: 'fin-tl-3', date: 'Mar 28', label: 'Fechamento', description: 'Reserva formalizada em renda fixa.' },
-        ],
-      },
-      {
-        id: 'fin-meta-diversificar',
-        title: 'Diversificar receitas em +15%',
-        progress: 0.2,
-        status: 'Planejado',
-        trimester: '2º Trimestre',
-        areaLabel: 'Finanças & Patrimônio',
-        intention: 'Criar bundles Flow e novas ofertas premium.',
-        reason: 'Reduzir dependência de uma única linha de receita e construir colchão estratégico.',
-        projects: [
-          { id: 'fin-proj-3', name: 'Sprint de pricing', status: 'Planejado' },
-          { id: 'fin-proj-4', name: 'Programa Atlas+', status: 'Planejado' },
-        ],
-        timeline: [
-          { id: 'fin-tl-4', date: 'Apr 15', label: 'Discovery', description: 'Entrevistas com clientes chave.' },
-          { id: 'fin-tl-5', date: 'Jun 10', label: 'Lançamento', description: 'Nova oferta ativa no FlowOS.' },
-        ],
-      },
-    ],
-  },
-]
+];
 
 const INITIAL_DREAM_MAP = [
   {
@@ -164,7 +55,7 @@ const INITIAL_DREAM_MAP = [
     image:
       'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=60',
   },
-]
+];
 
 function MetaDetail({ meta, onBack }) {
   if (!meta) {
@@ -523,5 +414,3 @@ export default function Goals({ onNavigate, onLogout, user }) {
         </div>
       )
     }
-}
-}

@@ -702,6 +702,8 @@ export default function Tasks({ onNavigate, onLogout, user }) {
       <FloatingCreateButton
         label="Nova tarefa"
         caption="Capturar tarefa"
+        icon="plus"
+        ariaLabel="Criar nova tarefa"
         onClick={() => setTaskModalOpen(true)}
       />
 
@@ -711,8 +713,6 @@ export default function Tasks({ onNavigate, onLogout, user }) {
           onClose={() => setTaskModalOpen(false)}
           onSubmit={handleTaskModalSubmit}
           projectsOptions={projectOptions}
-          goalOptions={[]}
-          areaOptions={[]}
           statusOptions={TASK_MODAL_STATUS}
           priorityOptions={TASK_MODAL_PRIORITY}
         />

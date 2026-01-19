@@ -94,7 +94,7 @@ export default function CreateStudyModal({ onClose, onSubmit }) {
 
           {formData.coverUrl && (
             <div className="study-modal__preview">
-              <img src={formData.coverUrl} alt="Preview" onError={(e) => e.target.style.display = 'none'} />
+              <img src={formData.coverUrl} alt="Preview" onError={(e) => (e.currentTarget.style.display = 'none')} />
             </div>
           )}
 

@@ -198,7 +198,13 @@ export default function Projects({ onNavigate, onLogout, user }) {
     <div className="projects">
       <TopNav user={currentUser} active="Projetos" onNavigate={handleNavigate} onLogout={onLogout} />
 
-      <FloatingCreateButton label="Criar novo projeto" caption="Novo projeto" onClick={openModal} />
+      <FloatingCreateButton
+        label="Criar novo projeto"
+        caption="Novo projeto"
+        onClick={openModal}
+        icon="+"
+        ariaLabel="Criar novo projeto"
+      />
 
       <section className="projectsBoard">
         {boardColumns.map((column) => (
@@ -301,8 +307,6 @@ export default function Projects({ onNavigate, onLogout, user }) {
           onClose={closeTaskModal}
           onSubmit={handleSubmitTask}
           projectsOptions={projectOptions}
-          goalOptions={TASK_GOAL_OPTIONS}
-          areaOptions={TASK_AREA_OPTIONS}
           statusOptions={TASK_STATUS_OPTIONS}
           priorityOptions={TASK_PRIORITY_OPTIONS}
           initialProject={taskProject}

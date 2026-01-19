@@ -1,6 +1,15 @@
 import './FloatingCreateButton.css'
 
-export default function FloatingCreateButton({ label, caption, onClick, icon, ariaLabel }) {
+/**
+ * @typedef {{label?: string, caption?: string, onClick?: ()=>void, icon?: any, ariaLabel?: string}} FloatingCreateButtonProps
+ */
+
+/**
+ * @param {FloatingCreateButtonProps} props
+ */
+export default function FloatingCreateButton(props) {
+  const { label, caption, onClick, icon, ariaLabel } = props
+
   const renderIcon = () => {
     if (icon) return icon
     return (

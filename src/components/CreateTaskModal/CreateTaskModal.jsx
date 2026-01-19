@@ -227,7 +227,7 @@ export default function CreateTaskModal({
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.description}
                 onChange={updateField('description')}
-                rows="3"
+                rows={3}
                 required
               />
               <span className="createTaskModal__counter">{charCounter}</span>
