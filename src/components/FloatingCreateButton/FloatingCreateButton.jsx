@@ -25,6 +25,11 @@ export default function FloatingCreateButton(props) {
     if (isValidElement(icon)) return icon
 
     // If `icon` is a component (function or object like forwardRef), render as element
+    // If icon is a plain string or number, render it as text (e.g., "+")
+    if (typeof icon === 'string' || typeof icon === 'number') {
+      return <span className="floatingCreateButton__iconText">{icon}</span>
+    }
+
     const IconComponent = icon
     try {
       return <IconComponent />
