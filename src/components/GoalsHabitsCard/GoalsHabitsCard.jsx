@@ -4,32 +4,50 @@ import './GoalsHabitsCard.css'
 const GOAL_FILTERS = ['Mensal', 'Trimestral', 'Semestral', 'Anual']
 
 export default function GoalsHabitsCard({ className = '', goals = [], habits = [] }) {
-  const [habitFilter] = useState('Dia')
   const [goalFilter, setGoalFilter] = useState('Mensal')
 
   const habitData = useMemo(() => {
+    // Proteção: se habits não for array, retorna dados zerados
+    if (!Array.isArray(habits)) {
+      return { current: 0, total: 100, change: 0, improved: false }
+    }
+
     const totalHabits = habits.length
+    const today = new Date().toISOString().split('T')[0]
+
     const completedToday = habits.filter(h => {
-      const completedDates = JSON.parse(h.completed_dates || '[]')
-      const today = new Date().toISOString().split('T')[0]
+      // CORREÇÃO DE SEGURANÇA:
+      // O Dashboard já entrega os dados sanitizados. 
+      // Verificamos 'completions' (novo) ou 'completed_dates' (antigo) e garantimos que seja array.
+      // NUNCA usamos JSON.parse aqui para evitar crashes.
+      const completedDates = Array.isArray(h.completions) 
+        ? h.completions 
+        : (Array.isArray(h.completed_dates) ? h.completed_dates : [])
+      
       return completedDates.includes(today)
     }).length
 
     const current = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
-    const avgStreak = habits.reduce((sum, h) => sum + (h.current_streak || 0), 0) / (habits.length || 1)
+    
+    // Cálculo seguro de streak
+    const avgStreak = totalHabits > 0 
+      ? habits.reduce((sum, h) => sum + (Number(h.current_streak) || 0), 0) / totalHabits
+      : 0
 
     return {
-      current,
-      total: 100,
-      change: avgStreak > 5 ? 6.2 : avgStreak > 2 ? 3.8 : -2.4,
+      current, // Percentual de conclusão hoje (0 a 100)
+      total: totalHabits, // Quantidade de hábitos
+      change: avgStreak > 5 ? 6.2 : avgStreak > 2 ? 3.8 : -2.4, // Dado decorativo baseado no streak
       improved: avgStreak > 2,
     }
   }, [habits])
 
   const goalData = useMemo(() => {
-    const now = new Date()
-    const completedGoals = goals.filter(g => g.progress >= 100).length
-    const totalGoals = goals.length
+    // Proteção para goals
+    const safeGoals = Array.isArray(goals) ? goals : []
+    
+    const completedGoals = safeGoals.filter(g => (g.progress || 0) >= 100).length
+    const totalGoals = safeGoals.length
     const progress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0
 
     // Grid de 4x4 representando progresso das metas
@@ -45,8 +63,9 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
     return { labels, grid, progress }
   }, [goals, goalFilter])
 
-  const percentage = (habitData.current / habitData.total) * 100
-  const rotation = (percentage / 100) * 270 - 135
+  // Cálculo da rotação do ponteiro (Gauge)
+  // Mapeia 0-100% para o ângulo do SVG
+  const rotation = (habitData.current / 100) * 270 - 135
 
   const handleGoalFilterToggle = () => {
     const currentIndex = GOAL_FILTERS.indexOf(goalFilter)
@@ -60,6 +79,7 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
       handleGoalFilterToggle()
     }
   }
+
   return (
     <section className={`gh ui-card ${className}`.trim()}>
       <div className="gh__habits">
@@ -120,8 +140,9 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
           </svg>
         </div>
         <div className="gh__habitsMeta">
-          <span className="gh__habitsLabel">Hábitos</span>
-          <span className="gh__habitsValue">{habitData.current}/{habitData.total}</span>
+          <span className="gh__habitsLabel">Hábitos Hoje</span>
+          {/* Mostra percentual de conclusão do dia */}
+          <span className="gh__habitsValue">{habitData.current}%</span>
           <span className="gh__pill" data-improved={habitData.improved || undefined}>
             {Math.abs(habitData.change)}%
             <span className="gh__arrow" aria-hidden="true" style={{ transform: habitData.improved ? 'none' : 'rotate(180deg)' }} />
@@ -148,18 +169,16 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
 
         <div className="gh__grid" aria-hidden="true">
           {goalData.grid.map((highlight, index) => (
-            // eslint-disable-next-line react/no-array-index-key
             <span key={index} className={highlight ? 'gh__cell gh__cell--highlight' : 'gh__cell'} />
           ))}
           <div className="gh__focus">
-            <div className="gh__focusLabel">Meta Atual</div>
+            <div className="gh__focusLabel">Conclusão</div>
             <div className="gh__focusValue">{goalData.progress}%</div>
           </div>
         </div>
 
         <div className="gh__months">
           {goalData.labels.map((label, index) => (
-            // eslint-disable-next-line react/no-array-index-key
             <span key={index} className="gh__month">
               {label}
             </span>

@@ -3,18 +3,24 @@ import { getSupabaseClient } from '../lib/supabaseClient';
 // Função auxiliar para traduzir do Banco (name) para o App (label)
 const normalizeHabit = (habit) => {
   // CORREÇÃO CRÍTICA: Garante que 'completions' seja SEMPRE um array
-  // Se vier null, undefined, ou objeto {}, transformamos em []
   let completions = [];
   
   if (Array.isArray(habit.completed_dates)) {
     completions = habit.completed_dates;
   } else if (typeof habit.completed_dates === 'string') {
-    // Caso venha como string do banco (legado)
-    try {
-      const parsed = JSON.parse(habit.completed_dates);
-      if (Array.isArray(parsed)) completions = parsed;
-    } catch (e) {
+    // === NOVA PROTEÇÃO CONTRA TELA BRANCA ===
+    // Se a string for vazia (""), o JSON.parse quebrava com "Unexpected end of JSON input".
+    // Agora verificamos antes se tem conteúdo.
+    if (!habit.completed_dates.trim()) {
       completions = [];
+    } else {
+      try {
+        const parsed = JSON.parse(habit.completed_dates);
+        if (Array.isArray(parsed)) completions = parsed;
+      } catch (e) {
+        console.warn('Erro ao decodificar hábito (ignorado):', e);
+        completions = [];
+      }
     }
   }
   
@@ -51,7 +57,7 @@ export const habitService = {
       frequency: habit.frequency || 'daily',
       current_streak: habit.currentStreak || 0,
       best_streak: habit.bestStreak || 0,
-      // CORREÇÃO: Salva sempre como Array vazio [] se não tiver dados, nunca {}
+      // Salva sempre como Array vazio [] se não tiver dados
       completed_dates: Array.isArray(habit.completions) ? habit.completions : [],
       user_id: userId,
     };
@@ -84,7 +90,7 @@ export const habitService = {
     if (updates.currentStreak !== undefined) payload.current_streak = updates.currentStreak;
     if (updates.bestStreak !== undefined) payload.best_streak = updates.bestStreak;
     
-    // CORREÇÃO: Garante que ao atualizar, enviamos array
+    // Garante que ao atualizar, enviamos array
     if (updates.completions !== undefined) {
       payload.completed_dates = Array.isArray(updates.completions) 
         ? updates.completions 
