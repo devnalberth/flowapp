@@ -59,6 +59,9 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
     const amount = parseFloat(formData.amount.replace(',', '.'))
     if (isNaN(amount) || amount <= 0) return
 
+    // Garante que installmentCount seja um número válido no envio
+    const installmentCount = formData.isInstallment ? (Number(formData.installmentCount) || 2) : null;
+
     onSubmit({
       description: formData.description.trim(),
       amount: amount.toFixed(2),
@@ -66,8 +69,8 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
       category: formData.category,
       date: new Date(formData.date).toISOString(),
       isInstallment: formData.isInstallment,
-      installmentCount: formData.isInstallment ? formData.installmentCount : null,
-      installmentTotal: formData.isInstallment ? (amount * formData.installmentCount).toFixed(2) : null,
+      installmentCount: installmentCount,
+      installmentTotal: formData.isInstallment ? (amount * installmentCount).toFixed(2) : null,
     })
 
     setFormData({
@@ -259,16 +262,19 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
                       min="2"
                       max="48"
                       value={formData.installmentCount}
-                      onChange={(e) => handleChange('installmentCount', parseInt(e.target.value))}
+                      // CORREÇÃO 1: Trata campo vazio para não gerar NaN
+                      onChange={(e) => handleChange('installmentCount', e.target.value === '' ? '' : parseInt(e.target.value))}
                     />
                   </div>
                   {formData.amount && (
                     <div className="finance-modal__installment-info">
                       <p>
-                        {formData.installmentCount}x de <strong>R$ {(parseFloat(formData.amount.replace(',', '.')) / formData.installmentCount).toFixed(2).replace('.', ',')}</strong>
+                        {/* CORREÇÃO 2: Usa '0' como string no fallback do parseFloat para satisfazer TypeScript */}
+                        {formData.installmentCount || 0}x de <strong>R$ {((parseFloat(formData.amount.replace(',', '.') || '0')) / (formData.installmentCount || 1)).toFixed(2).replace('.', ',')}</strong>
                       </p>
                       <p className="finance-modal__installment-total">
-                        Total: R$ {(parseFloat(formData.amount.replace(',', '.')) * formData.installmentCount).toFixed(2).replace('.', ',')}
+                        {/* CORREÇÃO 3: Fallback '0' e divisor seguro */}
+                        Total: R$ {((parseFloat(formData.amount.replace(',', '.') || '0')) * (formData.installmentCount || 1)).toFixed(2).replace('.', ',')}
                       </p>
                     </div>
                   )}

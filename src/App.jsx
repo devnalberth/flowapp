@@ -216,7 +216,19 @@ function App() {
 // Wrap app with Context Provider
 export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
-  const [isReady, setIsReady] = useState(false) // NOVO: Controle de estado inicial
+  const [isReady, setIsReady] = useState(false)
+
+  // Timeout de segurança: Se a verificação demorar mais de 2s, força a liberação
+  // Isso evita que o app fique travado na tela "Carregando FlowApp..."
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isReady) {
+        console.warn('AppWrapper: Auth check timeout - forcing ready state')
+        setIsReady(true)
+      }
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [isReady])
 
   useEffect(() => {
     const clients = [supabasePersistent, supabaseSession]
@@ -226,10 +238,10 @@ export default function AppWrapper() {
         const { data: { session } } = await client.auth.getSession()
         
         if (session?.user) {
-          // ensureUser com false para não recriar usuário automaticamente apenas checando sessão
           const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
           if (!ensured) {
             try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
+            // Limpeza de storage
             try {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('flowapp-auth')
@@ -237,14 +249,12 @@ export default function AppWrapper() {
                 localStorage.removeItem('flowapp-auth-storage')
                 sessionStorage.clear()
               }
-            } catch (e) {
-              console.error('Failed to clear auth storage:', e)
-            }
+            } catch (e) { console.error('Failed to clear auth storage:', e) }
             setCurrentUserId(null)
-            return true
+            return true // Encontrou sessão (mesmo que inválida), para de procurar
           }
           setCurrentUserId(session.user.id)
-          return true
+          return true // Encontrou usuário válido
         }
         return false
       } catch (error) {
@@ -255,38 +265,32 @@ export default function AppWrapper() {
 
     let mounted = true
 
-    ;(async () => {
-      for (const client of clients) {
-        if (!mounted) return
-        const found = await loadFromClient(client)
-        if (found) break
+    const initAuth = async () => {
+      try {
+        for (const client of clients) {
+          if (!mounted) return
+          const found = await loadFromClient(client)
+          if (found) break
+        }
+      } catch (err) {
+        console.error('Fatal error during auth check:', err)
+      } finally {
+        // GARANTIA DE SAÍDA: Libera a tela mesmo se der erro
+        if (mounted) setIsReady(true)
       }
-      if (mounted) setIsReady(true) // NOVO: Marca como pronto após finalizar verificações
-    })()
+    }
+
+    initAuth()
 
     const listeners = clients.map((client) =>
       client.auth.onAuthStateChange(async (_event, session) => {
+        if (!mounted) return
         if (session?.user) {
           try {
             const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
-            if (!ensured) {
-              try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
-              try {
-                if (typeof window !== 'undefined') {
-                  localStorage.removeItem('flowapp-auth')
-                  localStorage.removeItem('flowapp-auth-session')
-                  localStorage.removeItem('flowapp-auth-storage')
-                  sessionStorage.clear()
-                }
-              } catch (e) {
-                console.error('Failed to clear auth storage:', e)
-              }
-              setCurrentUserId(null)
-            } else {
-              setCurrentUserId(session.user.id)
-            }
+            setCurrentUserId(ensured ? session.user.id : null)
           } catch (error) {
-            console.error('Error ensuring user:', error)
+            console.error('Error ensuring user on change:', error)
             setCurrentUserId(null)
           }
         } else {
@@ -301,8 +305,6 @@ export default function AppWrapper() {
     }
   }, [])
   
-  // NOVO: Tela de carregamento enquanto verifica sessão
-  // Isso evita que o AppProvider monte com userId=null e limpe os dados
   if (!isReady) {
     return (
       <div style={{ 
@@ -311,9 +313,21 @@ export default function AppWrapper() {
         alignItems: 'center', 
         height: '100vh', 
         backgroundColor: '#09090b', 
-        color: '#ffffff' 
+        color: '#ffffff',
+        fontFamily: 'sans-serif',
+        flexDirection: 'column',
+        gap: '1rem'
       }}>
-        Carregando FlowApp...
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '2px solid #333',
+          borderTopColor: '#fff',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}/>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        <span>Carregando FlowApp...</span>
       </div>
     )
   }
