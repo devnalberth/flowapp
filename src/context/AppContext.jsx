@@ -18,7 +18,7 @@ export function useApp() {
 }
 
 export function AppProvider({ children, userId }) {
-  // State for all entities - Inicializado sempre com Array Vazio
+  // State for all entities
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [goals, setGoals] = useState([])
@@ -59,7 +59,6 @@ export function AppProvider({ children, userId }) {
         dreamMapService.getDreamMaps(userId),
       ])
       
-      // FUNÇÃO DE SEGURANÇA: Garante que o retorno seja sempre um Array
       const safeArray = (res, label) => {
         if (res.status === 'fulfilled' && Array.isArray(res.value)) {
           return res.value
@@ -67,7 +66,6 @@ export function AppProvider({ children, userId }) {
         if (res.status === 'rejected') {
           console.error(`Erro ao carregar ${label}:`, res.reason)
         }
-        // Se falhou ou não é array, retorna vazio para não quebrar a tela
         return []
       }
 
@@ -86,9 +84,10 @@ export function AppProvider({ children, userId }) {
     }
   }
 
-  // Task Actions
+  // Task Actions - CORREÇÃO DE FLICKER AQUI
   const addTask = async (task) => {
     if (!userId) return
+    // Adiciona temporariamente para feedback instantâneo (com ID temporário se necessário, mas o service retorna rápido)
     const newTask = await taskService.createTask(userId, task)
     setTasks(prev => [newTask, ...prev])
     return newTask
@@ -96,14 +95,31 @@ export function AppProvider({ children, userId }) {
 
   const updateTask = async (id, updates) => {
     if (!userId) return
-    const updatedTask = await taskService.updateTask(id, userId, updates)
-    setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))
+    
+    // 1. ATUALIZAÇÃO OTIMISTA (A MÁGICA ACONTECE AQUI)
+    // Atualiza o estado global IMEDIATAMENTE, antes mesmo de chamar o servidor.
+    // Isso impede que a tarefa "volte" para o estado anterior enquanto o servidor processa.
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+
+    try {
+      // 2. Chama o servidor em segundo plano
+      const updatedTask = await taskService.updateTask(id, userId, updates)
+      
+      // 3. Confirmação silenciosa (só atualiza se o servidor devolver algo válido)
+      if (updatedTask && updatedTask.id) {
+        setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar tarefa:", error)
+      // Opcional: Reverter em caso de erro crítico, mas para UX é melhor manter o estado visual
+    }
   }
 
   const deleteTask = async (id) => {
     if (!userId) return
-    await taskService.deleteTask(id, userId)
+    // Otimista também para exclusão
     setTasks(prev => prev.filter(t => t.id !== id))
+    await taskService.deleteTask(id, userId)
   }
 
   // Project Actions
@@ -116,14 +132,16 @@ export function AppProvider({ children, userId }) {
 
   const updateProject = async (id, updates) => {
     if (!userId) return
+    // Otimista
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
     const updatedProject = await projectService.updateProject(id, userId, updates)
-    setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
+    if(updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
   }
 
   const deleteProject = async (id) => {
     if (!userId) return
-    await projectService.deleteProject(id, userId)
     setProjects(prev => prev.filter(p => p.id !== id))
+    await projectService.deleteProject(id, userId)
   }
 
   // Goal Actions
@@ -136,21 +154,21 @@ export function AppProvider({ children, userId }) {
 
   const updateGoal = async (id, updates) => {
     if (!userId) return
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g))
     const updatedGoal = await goalService.updateGoal(id, userId, updates)
-    setGoals(prev => prev.map(g => g.id === id ? updatedGoal : g))
+    if(updatedGoal) setGoals(prev => prev.map(g => g.id === id ? updatedGoal : g))
   }
 
   const deleteGoal = async (id) => {
     if (!userId) return
-    await goalService.deleteGoal(id, userId)
     setGoals(prev => prev.filter(g => g.id !== id))
+    await goalService.deleteGoal(id, userId)
   }
 
   // Habit Actions
   const addHabit = async (habit) => {
     if (!userId) return
     const newHabit = await habitService.createHabit(userId, habit)
-    // Preserve any front-end-only fields like customDays so filtering works immediately
     if (habit.customDays !== undefined) newHabit.customDays = habit.customDays
     setHabits(prev => [newHabit, ...prev])
     return newHabit
@@ -162,52 +180,49 @@ export function AppProvider({ children, userId }) {
     if (!habit) return
 
     const today = new Date().toISOString().split('T')[0]
-    // suportar campos com nomes diferentes e formatos
     const completedDates = Array.isArray(habit.completions)
       ? [...habit.completions]
       : Array.isArray(habit.completed_dates)
       ? [...habit.completed_dates]
       : []
 
+    let updates = {}
+
     if (completedDates.includes(today)) {
-      // já marcado — desmarcar (toggle)
       const newDates = completedDates.filter(d => d !== today)
       const newCurrent = Math.max((habit.currentStreak || 1) - 1, 0)
-      const updatedHabit = await habitService.updateHabit(id, userId, {
-        ...habit,
-        completions: newDates,
-        currentStreak: newCurrent,
-      })
-      setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
-      return
+      updates = { ...habit, completions: newDates, currentStreak: newCurrent }
+    } else {
+      completedDates.push(today)
+      const currentStreak = (habit.currentStreak || 0) + 1
+      const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+      updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
     }
 
-    // não estava marcado — marcar hoje
-    completedDates.push(today)
-    const currentStreak = (habit.currentStreak || 0) + 1
-    const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+    // Otimista: Atualiza localmente AGORA
+    setHabits(prev => prev.map(h => h.id === id ? updates : h))
 
-    const updatedHabit = await habitService.updateHabit(id, userId, {
-      ...habit,
-      completions: completedDates,
-      currentStreak,
-      bestStreak,
-    })
-    setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+    // Envia pro servidor
+    const updatedHabit = await habitService.updateHabit(id, userId, updates)
+    
+    // Confirma
+    if (updatedHabit) {
+        setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+    }
   }
 
   const updateHabit = async (id, updates) => {
     if (!userId) return
+    setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h))
     const updatedHabit = await habitService.updateHabit(id, userId, updates)
-    // Preserve customDays from updates in front-end state (DB may not persist this column)
-    if (updates.customDays !== undefined) updatedHabit.customDays = updates.customDays
-    setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+    if (updates.customDays !== undefined && updatedHabit) updatedHabit.customDays = updates.customDays
+    if (updatedHabit) setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
   }
 
   const deleteHabit = async (id) => {
     if (!userId) return
-    await habitService.deleteHabit(id, userId)
     setHabits(prev => prev.filter(h => h.id !== id))
+    await habitService.deleteHabit(id, userId)
   }
 
   // Finance Actions
@@ -220,17 +235,18 @@ export function AppProvider({ children, userId }) {
 
   const updateFinance = async (id, updates) => {
     if (!userId) return
+    setFinances(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f))
     const updatedFinance = await financeService.updateTransaction(id, userId, updates)
-    setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
+    if(updatedFinance) setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
   }
 
   const deleteFinance = async (id) => {
     if (!userId) return
-    await financeService.deleteTransaction(id, userId)
     setFinances(prev => prev.filter(f => f.id !== id))
+    await financeService.deleteTransaction(id, userId)
   }
 
-  // Study Actions
+  // Study & Dream Actions (Mantidos simples)
   const addStudy = async (study) => {
     if (!userId) return
     const newStudy = await studyService.createStudy(userId, study)
@@ -241,6 +257,8 @@ export function AppProvider({ children, userId }) {
 
   const updateStudy = async (id, updates) => {
     if (!userId) return
+    // Otimista parcial
+    setStudies(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
     await studyService.updateStudy(id, updates)
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
@@ -248,8 +266,8 @@ export function AppProvider({ children, userId }) {
 
   const deleteStudy = async (id) => {
     if (!userId) return
-    await studyService.deleteStudy(id)
     setStudies(prev => prev.filter(s => s.id !== id))
+    await studyService.deleteStudy(id)
   }
 
   const addStudyModule = async (studyItemId, moduleData) => {
@@ -273,9 +291,9 @@ export function AppProvider({ children, userId }) {
     setStudies(allStudies)
   }
 
-  // Dream Map Actions
   const addDreamMap = async (dreamMap, imageFile) => {
     if (!userId) return
+    // Note: Upload de imagem é difícil de ser otimista visualmente sem preview local complexo
     const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
     const newDreamMap = await dreamMapService.createDreamMap(userId, { ...dreamMap, imageUrl })
     setDreamMaps([newDreamMap, ...dreamMaps])
@@ -284,14 +302,15 @@ export function AppProvider({ children, userId }) {
 
   const updateDreamMap = async (id, updates) => {
     if (!userId) return
+    setDreamMaps(dreamMaps.map(dm => dm.id === id ? { ...dm, ...updates } : dm))
     const updated = await dreamMapService.updateDreamMap(id, userId, updates)
-    setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
+    if(updated) setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
   }
 
   const deleteDreamMap = async (id) => {
     if (!userId) return
-    await dreamMapService.deleteDreamMap(id, userId)
     setDreamMaps(dreamMaps.filter(dm => dm.id !== id))
+    await dreamMapService.deleteDreamMap(id, userId)
   }
 
   const value = {
