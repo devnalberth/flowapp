@@ -58,8 +58,7 @@ export function AppProvider({ children, userId }) {
     
     setLoading(true)
     try {
-      // CORREÇÃO: Usamos allSettled em vez de all. 
-      // Se um falhar, os outros continuam funcionando.
+      // Usamos allSettled para garantir que se um falhar, os outros carregam
       const results = await Promise.allSettled([
         taskService.getTasks(userId),
         projectService.getProjects(userId),
@@ -94,11 +93,7 @@ export function AppProvider({ children, userId }) {
 
   // Task Actions
   const addTask = async (task) => {
-    if (!userId) {
-      console.warn('addTask aborted: no userId')
-      return
-    }
-    console.debug('addTask called for userId:', userId, 'task:', task)
+    if (!userId) return
     try {
       const newTask = await taskService.createTask(userId, task)
       setTasks((prev) => [newTask, ...prev])
@@ -133,11 +128,7 @@ export function AppProvider({ children, userId }) {
 
   // Project Actions
   const addProject = async (project) => {
-    if (!userId) {
-      console.warn('addProject aborted: no userId')
-      return
-    }
-    console.debug('addProject called for userId:', userId, 'project:', project)
+    if (!userId) return
     try {
       const newProject = await projectService.createProject(userId, project)
       setProjects((prev) => [newProject, ...prev])
@@ -172,11 +163,7 @@ export function AppProvider({ children, userId }) {
 
   // Goal Actions
   const addGoal = async (goal) => {
-    if (!userId) {
-      console.warn('addGoal aborted: no userId')
-      return
-    }
-    console.debug('addGoal called for userId:', userId, 'goal:', goal)
+    if (!userId) return
     try {
       const newGoal = await goalService.createGoal(userId, goal)
       setGoals((prev) => [newGoal, ...prev])
@@ -211,11 +198,7 @@ export function AppProvider({ children, userId }) {
 
   // Habit Actions
   const addHabit = async (habit) => {
-    if (!userId) {
-      console.warn('addHabit aborted: no userId')
-      return
-    }
-    console.debug('addHabit called for userId:', userId, 'habit:', habit)
+    if (!userId) return
     try {
       const newHabit = await habitService.createHabit(userId, habit)
       setHabits((prev) => [newHabit, ...prev])
@@ -233,16 +216,22 @@ export function AppProvider({ children, userId }) {
       if (!habit) return
 
       const today = new Date().toISOString().split('T')[0]
-      const completedDates = JSON.parse(habit.completed_dates || '[]')
+      
+      // CORREÇÃO: Usar o array 'completions' normalizado pelo serviço
+      // Garante que é sempre array para evitar erro .includes
+      const completedDates = Array.isArray(habit.completions) 
+        ? [...habit.completions] 
+        : []
       
       if (!completedDates.includes(today)) {
         completedDates.push(today)
-        const currentStreak = habit.current_streak + 1
-        const bestStreak = Math.max(currentStreak, habit.best_streak)
+        const currentStreak = (habit.currentStreak || 0) + 1
+        const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
 
+        // Envia como array (completions), o serviço normaliza se precisar
         const updatedHabit = await habitService.updateHabit(id, userId, {
           ...habit,
-          completedDates: JSON.stringify(completedDates),
+          completions: completedDates, 
           currentStreak,
           bestStreak,
         })
@@ -279,11 +268,7 @@ export function AppProvider({ children, userId }) {
 
   // Finance Actions
   const addFinance = async (finance) => {
-    if (!userId) {
-      console.warn('addFinance aborted: no userId')
-      return
-    }
-    console.debug('addFinance called for userId:', userId, 'finance:', finance)
+    if (!userId) return
     try {
       const newFinance = await financeService.createTransaction(userId, finance)
       setFinances((prev) => [newFinance, ...prev])
@@ -433,6 +418,9 @@ export function AppProvider({ children, userId }) {
   }
 
   const value = {
+    // CORREÇÃO: Adicionado userId ao contexto
+    userId,
+
     // State
     tasks,
     projects,

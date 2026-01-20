@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AppProvider } from './context/AppContext.jsx'
+import { AppProvider, useApp } from './context/AppContext.jsx'
 
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
@@ -19,7 +19,7 @@ const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
 
 const getPathname = () => (typeof window === 'undefined' ? '/' : window.location.pathname)
 
-// Estado inicial vazio/genérico
+// Estado inicial vazio
 const INITIAL_USER = {
   name: '',
   email: '',
@@ -27,82 +27,43 @@ const INITIAL_USER = {
 }
 
 function App() {
-  const resolveInitialAuth = () => {
-    if (typeof window === 'undefined') {
-      return { pref: 'local', client: getSupabaseClient(true) }
-    }
-    const stored = window.localStorage.getItem(AUTH_STORAGE_KEY) === 'session' ? 'session' : 'local'
-    return { pref: stored, client: getSupabaseClient(stored !== 'session') }
-  }
-
-  const initialAuth = resolveInitialAuth()
-
+  // AQUI ESTÁ A MÁGICA: Pegamos o userId do contexto.
+  // Se o AppWrapper definiu o ID, estamos logados. Se for null, estamos deslogados.
+  const { userId } = useApp()
+  
   const [page, setPage] = useState('Dashboard')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState(INITIAL_USER)
-  const [isAuthReady, setIsAuthReady] = useState(false)
-  const [authPreference, setAuthPreference] = useState(initialAuth.pref)
-  const [authClient, setAuthClient] = useState(initialAuth.client)
   const [authInfoMessage, setAuthInfoMessage] = useState('')
   const [currentPath, setCurrentPath] = useState(getPathname())
 
-  const syncUser = (sessionUser) => {
-    if (!sessionUser) return
-    setCurrentUser((prev) => ({
-      ...prev,
-      id: sessionUser.id,
-      email: sessionUser.email ?? prev.email,
-      name: sessionUser.user_metadata?.name ?? prev.name,
-    }))
-  }
+  // Derivamos o estado de autenticação diretamente do userId
+  const isAuthenticated = !!userId
 
+  // Efeito para carregar os dados visuais do usuário (Nome, Avatar)
+  // Só roda se tivermos um userId válido
   useEffect(() => {
-    let isMounted = true
-
-    const bootstrap = async () => {
-      try {
-        const { data: { session } } = await authClient.auth.getSession()
-
-        if (!isMounted) return
-
-        if (session?.user) {
-          syncUser(session.user)
-          setIsAuthenticated(true)
-        } else {
-          setIsAuthenticated(false)
-        }
-      } catch (error) {
-        console.error('Error loading session:', error)
-        if (isMounted) {
-          setIsAuthenticated(false)
-        }
-      } finally {
-        if (isMounted) {
-          setIsAuthReady(true)
+    if (userId) {
+      const fetchUserData = async () => {
+        try {
+          const client = getSupabaseClient(true)
+          const { data: { user } } = await client.auth.getUser()
+          if (user) {
+            setCurrentUser(prev => ({
+              ...prev,
+              id: user.id,
+              email: user.email ?? prev.email,
+              name: user.user_metadata?.name ?? prev.name,
+            }))
+          }
+        } catch (error) {
+          console.error('Erro ao sincronizar dados do usuário:', error)
         }
       }
+      fetchUserData()
+    } else {
+      setCurrentUser(INITIAL_USER)
     }
-
-    setIsAuthReady(true)
-    bootstrap()
-
-    const {
-      data: authListener,
-    } = authClient.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return
-      if (session?.user) {
-        syncUser(session.user)
-        setIsAuthenticated(true)
-      } else {
-        setIsAuthenticated(false)
-      }
-    })
-
-    return () => {
-      isMounted = false
-      authListener.subscription.unsubscribe()
-    }
-  }, [authClient])
+  }, [userId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
@@ -140,34 +101,28 @@ function App() {
     }
 
     if (data.user) {
-      syncUser(data.user)
-      setIsAuthenticated(true)
       setAuthInfoMessage('')
-      
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(AUTH_STORAGE_KEY, targetPref)
       }
-      
-      if (authPreference !== targetPref) {
-        setAuthPreference(targetPref)
-        setAuthClient(client)
-      }
+      // Não precisamos fazer mais nada. O AppWrapper vai detectar a sessão,
+      // atualizar o userId no contexto, e o App vai re-renderizar automaticamente no Dashboard.
     }
   }
 
   const handleLogout = async () => {
-    await authClient.auth.signOut()
-    setIsAuthenticated(false)
+    const client = getSupabaseClient(true)
+    await client.auth.signOut()
     setPage('Dashboard')
     setAuthInfoMessage('Você saiu com sucesso. Faça login novamente abaixo.')
     replacePath('/')
   }
 
   const handleResetComplete = async (message) => {
-    await authClient.auth.signOut()
+    const client = getSupabaseClient(true)
+    await client.auth.signOut()
     setAuthInfoMessage(message ?? 'Senha atualizada com sucesso. Faça login novamente.')
     replacePath('/')
-    setIsAuthenticated(false)
   }
 
   if (currentPath === '/recuperar-senha') {
@@ -211,12 +166,12 @@ function App() {
   return <Dashboard {...pageProps} />
 }
 
-// Wrap app with Context Provider
+// O AppWrapper continua blindado (Timeout 10s + Sem Logout Forçado)
 export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [isReady, setIsReady] = useState(false)
 
-  // Timeout de 10 segundos para segurança
+  // Timeout de 10 segundos
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isReady) {
@@ -235,18 +190,12 @@ export default function AppWrapper() {
         const { data: { session } } = await client.auth.getSession()
         
         if (session?.user) {
-          // Tenta garantir o usuário no banco
           const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
           
           if (!ensured) {
-            // CORREÇÃO: Se falhar (erro de rede, etc), NÃO deslogamos o usuário.
-            // Apenas logamos o erro e tentamos seguir a vida (talvez o app funcione parcialmente ou no próximo reload resolva)
-            console.warn('Falha ao sincronizar usuário com o banco. Mantendo sessão local.')
-            
-            // Mesmo sem 'ensured', podemos tentar setar o ID se o Supabase diz que tem sessão.
-            // Isso evita o logout, mas pode causar erros de FK se o usuário realmente não existir no banco.
-            // Por segurança, mantemos null no provider para não quebrar a UI, mas NÃO apagamos o storage.
-            setCurrentUserId(null) 
+            console.warn('Falha ao garantir usuário. Mantendo sessão local.')
+            // Não força logout, apenas define ID como null temporariamente
+            setCurrentUserId(null)
             return true 
           }
           
@@ -287,7 +236,6 @@ export default function AppWrapper() {
             setCurrentUserId(ensured ? session.user.id : null)
           } catch (error) {
             console.error('Error ensuring user on change:', error)
-            // Mantém null se der erro, mas não força logout explícito aqui também
             setCurrentUserId(null)
           }
         } else {
