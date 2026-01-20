@@ -78,6 +78,21 @@ export default function Habits({ user, onNavigate, onLogout }) {
   const habitsDisplay = useMemo(() => {
     const dayOfWeek = currentDate.getDay() // 0 = Domingo
 
+    const parseDays = (raw) => {
+      if (!raw && raw !== 0) return []
+      if (Array.isArray(raw)) return raw.map((d) => Number(d))
+      if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed)) return parsed.map((d) => Number(d))
+        } catch (e) {
+          // fallback: comma / semicolon separated
+          return raw.split(/[;,]/).map(s => Number(s.trim())).filter(n => !Number.isNaN(n))
+        }
+      }
+      return []
+    }
+
     return habitsWithMeta.filter((habit) => {
       // 1. Filtro de Categoria e Busca
       const matchesCategory = categoryFilter === 'all' || habit.category === categoryFilter
@@ -89,7 +104,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
       if (habit.frequency === 'daily' || !habit.frequency) return true
       
       if (habit.frequency === 'custom' || habit.frequency === 'weekly') {
-        const days = Array.isArray(habit.customDays) ? habit.customDays : (Array.isArray(habit.selectedDays) ? habit.selectedDays : [])
+        const days = parseDays(habit.customDays ?? habit.selectedDays ?? habit.selected_days ?? habit.days)
         if (days.length === 0) return true
         return days.includes(dayOfWeek)
       }

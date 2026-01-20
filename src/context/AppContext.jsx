@@ -150,6 +150,8 @@ export function AppProvider({ children, userId }) {
   const addHabit = async (habit) => {
     if (!userId) return
     const newHabit = await habitService.createHabit(userId, habit)
+    // Preserve any front-end-only fields like customDays so filtering works immediately
+    if (habit.customDays !== undefined) newHabit.customDays = habit.customDays
     setHabits(prev => [newHabit, ...prev])
     return newHabit
   }
@@ -160,27 +162,45 @@ export function AppProvider({ children, userId }) {
     if (!habit) return
 
     const today = new Date().toISOString().split('T')[0]
-    const completedDates = Array.isArray(habit.completions) ? [...habit.completions] : []
-    
-    if (!completedDates.includes(today)) {
-      completedDates.push(today)
-      const currentStreak = (habit.currentStreak || 0) + 1
-      const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+    // suportar campos com nomes diferentes e formatos
+    const completedDates = Array.isArray(habit.completions)
+      ? [...habit.completions]
+      : Array.isArray(habit.completed_dates)
+      ? [...habit.completed_dates]
+      : []
 
+    if (completedDates.includes(today)) {
+      // já marcado — desmarcar (toggle)
+      const newDates = completedDates.filter(d => d !== today)
+      const newCurrent = Math.max((habit.currentStreak || 1) - 1, 0)
       const updatedHabit = await habitService.updateHabit(id, userId, {
         ...habit,
-        completions: completedDates,
-        currentStreak,
-        bestStreak,
+        completions: newDates,
+        currentStreak: newCurrent,
       })
-      
       setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+      return
     }
+
+    // não estava marcado — marcar hoje
+    completedDates.push(today)
+    const currentStreak = (habit.currentStreak || 0) + 1
+    const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+
+    const updatedHabit = await habitService.updateHabit(id, userId, {
+      ...habit,
+      completions: completedDates,
+      currentStreak,
+      bestStreak,
+    })
+    setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
   }
 
   const updateHabit = async (id, updates) => {
     if (!userId) return
     const updatedHabit = await habitService.updateHabit(id, userId, updates)
+    // Preserve customDays from updates in front-end state (DB may not persist this column)
+    if (updates.customDays !== undefined) updatedHabit.customDays = updates.customDays
     setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
   }
 
