@@ -15,7 +15,6 @@ export default function CreateTaskModal({
 }) {
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
-  const startDateRef = useRef(null)
   const dueDateRef = useRef(null)
 
   const normalizedProjects = useMemo(() => {
@@ -37,7 +36,6 @@ export default function CreateTaskModal({
   const defaultForm = useMemo(
     () => ({
       title: '',
-      startDate: '',
       dueDate: '',
       status: statusOptions[0] ?? '',
       priority: priorityOptions[0] ?? '',
@@ -101,7 +99,13 @@ export default function CreateTaskModal({
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    onSubmit?.(form)
+    // Converte `datetime-local` (valor local) para ISO antes de enviar
+    const payload = {
+      ...form,
+      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+    }
+
+    onSubmit?.(payload)
   }
 
   return (
@@ -135,24 +139,12 @@ export default function CreateTaskModal({
 
           <label className="createTaskModal__field">
             <span className="createTaskModal__label">
-              Data da tarefa <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
+              Data e hora da tarefa <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
             </span>
             <div className="createTaskModal__dateRange">
               <input
-                ref={startDateRef}
-                type="date"
-                name="startDate"
-                value={form.startDate}
-                onChange={updateField('startDate')}
-                className="createTaskModal__dateInput"
-                required
-              />
-              <span className="createTaskModal__dateDivider" aria-hidden="true">
-                —
-              </span>
-              <input
                 ref={dueDateRef}
-                type="date"
+                type="datetime-local"
                 name="dueDate"
                 value={form.dueDate}
                 onChange={updateField('dueDate')}
@@ -163,7 +155,7 @@ export default function CreateTaskModal({
                 type="button"
                 className="createTaskModal__calendarBtn"
                 onClick={() => dueDateRef.current?.showPicker?.()}
-                aria-label="Abrir calendário"
+                aria-label="Abrir seletor de data e hora"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>

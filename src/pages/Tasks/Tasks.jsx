@@ -28,7 +28,7 @@ const TASK_MODAL_PRIORITY = ['Alta', 'Média', 'Baixa', 'Urgente']
 
 export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, addTask, updateTask } = useApp()
+  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask } = useApp()
   
   // Estado inicial dos filtros
   const [timelineFilter, setTimelineFilter] = useState('today')
@@ -71,7 +71,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    return tasks.filter((task) => {
+    const matched = tasks.filter((task) => {
       // 1. Normalizar Data
       let dueDate = null
       if (task.due_date) {
@@ -121,6 +121,42 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 
       return matchesStatus
     })
+
+    // Função utilitária para comparar datas (nulls vão para o final)
+    const getTimeOrInfinity = (dateStr) => {
+      if (!dateStr) return Infinity
+      try {
+        return new Date(dateStr).getTime()
+      } catch (e) {
+        return Infinity
+      }
+    }
+
+    const priorityRank = (p) => {
+      if (!p) return 0
+      const map = { 'Urgente': 4, 'Alta': 3, 'Média': 2, 'Baixa': 1 }
+      return map[p] || 0
+    }
+
+    // Ordenação por regras solicitadas
+    matched.sort((a, b) => {
+      // Se estamos em filtro 'today' -> ordenar por data (mais cedo -> mais tarde)
+      if (timelineFilter === 'today' && statusFilters.length === 0) {
+        return getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
+      }
+
+      // Se estamos em modo Flow -> data mais cedo, dentro da mesma data prioridade mais alta primeiro
+      if (statusFilters.includes('flow')) {
+        const dateComp = getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
+        if (dateComp !== 0) return dateComp
+        return priorityRank(b.priority) - priorityRank(a.priority)
+      }
+
+      // Default: ordenar por data asc (sem data vão para o final)
+      return getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
+    })
+
+    return matched
   }, [tasks, timelineFilter, statusFilters])
 
   // --- Handlers ---
@@ -311,7 +347,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         )}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" icon="plus" onClick={() => setTaskModalOpen(true)} />
+      <FloatingCreateButton label="Nova tarefa" onClick={() => setTaskModalOpen(true)} />
       
       {isTaskModalOpen && (
         <CreateTaskModal open={true} onClose={() => setTaskModalOpen(false)} onSubmit={handleTaskSubmit}
@@ -329,18 +365,93 @@ export default function Tasks({ onNavigate, onLogout, user }) {
       <TaskDetailModal 
         task={activeDetailTask} 
         onClose={handleDetailClose} 
+        deleteTask={deleteTask}
       />
     </div>
   )
 }
 
 function FilterIcon({ name }) {
-  const icons = { list: '📅', spark: '✨', bolt: '⚡', check: '✓', sun: '☀️', 'calendar-late': '⚠️', 'calendar-off': '🚫' }
-  return <span>{icons[name] || '•'}</span>
+  const common = { width: 18, height: 18 }
+  switch (name) {
+    case 'list':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor" opacity="0.06" />
+          <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="8" y1="17" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      )
+    case 'spark':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <path d="M12 2l1.9 4.6L18 8l-4.1 1.4L12 14l-1.9-4.6L6 8l4.1-1.4L12 2z" fill="currentColor" opacity="0.95" />
+        </svg>
+      )
+    case 'bolt':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <path d="M13 2L3 14h7l-1 8L21 10h-7l-1-8z" fill="currentColor" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+      )
+    case 'sun':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <g stroke="currentColor" strokeWidth="1.4">
+            <line x1="12" y1="2" x2="12" y2="4" />
+            <line x1="12" y1="20" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="4" y2="12" />
+            <line x1="20" y1="12" x2="22" y2="12" />
+          </g>
+        </svg>
+      )
+    case 'calendar-late':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" fill="none" />
+          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M8 16l2-2 2 2 4-4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'calendar-off':
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" fill="none" />
+          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="1.2" />
+          <line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      )
+    default:
+      return (
+        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+        </svg>
+      )
+  }
 }
 
-function TaskDetailModal({ task, onClose }) {
+function TaskDetailModal({ task, onClose, deleteTask }) {
   if (!task) return null
+
+  const handleDelete = async () => {
+    const ok = window.confirm('Tem certeza que deseja excluir esta tarefa?')
+    if (!ok) return
+    try {
+      await deleteTask(task.id)
+      onClose()
+    } catch (e) {
+      alert('Erro ao excluir tarefa')
+    }
+  }
+
   return (
     <div className="taskModal" onClick={onClose}>
       <div className="taskModal__backdrop" />
@@ -356,6 +467,10 @@ function TaskDetailModal({ task, onClose }) {
         <div className="taskModal__description">
             <p>{task.description || 'Sem descrição'}</p>
         </div>
+        <footer style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+          <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
+          <button className="taskModal__deleteBtn" onClick={handleDelete} style={{ background: '#ff4d4f', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 8 }}>Excluir</button>
+        </footer>
       </div>
     </div>
   )
