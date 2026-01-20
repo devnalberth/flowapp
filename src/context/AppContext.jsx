@@ -19,13 +19,13 @@ export function useApp() {
 
 export function AppProvider({ children, userId }) {
   useEffect(() => {
-    // TEMP DEBUG: log userId changes to help trace aborted creates
     try {
-      console.debug('AppProvider: userId changed =>', userId)
+      if (userId) console.debug('AppProvider: userId changed =>', userId)
     } catch (err) {
-      console.debug('AppProvider: failed to log userId change', err)
+      // ignore
     }
   }, [userId])
+
   // State for all entities
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
@@ -56,9 +56,11 @@ export function AppProvider({ children, userId }) {
   const loadAllData = async () => {
     if (!userId) return
     
+    setLoading(true)
     try {
-      setLoading(true)
-      const [tasksData, projectsData, goalsData, habitsData, financesData, studiesData, dreamMapsData] = await Promise.all([
+      // CORREÇÃO: Usamos allSettled em vez de all. 
+      // Se um falhar, os outros continuam funcionando.
+      const results = await Promise.allSettled([
         taskService.getTasks(userId),
         projectService.getProjects(userId),
         goalService.getGoals(userId),
@@ -68,15 +70,23 @@ export function AppProvider({ children, userId }) {
         dreamMapService.getDreamMaps(userId),
       ])
       
-      setTasks(tasksData)
-      setProjects(projectsData)
-      setGoals(goalsData)
-      setHabits(habitsData)
-      setFinances(financesData)
-      setStudies(studiesData)
-      setDreamMaps(dreamMapsData)
+      // Helper para extrair dados ou retornar array vazio em caso de erro
+      const getVal = (res, label) => {
+        if (res.status === 'fulfilled') return res.value
+        console.error(`Falha ao carregar ${label}:`, res.reason)
+        return []
+      }
+
+      setTasks(getVal(results[0], 'tasks'))
+      setProjects(getVal(results[1], 'projects'))
+      setGoals(getVal(results[2], 'goals'))
+      setHabits(getVal(results[3], 'habits'))
+      setFinances(getVal(results[4], 'finances'))
+      setStudies(getVal(results[5], 'studies'))
+      setDreamMaps(getVal(results[6], 'dreamMaps'))
+
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('Erro geral no carregamento:', error)
     } finally {
       setLoading(false)
     }

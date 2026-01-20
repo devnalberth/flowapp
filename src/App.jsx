@@ -23,7 +23,7 @@ const getPathname = () => (typeof window === 'undefined' ? '/' : window.location
 const INITIAL_USER = {
   name: '',
   email: '',
-  avatarUrl: 'https://placehold.co/42x42', // Mantém um avatar padrão cinza
+  avatarUrl: 'https://placehold.co/42x42',
 }
 
 function App() {
@@ -83,7 +83,6 @@ function App() {
       }
     }
 
-    // Marcar como pronto imediatamente para evitar tela de loading
     setIsAuthReady(true)
     bootstrap()
 
@@ -145,12 +144,10 @@ function App() {
       setIsAuthenticated(true)
       setAuthInfoMessage('')
       
-      // Salvar preferência de autenticação
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(AUTH_STORAGE_KEY, targetPref)
       }
       
-      // Atualizar cliente se necessário
       if (authPreference !== targetPref) {
         setAuthPreference(targetPref)
         setAuthClient(client)
@@ -219,14 +216,14 @@ export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [isReady, setIsReady] = useState(false)
 
-  // CORREÇÃO 1: Timeout aumentado para 10 segundos
+  // Timeout de 10 segundos para segurança
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isReady) {
-        console.warn('AppWrapper: Auth check timeout - system slow')
+        console.warn('AppWrapper: Auth check timeout - forcing ready state')
         setIsReady(true)
       }
-    }, 10000) // <--- MUDADO DE 2000 PARA 10000
+    }, 10000)
     return () => clearTimeout(timer)
   }, [isReady])
 
@@ -238,21 +235,21 @@ export default function AppWrapper() {
         const { data: { session } } = await client.auth.getSession()
         
         if (session?.user) {
-          // CORREÇÃO 2: createIfMissing agora é TRUE
+          // Tenta garantir o usuário no banco
           const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
+          
           if (!ensured) {
-            try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
-            try {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('flowapp-auth')
-                localStorage.removeItem('flowapp-auth-session')
-                localStorage.removeItem('flowapp-auth-storage')
-                sessionStorage.clear()
-              }
-            } catch (e) { console.error('Failed to clear auth storage:', e) }
-            setCurrentUserId(null)
+            // CORREÇÃO: Se falhar (erro de rede, etc), NÃO deslogamos o usuário.
+            // Apenas logamos o erro e tentamos seguir a vida (talvez o app funcione parcialmente ou no próximo reload resolva)
+            console.warn('Falha ao sincronizar usuário com o banco. Mantendo sessão local.')
+            
+            // Mesmo sem 'ensured', podemos tentar setar o ID se o Supabase diz que tem sessão.
+            // Isso evita o logout, mas pode causar erros de FK se o usuário realmente não existir no banco.
+            // Por segurança, mantemos null no provider para não quebrar a UI, mas NÃO apagamos o storage.
+            setCurrentUserId(null) 
             return true 
           }
+          
           setCurrentUserId(session.user.id)
           return true 
         }
@@ -286,11 +283,11 @@ export default function AppWrapper() {
         if (!mounted) return
         if (session?.user) {
           try {
-            // CORREÇÃO 3: createIfMissing agora é TRUE aqui também
             const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
             setCurrentUserId(ensured ? session.user.id : null)
           } catch (error) {
             console.error('Error ensuring user on change:', error)
+            // Mantém null se der erro, mas não força logout explícito aqui também
             setCurrentUserId(null)
           }
         } else {
