@@ -57,10 +57,15 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   const [timeLeft, setTimeLeft] = useState(25 * 60)
   const [isRunning, setIsRunning] = useState(false)
   const [sessionsCompleted, setSessionsCompleted] = useState(0)
-  const [focusedTaskId, setFocusedTaskId] = useState(null) // ID da tarefa em foco
+  const [focusedTaskId, setFocusedTaskId] = useState(null)
   
   const [showPomodoroConfig, setShowPomodoroConfig] = useState(false)
   const [customConfig, setCustomConfig] = useState({ focus: 25, break: 5, longBreak: 15, sessions: 4 })
+
+  // --- REFS PARA O TIMER REAL (FIX DO SEGUNDO PLANO) ---
+  const endTimeRef = useRef(null)
+  const timerIntervalRef = useRef(null)
+  const lastTimeRef = useRef(timeLeft) // Para calcular o tempo gasto ao pausar
 
   const projectOptions = useMemo(() => {
     return projects.map((project) => ({ id: project.id, label: project.title }))
@@ -70,78 +75,161 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     setTasks(contextTasks || [])
   }, [contextTasks])
 
-  // Identifica tarefa em foco
   const focusedTaskData = useMemo(() => 
     focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
   , [focusedTaskId, tasks])
 
-  // --- Lógica do Timer do Pomodoro ---
+  // --- LÓGICA ROBUSTA DO TIMER (TIMESTAMP) ---
   useEffect(() => {
-    let interval = null;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      handleTimerComplete();
+    if (isRunning) {
+      // Se acabou de iniciar/retomar, define o tempo de término baseado no agora
+      if (!endTimeRef.current) {
+        endTimeRef.current = Date.now() + timeLeft * 1000
+        lastTimeRef.current = timeLeft // Marca onde começou
+      }
+
+      timerIntervalRef.current = setInterval(() => {
+        const now = Date.now()
+        const diff = endTimeRef.current - now
+        const secondsLeft = Math.ceil(diff / 1000)
+
+        if (secondsLeft <= 0) {
+          handleTimerComplete()
+        } else {
+          setTimeLeft(secondsLeft)
+        }
+      }, 100) // Verifica a cada 100ms para maior precisão visual
+    } else {
+      clearInterval(timerIntervalRef.current)
+      endTimeRef.current = null // Limpa a referência ao pausar
     }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+
+    return () => clearInterval(timerIntervalRef.current)
+  }, [isRunning])
+
+  // Função para salvar o tempo focado na tarefa
+  const saveFocusTime = async (secondsElapsed) => {
+    if (!focusedTaskId || !secondsElapsed || secondsElapsed <= 0) return
+    if (pomodoroMode !== 'focus') return // Só salva tempo de foco, não de pausa
+
+    const minutesToAdd = secondsElapsed / 60
+    
+    // Busca a tarefa atualizada
+    const currentTask = tasks.find(t => t.id === focusedTaskId)
+    if (!currentTask) return
+
+    const newTimeSpent = (currentTask.time_spent || 0) + minutesToAdd
+
+    console.log(`Salvando foco: +${minutesToAdd.toFixed(2)} min na tarefa ${currentTask.title}`)
+    
+    // Atualiza otimista e no banco
+    await updateTask(focusedTaskId, { time_spent: newTimeSpent })
+  }
 
   const handleTimerComplete = () => {
-    setIsRunning(false);
-    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
+    setIsRunning(false)
+    clearInterval(timerIntervalRef.current)
+    
+    // Salva o tempo total do ciclo que acabou
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique]
+    if (pomodoroMode === 'focus') {
+      saveFocusTime(config.focus * 60) // Salva o ciclo completo
+    }
+
+    endTimeRef.current = null
     
     if (pomodoroMode === 'focus') {
-      const newSessions = sessionsCompleted + 1;
-      setSessionsCompleted(newSessions);
+      const newSessions = sessionsCompleted + 1
+      setSessionsCompleted(newSessions)
       
       if (newSessions >= config.sessions) {
-        setPomodoroMode('longBreak');
-        setTimeLeft(config.longBreak * 60);
-        setSessionsCompleted(0); 
+        setPomodoroMode('longBreak')
+        setTimeLeft(config.longBreak * 60)
+        setSessionsCompleted(0) 
       } else {
-        setPomodoroMode('break');
-        setTimeLeft(config.break * 60);
+        setPomodoroMode('break')
+        setTimeLeft(config.break * 60)
       }
     } else {
-      setPomodoroMode('focus');
-      setTimeLeft(config.focus * 60);
+      setPomodoroMode('focus')
+      setTimeLeft(config.focus * 60)
     }
-  };
+  }
 
   const switchTechnique = (techId) => {
-    setActiveTechnique(techId);
-    setIsRunning(false);
-    setPomodoroMode('focus');
-    setSessionsCompleted(0);
+    // Se estava rodando, salva o progresso parcial antes de trocar
+    if (isRunning && pomodoroMode === 'focus') {
+        const elapsed = lastTimeRef.current - timeLeft
+        saveFocusTime(elapsed)
+    }
+
+    setActiveTechnique(techId)
+    setIsRunning(false)
+    setPomodoroMode('focus')
+    setSessionsCompleted(0)
+    endTimeRef.current = null
     
-    const config = techId === 'custom' ? customConfig : POMODORO_TECHNIQUES[techId];
-    setTimeLeft(config.focus * 60);
-  };
+    const config = techId === 'custom' ? customConfig : POMODORO_TECHNIQUES[techId]
+    setTimeLeft(config.focus * 60)
+    lastTimeRef.current = config.focus * 60
+  }
 
   const handleFocusTask = (taskId) => {
-    setFocusedTaskId(taskId);
-    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
-    setPomodoroMode('focus');
-    setTimeLeft(config.focus * 60);
-    setIsRunning(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    // Se estava rodando em outra tarefa, salva o tempo dela
+    if (isRunning && focusedTaskId && focusedTaskId !== taskId && pomodoroMode === 'focus') {
+         const elapsed = lastTimeRef.current - timeLeft
+         saveFocusTime(elapsed)
+    }
 
-  const toggleTimer = () => setIsRunning(!isRunning);
+    setFocusedTaskId(taskId)
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique]
+    setPomodoroMode('focus')
+    setTimeLeft(config.focus * 60)
+    setIsRunning(false)
+    endTimeRef.current = null
+    lastTimeRef.current = config.focus * 60
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const toggleTimer = () => {
+    if (isRunning) {
+        // Vai pausar: Salva o tempo decorrido desde o último start/resume
+        if (pomodoroMode === 'focus') {
+            const currentSeconds = Math.ceil((endTimeRef.current - Date.now()) / 1000)
+            const elapsed = lastTimeRef.current - currentSeconds
+            saveFocusTime(elapsed)
+            
+            // Atualiza a referência "último tempo" para o tempo atual (pausado)
+            // para que na próxima retomada a conta comece daqui
+            setTimeLeft(currentSeconds) 
+            lastTimeRef.current = currentSeconds 
+        }
+    }
+    setIsRunning(!isRunning)
+  }
   
   const resetTimer = () => {
-    setIsRunning(false);
-    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
-    setTimeLeft((pomodoroMode === 'focus' ? config.focus : pomodoroMode === 'break' ? config.break : config.longBreak) * 60);
-  };
+    // Se resetar durante o foco, salva o que foi feito até agora
+    if (isRunning && pomodoroMode === 'focus') {
+        const currentSeconds = Math.ceil((endTimeRef.current - Date.now()) / 1000)
+        const elapsed = lastTimeRef.current - currentSeconds
+        saveFocusTime(elapsed)
+    }
+
+    setIsRunning(false)
+    endTimeRef.current = null
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique]
+    const resetTime = (pomodoroMode === 'focus' ? config.focus : pomodoroMode === 'break' ? config.break : config.longBreak) * 60
+    setTimeLeft(resetTime)
+    lastTimeRef.current = resetTime
+  }
 
   const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+    const safeSeconds = Math.max(0, seconds)
+    const m = Math.floor(safeSeconds / 60)
+    const s = safeSeconds % 60
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
 
   // --- Lógica de Filtros ---
   const filteredTasks = useMemo(() => {
@@ -253,7 +341,6 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     }))
   }
 
-  // === CORREÇÃO: Definição do activeDetailTask antes do return ===
   const activeDetailTask = useMemo(() => 
     detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
   , [detailTaskId, tasks])
@@ -306,6 +393,12 @@ export default function Tasks({ onNavigate, onLogout, user }) {
                 <div className="pomodoroCard__focus">
                   <span className="focusLabel">Focando em:</span>
                   <p className="focusTitle">{focusedTaskData.title}</p>
+                  {/* Mostra o tempo já acumulado da tarefa se existir */}
+                  {focusedTaskData.time_spent > 0 && (
+                     <span style={{fontSize:'12px', color:'rgba(255,255,255,0.4)'}}>
+                        Tempo total acumulado: {Math.floor(focusedTaskData.time_spent)} min
+                     </span>
+                  )}
                 </div>
               ) : (
                 <p className="pomodoroCard__message">Selecione uma tarefa para focar ou inicie um ciclo livre.</p>
@@ -425,7 +518,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
+      <FloatingCreateButton label="Nova tarefa" icon="+" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
       
       {isTaskModalOpen && (
         <CreateTaskModal
@@ -463,74 +556,8 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 // === Subcomponentes Visuais ===
 
 function FilterIcon({ name }) {
-  // cast to any to avoid TS narrowing issues when spreading into JSX SVG props
-  const common = /** @type {any} */({ width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' })
-
-  switch (name) {
-    case 'list':
-      return (
-        <svg {...common} aria-hidden="true">
-          <rect x="3" y="4" width="18" height="18" rx="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      )
-    case 'spark':
-      return (
-        <svg {...common} aria-hidden="true">
-          <polygon points="12 2 15 9 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 9 12 2" />
-        </svg>
-      )
-    case 'bolt':
-      return (
-        <svg {...common} aria-hidden="true">
-          <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      )
-    case 'check':
-      return (
-        <svg {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9 12l2 2 4-4" />
-        </svg>
-      )
-    case 'sun':
-      return (
-        <svg {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <line x1="12" y1="2" x2="12" y2="4" />
-          <line x1="12" y1="20" x2="12" y2="22" />
-          <line x1="2" y1="12" x2="4" y2="12" />
-          <line x1="20" y1="12" x2="22" y2="12" />
-          <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" />
-          <line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
-          <line x1="4.2" y1="19.8" x2="5.6" y2="18.4" />
-          <line x1="18.4" y1="5.6" x2="19.8" y2="4.2" />
-        </svg>
-      )
-    case 'calendar-late':
-      return (
-        <svg {...common} aria-hidden="true">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <circle cx="12" cy="17" r="1" />
-        </svg>
-      )
-    case 'calendar-off':
-      return (
-        <svg {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="15" y1="9" x2="9" y2="15" />
-        </svg>
-      )
-    default:
-      return (
-        <svg {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      )
-  }
+  const icons = { list: '📅', spark: '✨', bolt: '⚡', check: '✓', sun: '☀️', 'calendar-late': '⚠️', 'calendar-off': '🚫' }
+  return <span>{icons[name] || '•'}</span>
 }
 
 function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
