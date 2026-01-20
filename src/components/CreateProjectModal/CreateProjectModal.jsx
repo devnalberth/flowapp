@@ -23,7 +23,7 @@ const DEFAULT_FORM = {
   goalId: '',
 }
 
-export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [] }) {
+export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [], initialData = null }) {
   const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }))
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
@@ -65,10 +65,17 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
   }, [open])
 
   useEffect(() => {
-    if (!open) {
+    if (!open) return undefined
+    if (initialData) {
+      setForm({
+        ...DEFAULT_FORM,
+        ...initialData,
+        goalId: initialData.goalId || initialData.goal_id || DEFAULT_FORM.goalId,
+      })
+    } else {
       setForm(() => ({ ...DEFAULT_FORM }))
     }
-  }, [open])
+  }, [open, initialData])
 
   const updateField = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
@@ -175,7 +182,7 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
               Cancelar
             </button>
             <button type="submit" className="createProjectModal__btn createProjectModal__btn--primary">
-              Criar Projeto
+              {initialData ? 'Salvar alterações' : 'Criar Projeto'}
             </button>
           </footer>
         </form>

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { X, Trash2, CheckCircle2, Target } from 'lucide-react'
 import './ProjectDetailsModal.css'
 
-export default function ProjectDetailsModal({ project, open, onClose, tasks = [], goals = [], onDelete }) {
+export default function ProjectDetailsModal({ project, open, onClose, tasks = [], goals = [], onDelete, onEdit }) {
   if (!open || !project) return null
 
   // Filtra apenas tarefas deste projeto
@@ -94,7 +94,7 @@ export default function ProjectDetailsModal({ project, open, onClose, tasks = []
 
         <footer className="projectDetailsFooter">
           <button className="btn btn-secondary" onClick={onClose}>Fechar</button>
-          <button className="btn btn-primary">Editar Projeto</button>
+          <button className="btn btn-primary" onClick={() => onEdit?.(project)}>Editar Projeto</button>
         </footer>
       </div>
     </div>

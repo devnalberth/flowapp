@@ -38,7 +38,7 @@ const DEFAULT_LIFE_AREAS = [
   },
 ]
 
-function MetaDetail({ meta, onBack }) {
+function MetaDetail({ meta, onBack, onEdit }) {
   if (!meta) {
     return null
   }
@@ -59,6 +59,9 @@ function MetaDetail({ meta, onBack }) {
         <button type="button" className="metaDetail__back" onClick={onBack}>
           ← Voltar para metas
         </button>
+        <div style={{ marginLeft: 'auto' }}>
+          <button className="btn btn-secondary" onClick={() => onEdit?.(meta)}>Editar meta</button>
+        </div>
       </div>
       <header className="metaDetail__summary">
         <div>
@@ -180,7 +183,7 @@ function MetaDetail({ meta, onBack }) {
   )
 }
 
-function AreaDetail({ area, onBack }) {
+function AreaDetail({ area, onBack, onEdit }) {
   const [activeMetaId, setActiveMetaId] = useState(area.metas[0]?.id ?? null)
   const [view, setView] = useState('board')
 
@@ -224,7 +227,7 @@ function AreaDetail({ area, onBack }) {
       </header>
 
       {view === 'detail' && activeMeta ? (
-        <MetaDetail meta={activeMeta} onBack={() => setView('board')} />
+        <MetaDetail meta={activeMeta} onBack={() => setView('board')} onEdit={onEdit} />
       ) : (
         <section className="areaMetaBoard">
           <header>
@@ -288,10 +291,11 @@ function AreaDetail({ area, onBack }) {
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Adicionado 'projects' aqui para vincular nas metas
-  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, loading } = useApp()
+  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
+  const [editGoal, setEditGoal] = useState(null)
 
   // Agrupar metas por área
   const LIFE_AREAS = useMemo(() => {
@@ -382,18 +386,32 @@ export default function Goals({ onNavigate, onLogout, user }) {
   const handleGoalSubmit = async (payload) => {
     console.debug('Goals.handleGoalSubmit payload:', payload)
     try {
-      await addGoal({
-        title: payload.title,
-        area: payload.area,
-        target: payload.target,
-        startDate: payload.startDate,
-        endDate: payload.endDate,
-        type: payload.type,
-        trimesters: payload.trimesters,
-        trimester_values: payload.trimesterValues,
-      })
+      if (editGoal) {
+        await updateGoal(editGoal.id, {
+          title: payload.title,
+          area: payload.area,
+          target: payload.target,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          type: payload.type,
+          trimesters: payload.trimesters,
+          trimester_values: payload.trimesterValues,
+        })
+      } else {
+        await addGoal({
+          title: payload.title,
+          area: payload.area,
+          target: payload.target,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          type: payload.type,
+          trimesters: payload.trimesters,
+          trimester_values: payload.trimesterValues,
+        })
+      }
       console.debug('Goals.handleGoalSubmit: addGoal resolved')
       setIsGoalModalOpen(false)
+      setEditGoal(null)
     } catch (error) {
       console.error('Erro ao criar meta:', error)
       alert('Não conseguimos criar a meta. Tente novamente.')
@@ -407,7 +425,14 @@ export default function Goals({ onNavigate, onLogout, user }) {
       <FloatingCreateButton label="Nova meta" caption="Adicionar meta" icon={null} ariaLabel="Adicionar meta" onClick={() => setIsGoalModalOpen(true)} />
 
       {selectedArea ? (
-        <AreaDetail area={selectedArea} onBack={() => setSelectedAreaId(null)} />
+        <AreaDetail
+          area={selectedArea}
+          onBack={() => setSelectedAreaId(null)}
+          onEdit={(meta) => {
+            setEditGoal(meta)
+            setIsGoalModalOpen(true)
+          }}
+        />
       ) : (
         <>
               <section className="goalsAreasBoard">
@@ -515,9 +540,13 @@ export default function Goals({ onNavigate, onLogout, user }) {
       {isGoalModalOpen && (
         <CreateGoalModal
           open={isGoalModalOpen}
-          onClose={() => setIsGoalModalOpen(false)}
+          onClose={() => {
+            setIsGoalModalOpen(false)
+            setEditGoal(null)
+          }}
           onSubmit={handleGoalSubmit}
           areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
+          initialData={editGoal}
         />
       )}
 

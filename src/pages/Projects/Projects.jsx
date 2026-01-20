@@ -28,6 +28,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const [taskProject, setTaskProject] = useState('')
   const [selectedProject, setSelectedProject] = useState(null)
   const [isDetailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [editProject, setEditProject] = useState(null)
 
   // Organizar projetos por colunas
   const boardColumns = useMemo(() => {
@@ -47,9 +48,14 @@ export default function Projects({ onNavigate, onLogout, user }) {
   // Handlers
   const handleSubmitProject = async (payload) => {
     try {
-      await addProject(payload)
+      if (editProject) {
+        await updateProject(editProject.id, payload)
+      } else {
+        await addProject(payload)
+      }
       setModalOpen(false)
-    } catch (e) { alert('Erro ao criar projeto') }
+      setEditProject(null)
+    } catch (e) { alert(editProject ? 'Erro ao editar projeto' : 'Erro ao criar projeto') }
   }
 
   const handleSubmitTask = async (payload) => {
@@ -81,6 +87,12 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const handleCardClick = (project) => {
     setSelectedProject(project)
     setDetailsModalOpen(true)
+  }
+
+  const handleEditProject = (project) => {
+    setEditProject(project)
+    setModalOpen(true)
+    setDetailsModalOpen(false)
   }
 
   // --- Render ---
@@ -130,7 +142,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
       {/* MODAIS */}
       {isModalOpen && (
-        <CreateProjectModal open={true} onClose={() => setModalOpen(false)} onSubmit={handleSubmitProject} goalOptions={goals} />
+        <CreateProjectModal open={true} onClose={() => { setModalOpen(false); setEditProject(null) }} onSubmit={handleSubmitProject} goalOptions={goals} initialData={editProject} />
       )}
       
       {isTaskModalOpen && (
@@ -149,6 +161,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
           tasks={tasks} // Passando tarefas globais
           goals={goals} // Passando metas globais
           onDelete={handleDeleteProject} // Passando função de deletar
+          onEdit={handleEditProject}
         />
       )}
     </div>

@@ -1,3 +1,18 @@
+.taskModal__editBtn {
+  background: linear-gradient(180deg, #ffb300 0%, #ff9100 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(255, 145, 0, 0.18);
+  margin-left: 0;
+}
+.taskModal__editBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(255, 145, 0, 0.22);
+}
 .tasksPage {
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;

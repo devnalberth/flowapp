@@ -12,6 +12,7 @@ export default function CreateTaskModal({
   statusOptions = [],
   priorityOptions = [],
   initialProject = '',
+  initialData = null,
 }) {
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
@@ -46,17 +47,33 @@ export default function CreateTaskModal({
     [defaultProjectId, priorityOptions, statusOptions],
   )
 
-  const [form, setForm] = useState(defaultForm)
+  const [form, setForm] = useState(initialData ? {
+    ...defaultForm,
+    ...initialData,
+    dueDate: initialData?.due_date || initialData?.dueDate || '',
+    projectId: initialData?.projectId || initialData?.project_id || defaultProjectId,
+    subtasks: initialData?.subtasks || [],
+  } : defaultForm)
   const [subtaskDraft, setSubtaskDraft] = useState('')
 
   const charCounter = useMemo(() => `${form.description.length}/${DESCRIPTION_LIMIT}`, [form.description.length])
 
   useEffect(() => {
     if (open) {
-      setForm(defaultForm)
+      if (initialData) {
+        setForm({
+          ...defaultForm,
+          ...initialData,
+          dueDate: initialData?.due_date || initialData?.dueDate || '',
+          projectId: initialData?.projectId || initialData?.project_id || defaultProjectId,
+          subtasks: initialData?.subtasks || [],
+        })
+      } else {
+        setForm(defaultForm)
+      }
       setSubtaskDraft('')
     }
-  }, [open, defaultForm])
+  }, [open, defaultForm, initialData, defaultProjectId])
 
   useEffect(() => {
     if (!open) {
@@ -329,7 +346,7 @@ export default function CreateTaskModal({
               Cancelar
             </button>
             <button type="submit" className="createTaskModal__btn createTaskModal__btn--primary">
-              Criar tarefa
+              {initialData ? 'Salvar alterações' : 'Criar tarefa'}
             </button>
           </footer>
         </form>

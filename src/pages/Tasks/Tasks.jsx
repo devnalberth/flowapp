@@ -200,17 +200,21 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     setShowPomodoroConfig(false)
   }
 
+  const [editTask, setEditTask] = useState(null)
   const handleTaskSubmit = async (data) => {
     try {
-      await addTask({
-        ...data,
-        status: data.status || 'Capturar'
-      })
+      if (editTask) {
+        await updateTask(editTask.id, data)
+      } else {
+        await addTask({
+          ...data,
+          status: data.status || 'Capturar'
+        })
+      }
       setTaskModalOpen(false)
-      
+      setEditTask(null)
       const createdDate = data.dueDate ? new Date(data.dueDate) : null
       const today = new Date()
-      
       if (createdDate && createdDate.getDate() === today.getDate()) {
         if (timelineFilter !== 'today') {
            setTimelineFilter('today')
@@ -223,7 +227,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         }
       }
     } catch (e) {
-      alert('Erro ao criar tarefa')
+      alert(editTask ? 'Erro ao editar tarefa' : 'Erro ao criar tarefa')
     }
   }
 
@@ -347,11 +351,17 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         )}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" onClick={() => setTaskModalOpen(true)} />
+      <FloatingCreateButton label="Nova tarefa" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
       
       {isTaskModalOpen && (
-        <CreateTaskModal open={true} onClose={() => setTaskModalOpen(false)} onSubmit={handleTaskSubmit}
-          projectsOptions={projectOptions} statusOptions={TASK_MODAL_STATUS} priorityOptions={TASK_MODAL_PRIORITY}
+        <CreateTaskModal
+          open={true}
+          onClose={() => { setTaskModalOpen(false); setEditTask(null) }}
+          onSubmit={handleTaskSubmit}
+          projectsOptions={projectOptions}
+          statusOptions={TASK_MODAL_STATUS}
+          priorityOptions={TASK_MODAL_PRIORITY}
+          initialData={editTask}
         />
       )}
 
@@ -366,6 +376,11 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         task={activeDetailTask} 
         onClose={handleDetailClose} 
         deleteTask={deleteTask}
+        onEdit={(task) => {
+          setEditTask(task);
+          setTaskModalOpen(true);
+          setDetailTaskId(null);
+        }}
       />
     </div>
   )
@@ -438,7 +453,7 @@ function FilterIcon({ name }) {
   }
 }
 
-function TaskDetailModal({ task, onClose, deleteTask }) {
+function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
   if (!task) return null
 
   const handleDelete = async () => {
@@ -467,9 +482,10 @@ function TaskDetailModal({ task, onClose, deleteTask }) {
         <div className="taskModal__description">
             <p>{task.description || 'Sem descrição'}</p>
         </div>
-        <footer style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+        <footer className="taskModal__footer">
           <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
-          <button className="taskModal__deleteBtn" onClick={handleDelete} style={{ background: '#ff4d4f', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 8 }}>Excluir</button>
+          <button className="taskModal__editBtn" onClick={() => onEdit(task)}>Editar</button>
+          <button className="taskModal__deleteBtn" onClick={handleDelete}>Excluir</button>
         </footer>
       </div>
     </div>

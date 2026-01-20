@@ -50,8 +50,8 @@ const calculateTrimester = (startDate, endDate) => {
   return [TRIMESTERS[quarter - 1]]
 }
 
-export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions = [] }) {
-  const [form, setForm] = useState({
+export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions = [], initialData = null }) {
+  const [form, setForm] = useState(() => ({
     title: '',
     area: areaOptions[0] ?? '',
     type: 'trimestral',
@@ -60,7 +60,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
     startDate: '',
     endDate: '',
     target: '',
-  })
+  }))
   const titleRef = useRef(null)
 
   const charCount = useMemo(() => `${form.target.length}/${DESCRIPTION_LIMIT}`, [form.target.length])
@@ -70,8 +70,20 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
   }, [form.startDate, form.endDate])
 
   useEffect(() => {
-    if (open) {
-      const currentYear = new Date().getFullYear()
+    if (!open) return undefined
+    const currentYear = new Date().getFullYear()
+    if (initialData) {
+      setForm({
+        title: initialData.title || initialData.name || '',
+        area: initialData.area || areaOptions[0] || '',
+        type: initialData.type || 'trimestral',
+        trimester: initialData.trimester || null,
+        semester: initialData.semester || null,
+        startDate: initialData.startDate || initialData.start_date || `${currentYear}-01-01`,
+        endDate: initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
+        target: initialData.target || '',
+      })
+    } else {
       setForm({
         title: '',
         area: areaOptions[0] ?? '',
@@ -82,14 +94,14 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
         endDate: `${currentYear}-03-31`,
         target: '',
       })
-      requestAnimationFrame(() => titleRef.current?.focus())
-      document.body.style.overflow = 'hidden'
     }
+    requestAnimationFrame(() => titleRef.current?.focus())
+    document.body.style.overflow = 'hidden'
 
     return () => {
       document.body.style.overflow = ''
     }
-  }, [open, areaOptions])
+  }, [open, areaOptions, initialData])
 
   useEffect(() => {
     if (!open) return undefined
@@ -319,7 +331,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
               Cancelar
             </button>
             <button type="submit" className="btn btn--primary">
-              Registrar meta
+              {initialData ? 'Salvar alterações' : 'Registrar meta'}
             </button>
           </footer>
         </form>
