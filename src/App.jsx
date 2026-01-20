@@ -19,10 +19,11 @@ const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
 
 const getPathname = () => (typeof window === 'undefined' ? '/' : window.location.pathname)
 
-const USER = {
-  name: 'Matheus Nalberth',
-  email: 'Nalberthdev@gmail.com',
-  avatarUrl: 'https://placehold.co/42x42',
+// Estado inicial vazio/genérico
+const INITIAL_USER = {
+  name: '',
+  email: '',
+  avatarUrl: 'https://placehold.co/42x42', // Mantém um avatar padrão cinza
 }
 
 function App() {
@@ -38,7 +39,7 @@ function App() {
 
   const [page, setPage] = useState('Dashboard')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentUser, setCurrentUser] = useState(USER)
+  const [currentUser, setCurrentUser] = useState(INITIAL_USER)
   const [isAuthReady, setIsAuthReady] = useState(false)
   const [authPreference, setAuthPreference] = useState(initialAuth.pref)
   const [authClient, setAuthClient] = useState(initialAuth.client)
@@ -218,15 +219,14 @@ export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [isReady, setIsReady] = useState(false)
 
-  // Timeout de segurança: Se a verificação demorar mais de 2s, força a liberação
-  // Isso evita que o app fique travado na tela "Carregando FlowApp..."
+  // CORREÇÃO 1: Timeout aumentado para 10 segundos
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isReady) {
-        console.warn('AppWrapper: Auth check timeout - forcing ready state')
+        console.warn('AppWrapper: Auth check timeout - system slow')
         setIsReady(true)
       }
-    }, 2000)
+    }, 10000) // <--- MUDADO DE 2000 PARA 10000
     return () => clearTimeout(timer)
   }, [isReady])
 
@@ -238,10 +238,10 @@ export default function AppWrapper() {
         const { data: { session } } = await client.auth.getSession()
         
         if (session?.user) {
-          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+          // CORREÇÃO 2: createIfMissing agora é TRUE
+          const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
           if (!ensured) {
             try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
-            // Limpeza de storage
             try {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('flowapp-auth')
@@ -251,10 +251,10 @@ export default function AppWrapper() {
               }
             } catch (e) { console.error('Failed to clear auth storage:', e) }
             setCurrentUserId(null)
-            return true // Encontrou sessão (mesmo que inválida), para de procurar
+            return true 
           }
           setCurrentUserId(session.user.id)
-          return true // Encontrou usuário válido
+          return true 
         }
         return false
       } catch (error) {
@@ -275,7 +275,6 @@ export default function AppWrapper() {
       } catch (err) {
         console.error('Fatal error during auth check:', err)
       } finally {
-        // GARANTIA DE SAÍDA: Libera a tela mesmo se der erro
         if (mounted) setIsReady(true)
       }
     }
@@ -287,7 +286,8 @@ export default function AppWrapper() {
         if (!mounted) return
         if (session?.user) {
           try {
-            const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
+            // CORREÇÃO 3: createIfMissing agora é TRUE aqui também
+            const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
             setCurrentUserId(ensured ? session.user.id : null)
           } catch (error) {
             console.error('Error ensuring user on change:', error)
@@ -328,6 +328,7 @@ export default function AppWrapper() {
         }}/>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         <span>Carregando FlowApp...</span>
+        <span style={{ fontSize: '0.8rem', color: '#666' }}>(Conectando ao banco de dados...)</span>
       </div>
     )
   }
