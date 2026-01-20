@@ -43,10 +43,11 @@ const ICON_OPTIONS = [
   { id: 'book', icon: Book, label: 'Book' },
 ]
 
-// Matriz do mês para visualização mensal (Mantido visualmente)
+// Matriz do mês para visualização mensal
 const MONTH_MATRIX = [
   { label: 'Semana 1', days: [{ day: 1, inMonth: true, score: 0.8 }, { day: 2, inMonth: true, score: 0.6 }, { day: 3, inMonth: true, score: 0.9 }, { day: 4, inMonth: true, score: 0.7 }, { day: 5, inMonth: true, score: 0.85 }, { day: 6, inMonth: true, score: 0.5 }, { day: 7, inMonth: true, score: 0.3 }]},
   { label: 'Semana 2', days: [{ day: 8, inMonth: true, score: 0.75 }, { day: 9, inMonth: true, score: 0.9 }, { day: 10, inMonth: true, score: 0.85 }, { day: 11, inMonth: true, score: 0.7 }, { day: 12, inMonth: true, score: 0.65 }, { day: 13, inMonth: true, score: 0.8 }, { day: 14, inMonth: true, score: 0.4 }]},
+  { label: 'Semana 3', days: [{ day: 15, inMonth: true, score: 0.9 }, { day: 16, inMonth: true, score: 0.85 }, { day: 17, inMonth: true, score: 0.7 }, { day: 18, inMonth: true, score: 0.75 }, { day: 19, inMonth: true, score: 0.8 }, { day: 20, inMonth: true, score: 0.6 }, { day: 21, inMonth: true, score: 0.5 }]},
 ]
 
 export default function Habits({ user, onNavigate, onLogout }) {
@@ -73,75 +74,51 @@ export default function Habits({ user, onNavigate, onLogout }) {
     }))
   }, [habits])
 
-  // === LÓGICA CORRIGIDA DE FILTRAGEM DE DIAS ===
+  // === LÓGICA DE FILTRAGEM CORRIGIDA ===
   const filteredHabits = useMemo(() => {
     const today = new Date()
     const currentDayOfWeek = today.getDay() // 0 = Domingo, 1 = Segunda...
 
     return habitsWithMeta.filter((habit) => {
-      // 1. Filtro de Categoria
+      // 1. Filtro de Categoria e Busca
       const matchesCategory = categoryFilter === 'all' || habit.category === categoryFilter
-      
-      // 2. Filtro de Busca
       const matchesSearch = (habit.label || habit.name || '').toLowerCase().includes(searchTerm.toLowerCase())
       
       if (!matchesCategory || !matchesSearch) return false
 
-      // 3. Filtro de Dias Personalizados (CORREÇÃO PEDIDA)
-      // Se for "daily" ou não tiver frequência definida, aparece sempre.
+      // 2. Filtro de Frequência
       if (!habit.frequency || habit.frequency === 'daily') return true
-
-      // Se for "custom" ou "weekly", verifica os dias selecionados
+      
       if (habit.frequency === 'custom' || habit.frequency === 'weekly') {
-        // Tenta ler customDays (formato novo) ou selectedDays (formato antigo/modal)
         let days = []
+        
         if (Array.isArray(habit.customDays)) days = habit.customDays
         else if (Array.isArray(habit.selectedDays)) days = habit.selectedDays
         else if (typeof habit.customDays === 'string') {
-            try { days = JSON.parse(habit.customDays) } catch (e) {}
+            try { days = JSON.parse(habit.customDays) } catch (e) { 
+                days = habit.customDays.split(',').map(d => parseInt(d.trim()))
+            }
         }
 
-        // Se não selecionou nenhum dia, mostramos por segurança, senão filtramos
-        if (days.length === 0) return true;
+        const numericDays = days.map(d => Number(d))
+
+        if (numericDays.length === 0) return false;
         
-        // Verifica se hoje está na lista
-        return days.includes(currentDayOfWeek);
+        return numericDays.includes(currentDayOfWeek);
       }
 
       return true
     })
   }, [habitsWithMeta, categoryFilter, searchTerm])
 
-  // === LÓGICA DE CHECKLIST CORRIGIDA ===
+  // === LÓGICA DE CHECKLIST ===
   const toggleHabitCompletion = async (habitId, dateStr) => {
-    // Tenta usar a função otimizada do contexto se existir
     if (completeHabit) {
       await completeHabit(habitId)
-    } else {
-      // Fallback manual
-      const habit = habits.find(h => h.id === habitId)
-      if (!habit) return
-
-      let completions = Array.isArray(habit.completions) ? [...habit.completions] : []
-      // Se for formato antigo (string), tenta converter ou reseta
-      if (!Array.isArray(completions) && typeof habit.completed_dates === 'object') {
-         completions = Array.isArray(habit.completed_dates) ? [...habit.completed_dates] : []
-      }
-
-      const todayStr = dateStr || new Date().toISOString().split('T')[0]
-
-      if (completions.includes(todayStr)) {
-        completions = completions.filter(d => d !== todayStr)
-      } else {
-        completions.push(todayStr)
-      }
-
-      await updateHabit(habitId, { completions })
     }
   }
 
   const isHabitComplete = (habit, dateStr) => {
-    // Verifica array novo ou legado
     const list = Array.isArray(habit.completions) 
       ? habit.completions 
       : (Array.isArray(habit.completed_dates) ? habit.completed_dates : [])
@@ -155,24 +132,28 @@ export default function Habits({ user, onNavigate, onLogout }) {
     return date.toISOString().split('T')[0]
   }
 
-  // Dados para visualização Semanal (Mantido do seu código original)
+  // Dados para visualização Semanal
   const weeklyData = useMemo(() => {
     const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
-    const today = new Date()
-    const currentDay = today.getDay()
     
     return days.map((day, index) => {
+      const today = new Date()
+      const currentDay = today.getDay()
       const offset = index - currentDay
       const date = getDateString(offset)
       const dateObj = new Date()
       dateObj.setDate(dateObj.getDate() + offset)
       
-      // Para o gráfico semanal, consideramos todos os hábitos ativos naquele dia
       const activeHabitsForDay = habitsWithMeta.filter(h => {
          if (!h.frequency || h.frequency === 'daily') return true;
-         const days = h.customDays || h.selectedDays || [];
-         if (Array.isArray(days) && days.length > 0) return days.includes(index);
-         return true;
+         
+         let days = [];
+         if (Array.isArray(h.customDays)) days = h.customDays;
+         else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch(e){} }
+         
+         const numericDays = days.map(d => Number(d))
+         if (numericDays.length > 0) return numericDays.includes(index);
+         return false;
       });
 
       const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, date))
@@ -216,9 +197,14 @@ export default function Habits({ user, onNavigate, onLogout }) {
   const handleDeleteHabit = async () => {
     if (!editingHabit) return
     if (confirm('Tem certeza que deseja excluir este hábito?')) {
-      await deleteHabit(editingHabit.id)
-      setShowModal(false)
-      setEditingHabit(null)
+      try {
+        await deleteHabit(editingHabit.id)
+        setShowModal(false)
+        setEditingHabit(null)
+      } catch (error) {
+        console.error(error)
+        alert('Erro ao excluir')
+      }
     }
   }
 
@@ -239,7 +225,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
       )}
 
       <div className="habitsWrapper">
-        {/* Controles e Filtros (Layout Original) */}
+        {/* Controles e Filtros */}
         <section className="habitsControls">
           <div className="habitsControls__modes">
             {VIEW_MODES.map((mode) => {
@@ -287,7 +273,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
         {/* Board de Conteúdo */}
         <section className="habitsBoard">
           
-          {/* VISUALIZAÇÃO DIÁRIA (Original + Lógica de Filtragem) */}
+          {/* VISUALIZAÇÃO DIÁRIA */}
           {viewMode === 'daily' && (
             <div className="habitsDaily">
               <div className="dailyHeader">
@@ -350,7 +336,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
             </div>
           )}
 
-          {/* VISUALIZAÇÃO SEMANAL (Restaurada) */}
+          {/* VISUALIZAÇÃO SEMANAL */}
           {viewMode === 'weekly' && (
             <div className="habitsWeekly">
               {weeklyData.map((slot) => {
@@ -367,7 +353,6 @@ export default function Habits({ user, onNavigate, onLogout }) {
                     <div className="weekCard__progress">
                       <div className="weekCard__bar" style={{ width: `${progressPercent}%` }} />
                     </div>
-                    {/* Lista simplificada */}
                     <div style={{marginTop: '8px', fontSize: '12px', color: '#666'}}>
                         {slot.total} hábitos
                     </div>
@@ -377,7 +362,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
             </div>
           )}
 
-          {/* VISUALIZAÇÃO MENSAL (Restaurada) */}
+          {/* VISUALIZAÇÃO MENSAL */}
           {viewMode === 'monthly' && (
             <div className="habitsMonthly ui-card">
               <header>
@@ -412,6 +397,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
           label="Novo hábito"
           caption="Criar hábito"
           onClick={handleAddHabit}
+          icon={Plus}
           ariaLabel="Criar novo hábito"
         />
       </div>

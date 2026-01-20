@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer } from 'lucide-react'
 
 import './Tasks.css'
 
@@ -11,6 +12,14 @@ const DEFAULT_USER = {
   name: 'Matheus Nalberth',
   email: 'Nalberthdev@gmail.com',
   avatarUrl: 'https://placehold.co/42x42',
+}
+
+// Configurações das Técnicas
+const POMODORO_TECHNIQUES = {
+  classic: { id: 'classic', label: 'Clássico', focus: 25, break: 5, longBreak: 15, sessions: 4, icon: Timer },
+  deep: { id: 'deep', label: 'Deep Work', focus: 50, break: 10, longBreak: 20, sessions: 4, icon: Zap },
+  flow: { id: 'flow', label: 'Flow 90', focus: 90, break: 30, longBreak: 30, sessions: 1, icon: Coffee },
+  custom: { id: 'custom', label: 'Personalizado', focus: 25, break: 5, longBreak: 15, sessions: 4, icon: Settings }
 }
 
 const FILTERS = [
@@ -30,28 +39,28 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
   const { tasks: contextTasks, projects, addTask, updateTask, deleteTask } = useApp()
   
-  // Estado inicial dos filtros
+  // --- Estados de Filtro ---
   const [timelineFilter, setTimelineFilter] = useState('today')
   const [statusFilters, setStatusFilters] = useState([]) 
   
+  // --- Estados de Dados ---
   const [tasks, setTasks] = useState([])
+  const [editTask, setEditTask] = useState(null)
+  const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [expandedTaskId, setExpandedTaskId] = useState(null)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [celebratingTask, setCelebratingTask] = useState(null)
-  const [isTaskModalOpen, setTaskModalOpen] = useState(false)
 
-  // Pomodoro States
-  const [pomodoroTime, setPomodoroTime] = useState(25 * 60)
-  const [pomodoroRunning, setPomodoroRunning] = useState(false)
+  // --- Estados do Pomodoro Power User ---
+  const [activeTechnique, setActiveTechnique] = useState('classic')
+  const [pomodoroMode, setPomodoroMode] = useState('focus') // 'focus', 'break', 'longBreak'
+  const [timeLeft, setTimeLeft] = useState(25 * 60)
+  const [isRunning, setIsRunning] = useState(false)
+  const [sessionsCompleted, setSessionsCompleted] = useState(0)
+  const [focusedTaskId, setFocusedTaskId] = useState(null) // ID da tarefa em foco
+  
   const [showPomodoroConfig, setShowPomodoroConfig] = useState(false)
-  const [pomodoroConfig, setPomodoroConfig] = useState({
-    focusTime: 25, 
-    shortBreak: 5, 
-    longBreak: 10, 
-    sessionsBeforeLongBreak: 4, 
-    technique: 'classic'
-  })
-  const [focusedTaskId, setFocusedTaskId] = useState(null)
+  const [customConfig, setCustomConfig] = useState({ focus: 25, break: 5, longBreak: 15, sessions: 4 })
 
   const projectOptions = useMemo(() => {
     return projects.map((project) => ({ id: project.id, label: project.title }))
@@ -61,45 +70,104 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     setTasks(contextTasks || [])
   }, [contextTasks])
 
-  const isFlowMode = statusFilters.includes('flow')
+  // Identifica tarefa em foco
+  const focusedTaskData = useMemo(() => 
+    focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
+  , [focusedTaskId, tasks])
+
+  // --- Lógica do Timer do Pomodoro ---
+  useEffect(() => {
+    let interval = null;
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      handleTimerComplete();
+    }
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft]);
+
+  const handleTimerComplete = () => {
+    setIsRunning(false);
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
+    
+    if (pomodoroMode === 'focus') {
+      const newSessions = sessionsCompleted + 1;
+      setSessionsCompleted(newSessions);
+      
+      if (newSessions >= config.sessions) {
+        setPomodoroMode('longBreak');
+        setTimeLeft(config.longBreak * 60);
+        setSessionsCompleted(0); 
+      } else {
+        setPomodoroMode('break');
+        setTimeLeft(config.break * 60);
+      }
+    } else {
+      setPomodoroMode('focus');
+      setTimeLeft(config.focus * 60);
+    }
+  };
+
+  const switchTechnique = (techId) => {
+    setActiveTechnique(techId);
+    setIsRunning(false);
+    setPomodoroMode('focus');
+    setSessionsCompleted(0);
+    
+    const config = techId === 'custom' ? customConfig : POMODORO_TECHNIQUES[techId];
+    setTimeLeft(config.focus * 60);
+  };
+
+  const handleFocusTask = (taskId) => {
+    setFocusedTaskId(taskId);
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
+    setPomodoroMode('focus');
+    setTimeLeft(config.focus * 60);
+    setIsRunning(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleTimer = () => setIsRunning(!isRunning);
   
-  // === LÓGICA DE FILTRAGEM CORRIGIDA E ROBUSTA ===
+  const resetTimer = () => {
+    setIsRunning(false);
+    const config = activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique];
+    setTimeLeft((pomodoroMode === 'focus' ? config.focus : pomodoroMode === 'break' ? config.break : config.longBreak) * 60);
+  };
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // --- Lógica de Filtros ---
   const filteredTasks = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     const matched = tasks.filter((task) => {
-      // 1. Normalizar Data
       let dueDate = null
       if (task.due_date) {
         dueDate = new Date(task.due_date)
         dueDate.setHours(0, 0, 0, 0)
-        
-        // Ajuste de fuso horário opcional se necessário
         const timezoneOffset = dueDate.getTimezoneOffset() * 60000
         if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
            dueDate = new Date(dueDate.getTime() + timezoneOffset)
         }
       }
 
-      // 2. Verificar Timeline (Datas)
       let matchesTimeline = false
-      if (timelineFilter === 'today') {
-        matchesTimeline = dueDate && dueDate.getTime() === today.getTime()
-      } else if (timelineFilter === 'tomorrow') {
-        matchesTimeline = dueDate && dueDate.getTime() === tomorrow.getTime()
-      } else if (timelineFilter === 'late') {
-        matchesTimeline = dueDate && dueDate < today && !task.completed
-      } else if (timelineFilter === 'unscheduled') {
-        matchesTimeline = !dueDate
-      } else if (timelineFilter === 'any') {
-        matchesTimeline = true
-      }
+      if (timelineFilter === 'today') matchesTimeline = dueDate && dueDate.getTime() === today.getTime()
+      else if (timelineFilter === 'tomorrow') matchesTimeline = dueDate && dueDate.getTime() === tomorrow.getTime()
+      else if (timelineFilter === 'late') matchesTimeline = dueDate && dueDate < today && !task.completed
+      else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDate
+      else if (timelineFilter === 'any') matchesTimeline = true
 
-      // 3. Verificar Status
       let matchesStatus = true
       if (statusFilters.length > 0) {
         matchesStatus = statusFilters.some(filterId => {
@@ -110,56 +178,19 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         })
       }
 
-      // Regras de Combinação
-      if (statusFilters.includes('done')) {
-         return task.completed
-      }
-
-      if (statusFilters.length === 0) {
-        return matchesTimeline && !task.completed
-      }
+      if (statusFilters.includes('done')) return task.completed
+      if (statusFilters.length === 0) return matchesTimeline && !task.completed
 
       return matchesStatus
     })
 
-    // Função utilitária para comparar datas (nulls vão para o final)
-    const getTimeOrInfinity = (dateStr) => {
-      if (!dateStr) return Infinity
-      try {
-        return new Date(dateStr).getTime()
-      } catch (e) {
-        return Infinity
-      }
-    }
-
-    const priorityRank = (p) => {
-      if (!p) return 0
-      const map = { 'Urgente': 4, 'Alta': 3, 'Média': 2, 'Baixa': 1 }
-      return map[p] || 0
-    }
-
-    // Ordenação por regras solicitadas
-    matched.sort((a, b) => {
-      // Se estamos em filtro 'today' -> ordenar por data (mais cedo -> mais tarde)
-      if (timelineFilter === 'today' && statusFilters.length === 0) {
-        return getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
-      }
-
-      // Se estamos em modo Flow -> data mais cedo, dentro da mesma data prioridade mais alta primeiro
-      if (statusFilters.includes('flow')) {
-        const dateComp = getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
-        if (dateComp !== 0) return dateComp
-        return priorityRank(b.priority) - priorityRank(a.priority)
-      }
-
-      // Default: ordenar por data asc (sem data vão para o final)
-      return getTimeOrInfinity(a.due_date) - getTimeOrInfinity(b.due_date)
+    return matched.sort((a, b) => {
+      const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
+      const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
+      return timeA - timeB
     })
-
-    return matched
   }, [tasks, timelineFilter, statusFilters])
 
-  // --- Handlers ---
   const handleFilterClick = (filter) => {
     if (filter.group === 'timeline') {
       setStatusFilters([]) 
@@ -185,49 +216,32 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     if (newCompleted) setCelebratingTask(taskId)
 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newCompleted } : t))
-    await updateTask(taskId, { completed: newCompleted, status: newCompleted ? 'Concluído' : task.status })
+    
+    await updateTask(taskId, { 
+      completed: newCompleted, 
+      status: newCompleted ? 'done' : (task.prevStatus || 'Capturar') 
+    })
   }
 
-  const handleFocusTask = (id) => { setFocusedTaskId(id); setPomodoroRunning(false); setPomodoroTime(pomodoroConfig.focusTime * 60); }
-  const togglePomodoro = () => setPomodoroRunning(p => !p)
-  const resetPomodoro = () => { setPomodoroRunning(false); setPomodoroTime(pomodoroConfig.focusTime * 60) }
-  const formatTime = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
-
-  const handleConfigSave = (newConfig) => {
-    setPomodoroConfig(newConfig)
-    setPomodoroTime(newConfig.focusTime * 60)
-    setPomodoroRunning(false)
-    setShowPomodoroConfig(false)
-  }
-
-  const [editTask, setEditTask] = useState(null)
   const handleTaskSubmit = async (data) => {
     try {
       if (editTask) {
         await updateTask(editTask.id, data)
       } else {
-        await addTask({
-          ...data,
-          status: data.status || 'Capturar'
-        })
+        await addTask({ ...data, status: data.status || 'Capturar' })
       }
       setTaskModalOpen(false)
       setEditTask(null)
+      
       const createdDate = data.dueDate ? new Date(data.dueDate) : null
       const today = new Date()
       if (createdDate && createdDate.getDate() === today.getDate()) {
         if (timelineFilter !== 'today') {
-           setTimelineFilter('today')
-           setStatusFilters([])
-        }
-      } else if (!data.dueDate) {
-        if (timelineFilter !== 'unscheduled') {
-           setTimelineFilter('unscheduled')
-           setStatusFilters([])
+           setTimelineFilter('today'); setStatusFilters([]);
         }
       }
     } catch (e) {
-      alert(editTask ? 'Erro ao editar tarefa' : 'Erro ao criar tarefa')
+      alert('Erro ao salvar tarefa')
     }
   }
 
@@ -238,10 +252,11 @@ export default function Tasks({ onNavigate, onLogout, user }) {
       return { ...t, subtasks }
     }))
   }
-  const handleClarifyToggle = (id) => setExpandedTaskId(curr => curr === id ? null : id)
-  const handleDetailOpen = (id) => setDetailTaskId(id)
-  const handleDetailClose = () => setDetailTaskId(null)
-  const activeDetailTask = detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
+
+  // === CORREÇÃO: Definição do activeDetailTask antes do return ===
+  const activeDetailTask = useMemo(() => 
+    detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
+  , [detailTaskId, tasks])
 
   return (
     <div className="tasksPage">
@@ -261,6 +276,66 @@ export default function Tasks({ onNavigate, onLogout, user }) {
           })}
         </div>
 
+        {/* POMODORO POWER USER UI */}
+        {(statusFilters.includes('flow') || focusedTaskId) && (
+          <section className="pomodoroCard ui-card">
+            <div className="pomodoroCard__header">
+              <div className="pomodoroCard__techniques">
+                {Object.values(POMODORO_TECHNIQUES).map(tech => {
+                  const Icon = tech.icon;
+                  return (
+                    <button 
+                      key={tech.id}
+                      className={`techBtn ${activeTechnique === tech.id ? 'techBtn--active' : ''}`}
+                      onClick={() => switchTechnique(tech.id)}
+                      title={tech.label}
+                    >
+                      <Icon size={16} />
+                      <span>{tech.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <button className="configBtn" onClick={() => setShowPomodoroConfig(true)}>
+                <Settings size={18} />
+              </button>
+            </div>
+
+            <div className="pomodoroCard__display">
+              {focusedTaskData ? (
+                <div className="pomodoroCard__focus">
+                  <span className="focusLabel">Focando em:</span>
+                  <p className="focusTitle">{focusedTaskData.title}</p>
+                </div>
+              ) : (
+                <p className="pomodoroCard__message">Selecione uma tarefa para focar ou inicie um ciclo livre.</p>
+              )}
+              
+              <div className="pomodoroCard__timer">
+                {formatTime(timeLeft)}
+              </div>
+              
+              <div className="pomodoroCard__status">
+                <span className={`statusPill ${pomodoroMode}`}>
+                  {pomodoroMode === 'focus' ? '🎯 Foco' : pomodoroMode === 'break' ? '☕ Pausa' : '🌴 Pausa Longa'}
+                </span>
+                <span className="sessionCount">
+                  Sessão {sessionsCompleted + 1}/{activeTechnique === 'custom' ? customConfig.sessions : POMODORO_TECHNIQUES[activeTechnique].sessions}
+                </span>
+              </div>
+            </div>
+
+            <div className="pomodoroCard__controls">
+              <button className={`pomodoroCard__btn ${isRunning ? 'pause' : 'play'}`} onClick={toggleTimer}>
+                {isRunning ? <><Pause size={20}/> Pausar</> : <><Play size={20}/> Iniciar</>}
+              </button>
+              <button className="pomodoroCard__btn reset" onClick={resetTimer}>
+                <RotateCcw size={20}/>
+              </button>
+            </div>
+          </section>
+        )}
+
         <header className="tasksListShell__head">
           <div><p className="tasksListShell__eyebrow">Checklist</p><h2>Minhas Tarefas</h2></div>
         </header>
@@ -268,15 +343,15 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         <ul className="tasksList">
           {filteredTasks.map(task => {
             const isDone = task.completed
-            // CORREÇÃO AQUI: Adicionado .getTime() para comparar número com número
             const isLate = !isDone && task.due_date && new Date(task.due_date).getTime() < new Date().setHours(0,0,0,0)
             const isExpanded = expandedTaskId === task.id
+            const isFocused = focusedTaskId === task.id
             
             return (
-              <li key={task.id} className={`taskCard ${isDone ? 'taskCard--done' : ''} ${isLate ? 'taskCard--late' : ''} ${celebratingTask === task.id ? 'taskCard--celebrate' : ''}`}>
+              <li key={task.id} className={`taskCard ${isDone ? 'taskCard--done' : ''} ${isLate ? 'taskCard--late' : ''} ${isFocused ? 'taskCard--focused' : ''} ${celebratingTask === task.id ? 'taskCard--celebrate' : ''}`}>
                  {celebratingTask === task.id && (
                   <div className="taskCard__celebration">
-                    <span className="taskCard__xpPop">+10 XP</span>
+                    <span className="taskCard__xpPop">+ XP</span>
                     <span className="taskCard__confetti taskCard__confetti--one" />
                     <span className="taskCard__confetti taskCard__confetti--two" />
                   </div>
@@ -297,17 +372,26 @@ export default function Tasks({ onNavigate, onLogout, user }) {
                     </div>
                     
                     <div className="taskCard__badges">
-                      {isFlowMode && <button className="taskCard__focusBtn" onClick={() => handleFocusTask(task.id)}>Focar</button>}
-                      <span className="taskChip">{task.priority}</span>
+                      {!isDone && (
+                        <button 
+                          className={`taskCard__focusBtn ${isFocused ? 'active' : ''}`} 
+                          onClick={() => handleFocusTask(task.id)}
+                        >
+                          {isFocused ? <Zap size={12} fill="currentColor"/> : <Play size={12}/>}
+                          {isFocused ? 'Em Foco' : 'Focar'}
+                        </button>
+                      )}
+                      
+                      <span className={`taskChip priority-${task.priority?.toLowerCase()}`}>{task.priority}</span>
                       {task.due_date && <span className="taskCard__dueText">{new Date(task.due_date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span>}
                     </div>
                   </div>
 
                   <div className="taskCard__actions">
-                    <button className="taskCard__actionBtn" onClick={() => handleClarifyToggle(task.id)}>
+                    <button className="taskCard__actionBtn" onClick={() => setExpandedTaskId(curr => curr === task.id ? null : task.id)}>
                       {isExpanded ? 'Recolher' : 'Clarificar'}
                     </button>
-                    <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => handleDetailOpen(task.id)}>
+                    <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => { setDetailTaskId(task.id); setEditTask(null); }}>
                       Detalhes
                     </button>
                   </div>
@@ -339,19 +423,9 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         </ul>
         
         {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
-
-        {isFlowMode && (
-          <section className="pomodoroCard ui-card">
-            <div className="pomodoroCard__timer">{formatTime(pomodoroTime)}</div>
-            <div className="pomodoroCard__controls">
-              <button className="pomodoroCard__btn pomodoroCard__btn--primary" onClick={togglePomodoro}>{pomodoroRunning ? 'Pausar' : 'Iniciar'}</button>
-              <button className="pomodoroCard__btn pomodoroCard__btn--secondary" onClick={resetPomodoro}>Resetar</button>
-            </div>
-          </section>
-        )}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
+      <FloatingCreateButton label="Nova tarefa" icon="+" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
       
       {isTaskModalOpen && (
         <CreateTaskModal
@@ -367,15 +441,15 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 
       <PomodoroConfigModal
         show={showPomodoroConfig}
-        config={pomodoroConfig}
+        config={customConfig}
         onClose={() => setShowPomodoroConfig(false)}
-        onSave={handleConfigSave}
+        onSave={(newCfg) => { setCustomConfig(newCfg); setShowPomodoroConfig(false); }}
       />
 
       <TaskDetailModal 
         task={activeDetailTask} 
-        onClose={handleDetailClose} 
-        deleteTask={deleteTask}
+        onClose={() => setDetailTaskId(null)} 
+        deleteTask={async (id) => { await deleteTask(id); setDetailTaskId(null); }}
         onEdit={(task) => {
           setEditTask(task);
           setTaskModalOpen(true);
@@ -386,87 +460,15 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   )
 }
 
+// === Subcomponentes Visuais ===
+
 function FilterIcon({ name }) {
-  const common = { width: 18, height: 18 }
-  switch (name) {
-    case 'list':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor" opacity="0.06" />
-          <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          <line x1="8" y1="17" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      )
-    case 'spark':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <path d="M12 2l1.9 4.6L18 8l-4.1 1.4L12 14l-1.9-4.6L6 8l4.1-1.4L12 2z" fill="currentColor" opacity="0.95" />
-        </svg>
-      )
-    case 'bolt':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <path d="M13 2L3 14h7l-1 8L21 10h-7l-1-8z" fill="currentColor" />
-        </svg>
-      )
-    case 'check':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </svg>
-      )
-    case 'sun':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="4" fill="currentColor" />
-          <g stroke="currentColor" strokeWidth="1.4">
-            <line x1="12" y1="2" x2="12" y2="4" />
-            <line x1="12" y1="20" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="4" y2="12" />
-            <line x1="20" y1="12" x2="22" y2="12" />
-          </g>
-        </svg>
-      )
-    case 'calendar-late':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" fill="none" />
-          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="1.2" />
-          <path d="M8 16l2-2 2 2 4-4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )
-    case 'calendar-off':
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" fill="none" />
-          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="1.2" />
-          <line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      )
-    default:
-      return (
-        <svg viewBox="0 0 24 24" {...common} aria-hidden="true">
-          <circle cx="12" cy="12" r="3" fill="currentColor" />
-        </svg>
-      )
-  }
+  const icons = { list: '📅', spark: '✨', bolt: '⚡', check: '✓', sun: '☀️', 'calendar-late': '⚠️', 'calendar-off': '🚫' }
+  return <span>{icons[name] || '•'}</span>
 }
 
 function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
   if (!task) return null
-
-  const handleDelete = async () => {
-    const ok = window.confirm('Tem certeza que deseja excluir esta tarefa?')
-    if (!ok) return
-    try {
-      await deleteTask(task.id)
-      onClose()
-    } catch (e) {
-      alert('Erro ao excluir tarefa')
-    }
-  }
-
   return (
     <div className="taskModal" onClick={onClose}>
       <div className="taskModal__backdrop" />
@@ -485,7 +487,7 @@ function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
         <footer className="taskModal__footer">
           <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
           <button className="taskModal__editBtn" onClick={() => onEdit(task)}>Editar</button>
-          <button className="taskModal__deleteBtn" onClick={handleDelete}>Excluir</button>
+          <button className="taskModal__deleteBtn" onClick={() => { if(confirm('Excluir?')) deleteTask(task.id) }}>Excluir</button>
         </footer>
       </div>
     </div>
@@ -493,12 +495,8 @@ function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
 }
 
 function PomodoroConfigModal({ show, config, onClose, onSave }) {
-  const [localConfig, setLocalConfig] = useState(config || { focusTime: 25, shortBreak: 5, longBreak: 10, technique: 'classic' })
-
-  useEffect(() => {
-    if(config) setLocalConfig(config)
-  }, [config])
-
+  const [local, setLocal] = useState(config)
+  useEffect(() => { if(config) setLocal(config) }, [config])
   if (!show) return null
 
   return (
@@ -506,40 +504,30 @@ function PomodoroConfigModal({ show, config, onClose, onSave }) {
       <div className="pomodoroConfigModal__backdrop" onClick={onClose} />
       <div className="pomodoroConfigModal__panel">
         <header className="pomodoroConfigModal__header">
-            <h3>Configurar Pomodoro</h3>
+            <h3>Configurar Personalizado</h3>
             <button className="pomodoroConfigModal__close" onClick={onClose}>×</button>
         </header>
-        
         <div className="pomodoroConfigModal__content">
             <div className="pomodoroInput">
                 <label>Foco (minutos)</label>
-                <input 
-                    type="number" 
-                    value={localConfig.focusTime} 
-                    onChange={e => setLocalConfig({...localConfig, focusTime: Number(e.target.value)})}
-                />
+                <input type="number" value={local.focus} onChange={e => setLocal({...local, focus: Number(e.target.value)})}/>
             </div>
             <div className="pomodoroInput">
-                <label>Pausa Curta (minutos)</label>
-                <input 
-                    type="number" 
-                    value={localConfig.shortBreak} 
-                    onChange={e => setLocalConfig({...localConfig, shortBreak: Number(e.target.value)})}
-                />
+                <label>Pausa Curta (min)</label>
+                <input type="number" value={local.break} onChange={e => setLocal({...local, break: Number(e.target.value)})}/>
             </div>
              <div className="pomodoroInput">
-                <label>Pausa Longa (minutos)</label>
-                <input 
-                    type="number" 
-                    value={localConfig.longBreak} 
-                    onChange={e => setLocalConfig({...localConfig, longBreak: Number(e.target.value)})}
-                />
+                <label>Pausa Longa (min)</label>
+                <input type="number" value={local.longBreak} onChange={e => setLocal({...local, longBreak: Number(e.target.value)})}/>
+            </div>
+            <div className="pomodoroInput">
+                <label>Sessões p/ Pausa Longa</label>
+                <input type="number" value={local.sessions} onChange={e => setLocal({...local, sessions: Number(e.target.value)})}/>
             </div>
         </div>
-
         <footer className="pomodoroConfigModal__footer">
-            <button className="pomodoroConfigModal__btn pomodoroConfigModal__btn--secondary" onClick={onClose}>Cancelar</button>
-            <button className="pomodoroConfigModal__btn pomodoroConfigModal__btn--primary" onClick={() => onSave(localConfig)}>Salvar</button>
+            <button className="pomodoroConfigModal__btn" onClick={onClose}>Cancelar</button>
+            <button className="pomodoroConfigModal__btn pomodoroConfigModal__btn--primary" onClick={() => onSave(local)}>Salvar</button>
         </footer>
       </div>
     </div>

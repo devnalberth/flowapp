@@ -12,17 +12,17 @@ import GoalsHabitsCard from '../../components/GoalsHabitsCard/GoalsHabitsCard.js
 import './Dashboard.css'
 
 export default function Dashboard({ onNavigate, onLogout, user }) {
-  // Garantimos valores padrão vazios caso o contexto falhe
+  // Garantimos valores padrão vazios caso o contexto falhe momentaneamente
   const { tasks = [], projects = [], goals = [], habits = [], loading } = useApp()
 
   // 1. CAMADA DE SEGURANÇA (FIREWALL DE DADOS)
-  // Normaliza os hábitos para garantir que arrays existam, evitando o erro .includes
+  // Normaliza os hábitos para garantir que arrays existam, evitando erros visuais
   const safeHabits = useMemo(() => {
     if (!Array.isArray(habits)) return []
     
     return habits.map(h => {
       // O serviço novo usa 'completions', o antigo usava 'completed_dates'
-      // Vamos garantir que AMBOS existam e sejam arrays para não quebrar o componente filho
+      // Vamos garantir que AMBOS existam e sejam arrays
       const datesArray = Array.isArray(h.completions) 
         ? h.completions 
         : (Array.isArray(h.completed_dates) ? h.completed_dates : [])
@@ -43,15 +43,28 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
     // Proteção extra: tasks pode ser undefined no primeiro render
     const safeTasks = Array.isArray(tasks) ? tasks : []
 
+    // Tarefas para HOJE (que não estão concluídas)
     const tasksToday = safeTasks.filter(task => {
-      if (!task.due_date) return false
+      if (!task.due_date || task.completed) return false
+      
       const dueDate = new Date(task.due_date)
       dueDate.setHours(0, 0, 0, 0)
+      
+      // Ajuste de fuso horário se necessário (igual ao Tasks.jsx)
+      const timezoneOffset = dueDate.getTimezoneOffset() * 60000
+      if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
+         // Pequeno ajuste para garantir que a data do banco bata com o dia local
+         const adjusted = new Date(dueDate.getTime() + timezoneOffset)
+         adjusted.setHours(0,0,0,0)
+         return adjusted.getTime() === today.getTime()
+      }
+
       return dueDate.getTime() === today.getTime()
     }).length
 
-    const pending = safeTasks.filter(task => task.status !== 'done').length
-    const done = safeTasks.filter(task => task.status === 'done').length
+    // Contagem baseada na propriedade 'completed' que o Tasks.jsx agora gerencia
+    const pending = safeTasks.filter(task => !task.completed).length
+    const done = safeTasks.filter(task => task.completed).length
 
     // Calcular maior streak dos hábitos usando os dados seguros
     const streakDays = safeHabits.reduce((max, habit) => {
@@ -80,15 +93,15 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
             ) : kpis.tasksToday > 0 ? (
               `Você tem ${kpis.tasksToday} tarefa${kpis.tasksToday > 1 ? 's' : ''} para hoje e está com um streak de ${kpis.streakDays} dias!`
             ) : (
-              `Nenhuma tarefa para hoje. Seu maior streak é de ${kpis.streakDays} dias!`
+              `Nenhuma tarefa pendente para hoje. Seu maior streak é de ${kpis.streakDays} dias!`
             )}
           </div>
         </header>
 
-        {/* Se estiver carregando, mostramos um estado visual mais leve ou evitamos renderizar componentes complexos */}
         {loading ? (
-           <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
-             Carregando dashboard...
+           <div style={{ padding: '4rem', textAlign: 'center', color: '#666', display: 'flex', justifyContent: 'center' }}>
+             <div style={{width: 24, height: 24, borderRadius: '50%', border: '3px solid #ccc', borderTopColor: '#000', animation: 'spin 1s infinite linear'}}></div>
+             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
            </div>
         ) : (
           <>
