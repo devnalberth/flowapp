@@ -1,174 +1,125 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-
+import { useState, useEffect } from 'react'
+import { Trash2 } from 'lucide-react'
 import './CreateHabitModal.css'
 
-const DESCRIPTION_LIMIT = 200
-
-const HABIT_CATEGORIES = [
-  { id: 'saude', label: 'Saúde & Energia', icon: '⚡' },
-  { id: 'trabalho', label: 'Trabalho', icon: '💼' },
-  { id: 'aprendizado', label: 'Aprendizado', icon: '📚' },
-  { id: 'mindfulness', label: 'Mindfulness', icon: '🧘' },
+const FREQUENCIES = [
+  { value: 'daily', label: 'Todos os dias' },
+  { value: 'weekly', label: 'Semanalmente' }, // Usaremos esse para customizar dias
+  // { value: 'custom', label: 'Personalizado' } // Pode usar esse label se preferir
 ]
 
-const FREQUENCY_OPTIONS = [
-  { value: 'daily', label: 'Diário' },
-  { value: 'weekly', label: 'Semanal' },
-  { value: 'custom', label: 'Personalizado' },
+const WEEK_DAYS = [
+  { label: 'Dom', value: 0 },
+  { label: 'Seg', value: 1 },
+  { label: 'Ter', value: 2 },
+  { label: 'Qua', value: 3 },
+  { label: 'Qui', value: 4 },
+  { label: 'Sex', value: 5 },
+  { label: 'Sáb', value: 6 },
 ]
 
-const WEEKDAYS = [
-  { value: 0, label: 'Dom', name: 'Domingo' },
-  { value: 1, label: 'Seg', name: 'Segunda' },
-  { value: 2, label: 'Ter', name: 'Terça' },
-  { value: 3, label: 'Qua', name: 'Quarta' },
-  { value: 4, label: 'Qui', name: 'Quinta' },
-  { value: 5, label: 'Sex', name: 'Sexta' },
-  { value: 6, label: 'Sáb', name: 'Sábado' },
-]
-
-export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete }) {
-  const [formData, setFormData] = useState({
-    label: '',
-    category: HABIT_CATEGORIES[0].id,
-    description: '',
-    time: '',
-    frequency: 'daily',
-    selectedDays: [],
-  })
-  const labelRef = useRef(null)
-
-  const charCount = useMemo(() => `${formData.description.length}/${DESCRIPTION_LIMIT}`, [formData.description.length])
+export default function CreateHabitModal({ open, onClose, onSubmit, onDelete, initialData }) {
+  const [name, setName] = useState('')
+  const [frequency, setFrequency] = useState('daily')
+  const [customDays, setCustomDays] = useState([]) // Array de números [0, 2, 4]
 
   useEffect(() => {
-    if (habit) {
-      // Modo de edição
-      setFormData({
-        label: habit.label || '',
-        category: habit.category || HABIT_CATEGORIES[0].id,
-        description: habit.description || '',
-        time: habit.time || '',
-        frequency: habit.frequency || 'daily',
-        selectedDays: habit.selectedDays || [],
-      })
-    } else {
-      // Modo de criação
-      setFormData({
-        label: '',
-        category: HABIT_CATEGORIES[0].id,
-        description: '',
-        time: '',
-        frequency: 'daily',
-        selectedDays: [],
-      })
-    }
-    requestAnimationFrame(() => labelRef.current?.focus())
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [habit])
-
-  useEffect(() => {
-    const handleKey = (event) => {
-      if (event.key === 'Escape') {
-        onClose?.()
+    if (initialData) {
+      setName(initialData.name || initialData.label || '')
+      // Se tiver customDays preenchido, assumimos que é 'custom' ou 'weekly'
+      let loadedDays = []
+      if (Array.isArray(initialData.customDays)) loadedDays = initialData.customDays
+      else if (typeof initialData.customDays === 'string') {
+        try { loadedDays = JSON.parse(initialData.customDays) } catch (e) {}
       }
+
+      if (loadedDays.length > 0) {
+        setFrequency('custom')
+        setCustomDays(loadedDays)
+      } else {
+        setFrequency(initialData.frequency || 'daily')
+        setCustomDays([])
+      }
+    } else {
+      setName('')
+      setFrequency('daily')
+      setCustomDays([])
     }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
+  }, [initialData, open])
 
-  const updateField = (field) => (event) => {
-    setFormData((prev) => ({ ...prev, [field]: event.target.value }))
+  if (!open) return null
+
+  const toggleDay = (dayValue) => {
+    setCustomDays(prev => {
+      if (prev.includes(dayValue)) return prev.filter(d => d !== dayValue)
+      return [...prev, dayValue].sort()
+    })
   }
 
-  const toggleDay = (day) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedDays: prev.selectedDays.includes(day)
-        ? prev.selectedDays.filter((d) => d !== day)
-        : [...prev.selectedDays, day],
-    }))
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    
+    // Se selecionou dias específicos, forçamos frequência 'custom'
+    const finalFrequency = customDays.length > 0 ? 'custom' : 'daily'
+    
+    onSubmit({
+      name,
+      frequency: finalFrequency,
+      // Salva como array; o serviço cuida se precisar virar string
+      customDays: customDays
+    })
   }
-
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    onSubmit?.(formData)
-  }
-
-  const selectedCategory = HABIT_CATEGORIES.find((cat) => cat.id === formData.category)
 
   return (
-    <div className="createHabitModal" role="dialog" aria-modal="true">
-      <div className="createHabitModal__backdrop" onClick={onClose} />
-      <section className="createHabitModal__panel">
-        <header className="createHabitModal__header">
-          <div>
-            <p className="createHabitModal__eyebrow">Novo hábito</p>
-            <h3>Construa rotinas consistentes</h3>
-          </div>
-          <button type="button" className="createHabitModal__close" onClick={onClose} aria-label="Fechar modal">
-            ✕
-          </button>
+    <div className="habitModalOverlay">
+      <div className="habitModal">
+        <header>
+          <h3>{initialData ? 'Editar Hábito' : 'Novo Hábito'}</h3>
+          <button className="closeBtn" onClick={onClose}>×</button>
         </header>
-
-        <form className="createHabitModal__form" onSubmit={handleSubmit}>
-          <label className="createHabitModal__field">
-            <span>Nome do hábito*</span>
-            <input
-              ref={labelRef}
-              type="text"
-              placeholder="Ex: Treino Muay Thai"
-              value={formData.label}
-              onChange={updateField('label')}
-              required
+        
+        <form onSubmit={handleSubmit}>
+          <div className="formGroup">
+            <label>Nome do ritual</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Ler 10 páginas" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              required 
             />
-          </label>
+          </div>
 
-          <label className="createHabitModal__field">
-            <span>Categoria</span>
-            <div className="createHabitModal__categoryGrid">
-              {HABIT_CATEGORIES.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  className={`categoryChip ${formData.category === category.id ? 'categoryChip--active' : ''}`}
-                  onClick={() => setFormData((prev) => ({ ...prev, category: category.id }))}
-                >
-                  <span className="categoryChip__icon">{category.icon}</span>
-                  <span>{category.label}</span>
-                </button>
-              ))}
+          <div className="formGroup">
+            <label>Frequência</label>
+            <div className="freqOptions">
+              <button 
+                type="button" 
+                className={`freqBtn ${customDays.length === 0 ? 'active' : ''}`}
+                onClick={() => { setFrequency('daily'); setCustomDays([]) }}
+              >
+                Todos os dias
+              </button>
+              <button 
+                type="button" 
+                className={`freqBtn ${customDays.length > 0 ? 'active' : ''}`}
+                onClick={() => setFrequency('custom')}
+              >
+                Dias específicos
+              </button>
             </div>
-          </label>
+          </div>
 
-          <label className="createHabitModal__field">
-            <span>Horário ideal</span>
-            <input type="time" value={formData.time} onChange={updateField('time')} />
-          </label>
-
-          <label className="createHabitModal__field">
-            <span>Frequência</span>
-            <select value={formData.frequency} onChange={updateField('frequency')}>
-              {FREQUENCY_OPTIONS.map((freq) => (
-                <option key={freq.value} value={freq.value}>
-                  {freq.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {formData.frequency === 'custom' && (
-            <div className="createHabitModal__field">
-              <span>Dias da semana</span>
-              <div className="createHabitModal__weekdayGrid">
-                {WEEKDAYS.map((day) => (
+          {/* Seletor de dias aparece se for Custom ou se já tiver dias selecionados */}
+          {(frequency === 'custom' || customDays.length > 0) && (
+            <div className="formGroup">
+              <label>Selecione os dias</label>
+              <div className="weekSelector">
+                {WEEK_DAYS.map(day => (
                   <button
                     key={day.value}
                     type="button"
-                    className={`weekdayChip ${formData.selectedDays.includes(day.value) ? 'weekdayChip--active' : ''}`}
+                    className={`dayBtn ${customDays.includes(day.value) ? 'active' : ''}`}
                     onClick={() => toggleDay(day.value)}
                   >
                     {day.label}
@@ -178,29 +129,19 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
             </div>
           )}
 
-          <label className="createHabitModal__field">
-            <span>Descrição (opcional)</span>
-            <div className="createHabitModal__textareaWrap">
-              <textarea
-                placeholder="Por que este hábito é importante? O que você quer alcançar?"
-                maxLength={DESCRIPTION_LIMIT}
-                value={formData.description}
-                onChange={updateField('description')}
-              />
-              <small>{charCount}</small>
+          <footer>
+            {initialData && onDelete && (
+              <button type="button" className="btnDelete" onClick={onDelete}>
+                <Trash2 size={18} /> Excluir
+              </button>
+            )}
+            <div className="actions">
+              <button type="button" className="btnCancel" onClick={onClose}>Cancelar</button>
+              <button type="submit" className="btnSave">Salvar</button>
             </div>
-          </label>
-
-          <footer className="createHabitModal__footer">
-            <button type="button" onClick={onClose} className="btn btn--ghost">
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn--primary">
-              Criar hábito
-            </button>
           </footer>
         </form>
-      </section>
+      </div>
     </div>
   )
 }

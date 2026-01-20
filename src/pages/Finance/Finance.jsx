@@ -34,6 +34,7 @@ const MONTHS = [
   { value: '12', label: 'Dezembro' },
 ]
 
+// Expandido para incluir 2026
 const YEARS = ['2024', '2025', '2026']
 
 const CATEGORY_OPTIONS = [
@@ -49,36 +50,20 @@ const PIE_COLORS = ['#ff4800', '#ff8d00', '#ffc241', '#7c88ff', '#5cd1b3']
 const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0)
 
-const parseNumber = (value) => {
-  const parsed = typeof value === 'number' ? value : Number(String(value).replace(/[^0-9.-]/g, ''))
-  return Number.isNaN(parsed) ? 0 : parsed
-}
-
 const formatDate = (value) => {
   if (!value) return '--'
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(value))
-}
-
-const generateInstallmentSchedule = (dateString, count, dueDay) => {
-  const baseDate = dateString ? new Date(dateString) : new Date()
-  const installments = []
-  for (let index = 0; index < count; index += 1) {
-    const projected = new Date(baseDate)
-    projected.setMonth(projected.getMonth() + index)
-    projected.setDate(dueDay ?? projected.getDate())
-    installments.push(
-      new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(projected).replace('.', '')
-    )
-  }
-  return installments
 }
 
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
   const { finances, addFinance, updateFinance, deleteFinance, loading } = useApp()
-  const [selectedMonth, setSelectedMonth] = useState('12')
-  const [selectedYear, setSelectedYear] = useState('2025')
+  
+  // CORREÇÃO: Inicializa com a data atual do sistema
+  const today = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(String(today.getMonth() + 1).padStart(2, '0'))
+  const [selectedYear, setSelectedYear] = useState(String(today.getFullYear()))
 
   const [isTransactionModalOpen, setTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null)
@@ -99,18 +84,11 @@ export default function Finance({ user, onNavigate, onLogout }) {
         yearDelta = 1
       }
 
-      const currentYearIndex = YEARS.indexOf(selectedYear)
-      const hitsLowerBound = yearDelta < 0 && currentYearIndex === 0
-      const hitsUpperBound = yearDelta > 0 && currentYearIndex === YEARS.length - 1
-      if (hitsLowerBound || hitsUpperBound) {
-        return prevMonth
-      }
-
+      // Lógica simplificada de troca de ano
       if (yearDelta !== 0) {
         setSelectedYear((prevYear) => {
-          const yearIndex = YEARS.indexOf(prevYear)
-          const nextIndex = Math.min(Math.max(yearIndex + yearDelta, 0), YEARS.length - 1)
-          return YEARS[nextIndex] ?? prevYear
+          const yearNum = parseInt(prevYear) + yearDelta
+          return String(yearNum)
         })
       }
       return MONTHS[monthIndex].value
@@ -118,26 +96,37 @@ export default function Finance({ user, onNavigate, onLogout }) {
   }
 
   const periodKey = `${selectedYear}-${selectedMonth}`
-  const periodLabel = `${currentMonthMeta?.label ?? ''} · ${selectedYear}`
 
   const filteredTransactions = useMemo(() => {
     return finances
       .map(t => ({
         ...t,
-        amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount),
-        date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
+        amount: Number(t.amount) || 0,
+        // Garante que a data seja string ISO para comparação
+        dateString: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
       }))
-        .filter((transaction) => transaction.date.startsWith(periodKey))
+        .filter((transaction) => transaction.dateString.startsWith(periodKey))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [finances, periodKey])
 
+  // CORREÇÃO: Filtro robusto para Receita e Despesa (Case insensitive)
   const monthlyRevenue = useMemo(
-    () => filteredTransactions.filter((item) => item.type === 'receita').reduce((sum, item) => sum + item.amount, 0),
+    () => filteredTransactions
+      .filter((item) => {
+        const type = (item.type || '').toUpperCase()
+        return type === 'RECEITA' || type === 'INCOME'
+      })
+      .reduce((sum, item) => sum + item.amount, 0),
     [filteredTransactions]
   )
 
   const monthlyExpenses = useMemo(
-    () => filteredTransactions.filter((item) => item.type === 'DESPESA').reduce((sum, item) => sum + item.amount, 0),
+    () => filteredTransactions
+      .filter((item) => {
+        const type = (item.type || '').toUpperCase()
+        return type === 'DESPESA' || type === 'EXPENSE'
+      })
+      .reduce((sum, item) => sum + item.amount, 0),
     [filteredTransactions]
   )
 
@@ -153,22 +142,22 @@ export default function Finance({ user, onNavigate, onLogout }) {
         id: 'revenue',
         label: 'Receitas do mês',
         value: formatCurrency(monthlyRevenue),
-        helper: `${filteredTransactions.filter((item) => item.type === 'RECEITA').length} entradas`,
+        helper: 'Total de entradas',
       },
       {
         id: 'expense',
         label: 'Despesas do mês',
         value: formatCurrency(monthlyExpenses),
-        helper: `${filteredTransactions.filter((item) => item.type === 'DESPESA').length} saídas`,
+        helper: 'Total de saídas',
       },
     ],
-    [monthlyRevenue, monthlyExpenses, filteredTransactions]
+    [monthlyRevenue, monthlyExpenses]
   )
 
   const categoryBreakdown = useMemo(() => {
     const breakdown = {}
     filteredTransactions
-      .filter(t => t.type === 'DESPESA')
+      .filter(t => (t.type || '').toUpperCase() === 'DESPESA')
       .forEach(t => {
         if (!breakdown[t.category]) {
           breakdown[t.category] = {
@@ -182,6 +171,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
     return Object.values(breakdown).sort((a, b) => b.value - a.value)
   }, [filteredTransactions])
 
+  // Chart Series
   const cashflowSeries = useMemo(() => {
     const series = []
     for (let i = 0; i < 12; i++) {
@@ -190,18 +180,18 @@ export default function Finance({ user, onNavigate, onLogout }) {
       const monthTransactions = finances
         .map(t => ({
           ...t,
-          amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount),
-          date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : new Date(t.date).toISOString().split('T')[0]
+          amount: Number(t.amount) || 0,
+          dateString: new Date(t.date).toISOString().split('T')[0]
         }))
-        .filter(t => t.date.startsWith(monthKey))
+        .filter(t => t.dateString.startsWith(monthKey))
       
-      const receitas = monthTransactions.filter(t => t.type === 'RECEITA').reduce((sum, t) => sum + t.amount, 0)
-      const despesas = monthTransactions.filter(t => t.type === 'DESPESA').reduce((sum, t) => sum + t.amount, 0)
+      const receitas = monthTransactions.filter(t => (t.type||'').toUpperCase() === 'RECEITA').reduce((sum, t) => sum + t.amount, 0)
+      const despesas = monthTransactions.filter(t => (t.type||'').toUpperCase() === 'DESPESA').reduce((sum, t) => sum + t.amount, 0)
       
       series.push({
         name: MONTHS[i].label.substring(0, 3),
-        receitas,
-        despesas
+        receita: receitas,
+        despesa: despesas
       })
     }
     return series
@@ -255,7 +245,9 @@ export default function Finance({ user, onNavigate, onLogout }) {
             {kpiMetrics.map((kpi) => (
               <article key={kpi.id} className="financeKpi__card">
                 <p>{kpi.label}</p>
-                <strong>{kpi.value}</strong>
+                <strong style={{color: kpi.id === 'balance' ? (monthlyRevenue - monthlyExpenses >= 0 ? '#10b981' : '#ef4444') : 'inherit'}}>
+                    {kpi.value}
+                </strong>
                 <span>{kpi.helper}</span>
               </article>
             ))}
@@ -263,7 +255,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
           <div className="financeHeader__controls">
             <div className="financeHeader__carousel" aria-label="Selecionar período">
               <button type="button" aria-label="Mês anterior" onClick={() => handleShiftMonth(-1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" width="20">
                   <path d="M15 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -272,7 +264,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
                 <span>{selectedYear}</span>
               </div>
               <button type="button" aria-label="Próximo mês" onClick={() => handleShiftMonth(1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" width="20">
                   <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -292,12 +284,12 @@ export default function Finance({ user, onNavigate, onLogout }) {
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={cashflowSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${Math.round(value / 1000)}k`} />
-              <Tooltip formatter={(value) => formatCurrency(value)} labelFormatter={(label) => `Mês ${label}`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
               <Legend />
-              <Line type="monotone" dataKey="receita" stroke="#ff4800" strokeWidth={3} dot={false} name="Receitas" />
-              <Line type="monotone" dataKey="despesa" stroke="#1c2a44" strokeWidth={3} dot={false} name="Despesas" />
+              <Line type="monotone" dataKey="receita" stroke="#10b981" strokeWidth={3} dot={false} name="Receitas" />
+              <Line type="monotone" dataKey="despesa" stroke="#ef4444" strokeWidth={3} dot={false} name="Despesas" />
             </LineChart>
           </ResponsiveContainer>
         </article>
@@ -308,9 +300,6 @@ export default function Finance({ user, onNavigate, onLogout }) {
               <p>Distribuição</p>
               <h2>Gastos por categoria</h2>
             </div>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => {}}>
-              Categorias & limites
-            </button>
           </header>
           <div className="financeChart__split">
             <div className="financeChart__pie">
@@ -364,48 +353,53 @@ export default function Finance({ user, onNavigate, onLogout }) {
               <th>Categoria</th>
               <th>Data</th>
               <th>Valor</th>
-              <th />
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {filteredTransactions.length === 0 && (
               <tr>
-                <td colSpan={5} style={{textAlign: 'center', padding: '40px'}}>
-                  Nenhuma transação neste período. Clique em "Nova transação" para adicionar.
+                <td colSpan={5} style={{textAlign: 'center', padding: '40px', color: '#666'}}>
+                  Nenhuma transação encontrada em {currentMonthMeta?.label}/{selectedYear}.
                 </td>
               </tr>
             )}
-            {filteredTransactions.slice(0, 8).map((transaction) => (
-              <tr key={transaction.id}>
-                <td>
-                  <div className="cellMain">
-                    <span className={`pill pill--${transaction.type.toLowerCase()}`}>{transaction.type}</span>
-                    <div>
-                      <strong>{transaction.description}</strong>
+            {filteredTransactions.map((transaction) => {
+               const type = (transaction.type || '').toUpperCase()
+               const isExpense = type === 'DESPESA'
+               return (
+                <tr key={transaction.id}>
+                  <td>
+                    <div className="cellMain">
+                      <span className={`pill pill--${type.toLowerCase()}`}>{transaction.type}</span>
+                      <div>
+                        <strong>{transaction.description}</strong>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>{categoryLabelMap[transaction.category] || transaction.category}</td>
-                <td>{formatDate(transaction.date)}</td>
-                <td className={transaction.type === 'DESPESA' ? 'negative' : 'positive'}>
-                  {transaction.type === 'DESPESA' ? '-' : '+'}
-                  {formatCurrency(transaction.amount)}
-                </td>
-                <td>
-                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => handleEditTransaction(transaction)}>
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => handleDeleteTransaction(transaction.id)}
-                    style={{marginLeft: '8px', color: '#ef4444'}}
-                  >
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>{categoryLabelMap[transaction.category] || transaction.category}</td>
+                  <td>{formatDate(transaction.date)}</td>
+                  <td className={isExpense ? 'negative' : 'positive'}>
+                    {isExpense ? '-' : '+'}
+                    {formatCurrency(transaction.amount)}
+                  </td>
+                  <td>
+                    <div style={{display: 'flex', gap: '8px'}}>
+                        <button type="button" className="btn btn--ghost btn--sm" onClick={() => handleEditTransaction(transaction)}>
+                        Editar
+                        </button>
+                        <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        style={{color: '#ef4444'}}
+                        >
+                        Excluir
+                        </button>
+                    </div>
+                  </td>
+                </tr>
+            )})}
           </tbody>
         </table>
       </section>
@@ -420,7 +414,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
       <FloatingCreateButton
         label="Nova transação"
         caption="Adicionar"
-        icon={null}
+        icon="+"
         ariaLabel="Adicionar transação"
         onClick={handleOpenTransactionModal}
       />

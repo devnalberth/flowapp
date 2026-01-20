@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-
+import { Trash2 } from 'lucide-react'
 import './CreateGoalModal.css'
 
 const DESCRIPTION_LIMIT = 280
@@ -23,47 +23,53 @@ const SEMESTERS = [
   { value: 2, label: '2º Semestre', months: [7, 8, 9, 10, 11, 12] },
 ]
 
-// Função para calcular o trimestre baseado nas datas
+// Função auxiliar para converter "1º Trimestre" -> 1
+const parseTrimesterValue = (val) => {
+  if (typeof val === 'number') return val
+  if (typeof val === 'string') {
+    if (val.includes('1º')) return 1
+    if (val.includes('2º')) return 2
+    if (val.includes('3º')) return 3
+    if (val.includes('4º')) return 4
+  }
+  return 1 // Padrão
+}
+
 const calculateTrimester = (startDate, endDate) => {
   if (!startDate) return null
-  
   const start = new Date(startDate)
-  const startMonth = start.getMonth() + 1 // 1-12
+  const startMonth = start.getMonth() + 1
   
-  // Se tem data de fim, verifica se cobre múltiplos trimestres
   if (endDate) {
     const end = new Date(endDate)
     const endMonth = end.getMonth() + 1
     const startQuarter = Math.ceil(startMonth / 3)
     const endQuarter = Math.ceil(endMonth / 3)
-    
-    // Se cobre múltiplos trimestres, retorna todos
     const quarters = []
     for (let q = startQuarter; q <= endQuarter; q++) {
-      quarters.push(TRIMESTERS[q - 1])
+      if(TRIMESTERS[q-1]) quarters.push(TRIMESTERS[q - 1])
     }
     return quarters
   }
   
-  // Retorna apenas o trimestre de início
   const quarter = Math.ceil(startMonth / 3)
   return [TRIMESTERS[quarter - 1]]
 }
 
-export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions = [], initialData = null }) {
+export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], initialData = null }) {
   const [form, setForm] = useState(() => ({
     title: '',
     area: areaOptions[0] ?? '',
     type: 'trimestral',
-    trimester: null,
-    semester: null,
+    trimester: 1,
+    semester: 1,
     startDate: '',
     endDate: '',
     target: '',
   }))
   const titleRef = useRef(null)
 
-  const charCount = useMemo(() => `${form.target.length}/${DESCRIPTION_LIMIT}`, [form.target.length])
+  const charCount = useMemo(() => `${(form.target || '').length}/${DESCRIPTION_LIMIT}`, [form.target])
   
   const calculatedTrimesters = useMemo(() => {
     return calculateTrimester(form.startDate, form.endDate)
@@ -72,13 +78,17 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
   useEffect(() => {
     if (!open) return undefined
     const currentYear = new Date().getFullYear()
+
     if (initialData) {
+      // CORREÇÃO CRÍTICA: Converter string do trimestre para número seguro
+      const safeTrimester = parseTrimesterValue(initialData.trimester)
+      
       setForm({
         title: initialData.title || initialData.name || '',
         area: initialData.area || areaOptions[0] || '',
         type: initialData.type || 'trimestral',
-        trimester: initialData.trimester || null,
-        semester: initialData.semester || null,
+        trimester: safeTrimester, 
+        semester: initialData.semester || 1,
         startDate: initialData.startDate || initialData.start_date || `${currentYear}-01-01`,
         endDate: initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
         target: initialData.target || '',
@@ -88,50 +98,43 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
         title: '',
         area: areaOptions[0] ?? '',
         type: 'trimestral',
-        trimester: null,
-        semester: null,
+        trimester: 1,
+        semester: 1,
         startDate: `${currentYear}-01-01`,
         endDate: `${currentYear}-03-31`,
         target: '',
       })
     }
-    requestAnimationFrame(() => titleRef.current?.focus())
+    
+    // Pequeno timeout para focar e garantir que o estado atualizou
+    setTimeout(() => titleRef.current?.focus(), 50)
+    
     document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [open, initialData])
 
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [open, areaOptions, initialData])
-
-  useEffect(() => {
-    if (!open) return undefined
-    const handleKey = (event) => {
-      if (event.key === 'Escape') {
-        onClose?.()
-      }
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [open, onClose])
-  
-  // Atualizar datas automaticamente quando tipo de meta mudar
+  // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
   useEffect(() => {
     if (!form.startDate) return
     
     const currentYear = new Date().getFullYear()
-    const start = new Date(form.startDate)
-    const startMonth = start.getMonth()
-    const startDay = start.getDate()
-    
     let newEndDate = ''
     
+    // CORREÇÃO: Verificamos se o trimestre existe antes de acessar .months
     if (form.type === 'trimestral' && form.trimester) {
-      const trimesterMonths = TRIMESTERS[form.trimester - 1].months
-      newEndDate = `${currentYear}-${String(trimesterMonths[2]).padStart(2, '0')}-31`
+      const trimesterData = TRIMESTERS[form.trimester - 1]
+      if (trimesterData) {
+        const months = trimesterData.months
+        newEndDate = `${currentYear}-${String(months[2]).padStart(2, '0')}-31`
+      }
     } else if (form.type === 'semestral' && form.semester) {
-      const semesterMonths = SEMESTERS[form.semester - 1].months
-      const lastMonth = semesterMonths[semesterMonths.length - 1]
-      newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-31`
+      const semesterData = SEMESTERS[form.semester - 1]
+      if (semesterData) {
+        const months = semesterData.months
+        const lastMonth = months[months.length - 1]
+        const lastDay = lastMonth === 6 ? 30 : 31
+        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
+      }
     } else if (form.type === 'anual') {
       newEndDate = `${currentYear}-12-31`
     }
@@ -141,51 +144,30 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
     }
   }, [form.type, form.trimester, form.semester])
 
-  if (!open) {
-    return null
-  }
+  if (!open) return null
 
   const updateField = (field) => (event) => {
     const value = event.target.value
     setForm((prev) => {
       const newForm = { ...prev, [field]: value }
       
-      // Se mudou o tipo, resetar campos específicos
       if (field === 'type') {
         const currentYear = new Date().getFullYear()
         if (value === 'trimestral') {
           newForm.trimester = 1
           newForm.startDate = `${currentYear}-01-01`
-          newForm.endDate = `${currentYear}-03-31`
         } else if (value === 'semestral') {
           newForm.semester = 1
           newForm.startDate = `${currentYear}-01-01`
-          newForm.endDate = `${currentYear}-06-30`
         } else if (value === 'anual') {
           newForm.startDate = `${currentYear}-01-01`
           newForm.endDate = `${currentYear}-12-31`
         }
       }
-      
-      // Atualizar data de fim do trimestre
-      if (field === 'trimester') {
-        const currentYear = new Date().getFullYear()
-        const trimesterValue = parseInt(value)
-        const trimesterMonths = TRIMESTERS[trimesterValue - 1].months
-        newForm.startDate = `${currentYear}-${String(trimesterMonths[0]).padStart(2, '0')}-01`
-        newForm.endDate = `${currentYear}-${String(trimesterMonths[2]).padStart(2, '0')}-31`
-      }
-      
-      // Atualizar data de fim do semestre
-      if (field === 'semester') {
-        const currentYear = new Date().getFullYear()
-        const semesterValue = parseInt(value)
-        const semesterMonths = SEMESTERS[semesterValue - 1].months
-        newForm.startDate = `${currentYear}-${String(semesterMonths[0]).padStart(2, '0')}-01`
-        const lastMonth = semesterMonths[semesterMonths.length - 1]
-        const lastDay = lastMonth === 6 ? 30 : 31
-        newForm.endDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
-      }
+
+      // Casting para número ao mudar selects
+      if (field === 'trimester') newForm.trimester = parseInt(value)
+      if (field === 'semester') newForm.semester = parseInt(value)
       
       return newForm
     })
@@ -193,18 +175,13 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    
-    // Calcular trimestres automaticamente
     const trimesters = calculatedTrimesters || []
     
     const payload = {
       ...form,
-      trimesters: trimesters.map(t => t.label).join(', '),
+      trimesters: trimesters.length > 0 ? trimesters[0].label : '1º Trimestre', // Simplificação para salvar o principal
       trimesterValues: trimesters.map(t => t.value),
     }
-
-    console.debug('CreateGoalModal submit payload:', payload)
-
     onSubmit?.(payload)
   }
 
@@ -215,11 +192,9 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
         <header className="createGoalModal__header">
           <div>
             <p className="createGoalModal__eyebrow">Nova meta</p>
-            <h3>Mapear objetivo estratégico</h3>
+            <h3>{initialData ? 'Editar meta' : 'Mapear objetivo'}</h3>
           </div>
-          <button type="button" className="createGoalModal__close" onClick={onClose} aria-label="Fechar modal">
-            ✕
-          </button>
+          <button type="button" className="createGoalModal__close" onClick={onClose}>✕</button>
         </header>
 
         <form className="createGoalModal__form" onSubmit={handleSubmit}>
@@ -228,7 +203,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
             <input
               ref={titleRef}
               type="text"
-              placeholder="Ex: Escalar Flow OS para 1k clientes"
+              placeholder="Ex: Escalar Flow OS"
               value={form.title}
               onChange={updateField('title')}
               required
@@ -239,9 +214,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
             <span>Área</span>
             <select value={form.area} onChange={updateField('area')}>
               {areaOptions.map((area) => (
-                <option key={area} value={area}>
-                  {area}
-                </option>
+                <option key={area} value={area}>{area}</option>
               ))}
             </select>
           </label>
@@ -250,9 +223,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
             <span>Tipo de meta</span>
             <select value={form.type} onChange={updateField('type')}>
               {GOAL_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
+                <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
           </label>
@@ -260,11 +231,9 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
           {form.type === 'trimestral' && (
             <label className="createGoalModal__field">
               <span>Trimestre</span>
-              <select value={form.trimester || 1} onChange={updateField('trimester')}>
+              <select value={form.trimester} onChange={updateField('trimester')}>
                 {TRIMESTERS.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
+                  <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
             </label>
@@ -273,11 +242,9 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
           {form.type === 'semestral' && (
             <label className="createGoalModal__field">
               <span>Semestre</span>
-              <select value={form.semester || 1} onChange={updateField('semester')}>
+              <select value={form.semester} onChange={updateField('semester')}>
                 {SEMESTERS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
+                  <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
             </label>
@@ -286,38 +253,19 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
           <div className="createGoalModal__grid">
             <label className="createGoalModal__field">
               <span>Início</span>
-              <input 
-                type="date" 
-                value={form.startDate} 
-                onChange={updateField('startDate')}
-                disabled={form.type !== 'custom'}
-              />
+              <input type="date" value={form.startDate} onChange={updateField('startDate')} disabled={form.type !== 'custom'} />
             </label>
             <label className="createGoalModal__field">
               <span>Prazo</span>
-              <input 
-                type="date" 
-                value={form.endDate} 
-                min={form.startDate || undefined} 
-                onChange={updateField('endDate')}
-                disabled={form.type !== 'custom'}
-              />
+              <input type="date" value={form.endDate} min={form.startDate} onChange={updateField('endDate')} disabled={form.type !== 'custom'} />
             </label>
           </div>
-
-          {calculatedTrimesters && calculatedTrimesters.length > 0 && (
-            <div className="createGoalModal__info">
-              <p>
-                <strong>Trimestre(s):</strong> {calculatedTrimesters.map(t => t.label).join(', ')}
-              </p>
-            </div>
-          )}
 
           <label className="createGoalModal__field">
             <span>Resultado desejado</span>
             <div className="createGoalModal__textareaWrap">
               <textarea
-                placeholder="Descreva o que precisa estar verdadeiro para considerar a meta concluída."
+                placeholder="Descreva o sucesso..."
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.target}
                 onChange={updateField('target')}
@@ -326,13 +274,17 @@ export default function CreateGoalModal({ open, onClose, onSubmit, areaOptions =
             </div>
           </label>
 
-          <footer className="createGoalModal__footer">
-            <button type="button" onClick={onClose} className="btn btn--ghost">
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn--primary">
-              {initialData ? 'Salvar alterações' : 'Registrar meta'}
-            </button>
+          <footer className="createGoalModal__footer" style={{justifyContent: initialData ? 'space-between' : 'flex-end'}}>
+            {initialData && onDelete && (
+               <button type="button" onClick={onDelete} className="btn btn--danger" style={{marginRight: 'auto', color: '#ef4444', background: '#fee2e2', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                 <Trash2 size={16} /> Excluir
+               </button>
+            )}
+            
+            <div style={{display: 'flex', gap: '12px'}}>
+                <button type="button" onClick={onClose} className="btn btn--ghost">Cancelar</button>
+                <button type="submit" className="btn btn--primary">{initialData ? 'Salvar' : 'Criar'}</button>
+            </div>
           </footer>
         </form>
       </section>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
@@ -39,9 +39,7 @@ const DEFAULT_LIFE_AREAS = [
 ]
 
 function MetaDetail({ meta, onBack, onEdit }) {
-  if (!meta) {
-    return null
-  }
+  if (!meta) return null
 
   const progressPercent = Math.round((meta.progress || 0) * 100)
   const infoItems = [
@@ -50,7 +48,6 @@ function MetaDetail({ meta, onBack, onEdit }) {
     { label: 'Área', value: meta.areaLabel },
   ]
 
-  // Garante que projetos seja um array
   const projectsList = meta.projects || []
 
   return (
@@ -88,7 +85,7 @@ function MetaDetail({ meta, onBack, onEdit }) {
       <article className="metaDetail__card metaDetail__summaryCard">
         <header className="metaDetail__summaryCardHead">
           <h3>Resumo</h3>
-          <span>Objetivo e intenção em 2 blocos</span>
+          <span>Objetivo e intenção</span>
         </header>
         <div className="metaDetail__summaryGrid">
           <div className="metaDetail__summaryItem">
@@ -106,9 +103,8 @@ function MetaDetail({ meta, onBack, onEdit }) {
         <header>
           <div>
             <p>Projetos</p>
-            <h3>Projetos vinculados e timeline</h3>
+            <h3>Projetos vinculados</h3>
           </div>
-          <button type="button">Novo projeto</button>
         </header>
         <div className="metaDetail__projectsLayout">
           <div className="metaDetail__projectsList">
@@ -136,46 +132,12 @@ function MetaDetail({ meta, onBack, onEdit }) {
                         <span className={`metaProject__status metaProject__status--${statusClass}`}>
                           {project.status || 'Ativo'}
                         </span>
-                        <button type="button" className="metaProject__cta">
-                          Abrir
-                        </button>
                       </div>
                     </li>
                   )
                 })
               )}
             </ul>
-          </div>
-          <div className="metaDetail__projectsTimeline">
-            <div className="metaTimeline__head">
-              <p>Linha do tempo</p>
-              <span>{meta.timeline.length} marcos</span>
-            </div>
-
-            <div className="metaTimeline__gantt">
-              <div className="metaTimeline__ganttHeader">
-                <strong>Linha do Tempo</strong>
-                {/* Visualização simplificada da timeline */}
-              </div>
-
-              <div className="metaTimeline__ganttBody">
-                <div className="metaTimeline__ganttTrack">
-                  {meta.timeline.map((event, index) => (
-                    <div
-                      key={event.id}
-                      className="metaTimeline__ganttBar"
-                      style={{ left: `${index * 150 + 24}px`, width: '140px' }}
-                    >
-                      <div className="metaTimeline__ganttBarHeader">
-                        <span className="metaTimeline__ganttIcon" aria-hidden="true" />
-                        <p>{event.label}</p>
-                        <small>{event.date}</small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -257,19 +219,13 @@ function AreaDetail({ area, onBack, onEdit }) {
                         tabIndex={0}
                         aria-pressed={isActive}
                         onClick={() => openMetaDetail(meta.id)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault()
-                            openMetaDetail(meta.id)
-                          }
-                        }}
                       >
                         <div className="metaCard__head">
                           <span>{meta.trimester}</span>
                           <strong>{meta.status}</strong>
                         </div>
                         <h3>{meta.title}</h3>
-                        <div className="metaCard__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPercent}>
+                        <div className="metaCard__progress">
                           <span style={{ width: `${progressPercent}%` }} />
                         </div>
                         <footer>
@@ -290,14 +246,13 @@ function AreaDetail({ area, onBack, onEdit }) {
 }
 
 export default function Goals({ onNavigate, onLogout, user }) {
-  // CORREÇÃO: Adicionado 'projects' aqui para vincular nas metas
-  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, loading } = useApp()
+  // CORREÇÃO: Pegando deleteGoal do contexto
+  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
   const [editGoal, setEditGoal] = useState(null)
 
-  // Agrupar metas por área
   const LIFE_AREAS = useMemo(() => {
     return DEFAULT_LIFE_AREAS.map(area => {
       const areaGoals = goals
@@ -306,7 +261,6 @@ export default function Goals({ onNavigate, onLogout, user }) {
           goal.area?.toLowerCase() === area.label.toLowerCase()
         )
         .map(goal => {
-          // Calcular trimestres se não estiver definido
           let trimester = '1º Trimestre'
           
           if (goal.trimesters) {
@@ -318,7 +272,6 @@ export default function Goals({ onNavigate, onLogout, user }) {
             trimester = TRIMESTERS[quarterIndex - 1] || '4º Trimestre'
           }
 
-          // CORREÇÃO: Filtrar projetos vinculados a esta meta
           const goalProjects = (projects || []).filter(p => p.goalId === goal.id || p.goal_id === goal.id)
           
           return {
@@ -328,7 +281,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
             status: (goal.progress || 0) >= 1 ? 'Concluída' : (goal.progress || 0) > 0 ? 'Em progresso' : 'Não iniciada',
             reason: goal.target || 'Sem descrição',
             intention: goal.target || 'Sem intenção definida',
-            projects: goalProjects, // Adiciona os projetos à meta
+            projects: goalProjects,
             timeline: [
               { id: 1, label: 'Início', date: goal.startDate ? new Date(goal.startDate).toLocaleDateString('pt-BR') : 'A definir' },
               { id: 2, label: 'Fim', date: goal.endDate ? new Date(goal.endDate).toLocaleDateString('pt-BR') : 'A definir' },
@@ -349,72 +302,51 @@ export default function Goals({ onNavigate, onLogout, user }) {
         metas: areaGoals,
       }
     })
-  }, [goals, projects]) // Adicionado projects nas dependências
+  }, [goals, projects])
 
   const selectedArea = LIFE_AREAS.find((area) => area.id === selectedAreaId) ?? null
 
-  const handleCardSelect = (areaId) => {
-    setSelectedAreaId(areaId)
-  }
-
-  const handleCardKeyDown = (event, areaId) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      handleCardSelect(areaId)
-    }
-  }
+  const handleCardSelect = (areaId) => setSelectedAreaId(areaId)
 
   const handleDreamSubmit = async (form, imageFile) => {
     try {
       await addDreamMap(form, imageFile)
       setIsDreamModalOpen(false)
-    } catch (error) {
-      console.error('Erro ao adicionar ao mapa dos sonhos:', error)
-      alert('Não conseguimos adicionar a imagem. Tente novamente.')
-    }
+    } catch (error) { alert('Erro ao adicionar imagem.') }
   }
 
   const handleDeleteDream = async (dreamId) => {
-    if (!window.confirm('Deseja mesmo remover esta imagem do mapa dos sonhos?')) return
-    try {
-      await deleteDreamMap(dreamId)
-    } catch (error) {
-      console.error('Erro ao remover do mapa dos sonhos:', error)
-    }
+    if (!window.confirm('Remover imagem?')) return
+    try { await deleteDreamMap(dreamId) } catch (error) { console.error(error) }
   }
 
   const handleGoalSubmit = async (payload) => {
-    console.debug('Goals.handleGoalSubmit payload:', payload)
     try {
       if (editGoal) {
-        await updateGoal(editGoal.id, {
-          title: payload.title,
-          area: payload.area,
-          target: payload.target,
-          startDate: payload.startDate,
-          endDate: payload.endDate,
-          type: payload.type,
-          trimesters: payload.trimesters,
-          trimester_values: payload.trimesterValues,
-        })
+        await updateGoal(editGoal.id, payload)
       } else {
-        await addGoal({
-          title: payload.title,
-          area: payload.area,
-          target: payload.target,
-          startDate: payload.startDate,
-          endDate: payload.endDate,
-          type: payload.type,
-          trimesters: payload.trimesters,
-          trimester_values: payload.trimesterValues,
-        })
+        await addGoal(payload)
       }
-      console.debug('Goals.handleGoalSubmit: addGoal resolved')
       setIsGoalModalOpen(false)
       setEditGoal(null)
     } catch (error) {
-      console.error('Erro ao criar meta:', error)
-      alert('Não conseguimos criar a meta. Tente novamente.')
+      alert('Não conseguimos salvar a meta.')
+    }
+  }
+
+  // --- NOVA FUNÇÃO DE DELETAR ---
+  const handleDeleteGoal = async () => {
+    if (!editGoal) return
+    if (window.confirm('Tem certeza que deseja excluir esta meta? Isso pode afetar projetos vinculados.')) {
+      try {
+        await deleteGoal(editGoal.id)
+        setIsGoalModalOpen(false)
+        setEditGoal(null)
+        // Se a área ficar vazia, voltamos para a lista principal
+        // mas o react state deve cuidar disso via re-render
+      } catch (error) {
+        alert('Erro ao excluir meta')
+      }
     }
   }
 
@@ -422,7 +354,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
     <div className="goalsPage">
       <TopNav user={user} active="Metas" onNavigate={onNavigate} onLogout={onLogout} />
 
-      <FloatingCreateButton label="Nova meta" caption="Adicionar meta" icon={null} ariaLabel="Adicionar meta" onClick={() => setIsGoalModalOpen(true)} />
+      <FloatingCreateButton label="Nova meta" icon="+" onClick={() => setIsGoalModalOpen(true)} />
 
       {selectedArea ? (
         <AreaDetail
@@ -435,108 +367,68 @@ export default function Goals({ onNavigate, onLogout, user }) {
         />
       ) : (
         <>
-              <section className="goalsAreasBoard">
-                <div className="goalsAreas">
-                  {LIFE_AREAS.map((area) => {
-                    const progressPercent = Math.round(area.progress * 100)
-                    return (
-                      <article
-                        key={area.id}
-                        className={`goalsCard goalsCard--${area.id}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={selectedAreaId === area.id}
-                        onClick={() => handleCardSelect(area.id)}
-                        onKeyDown={(event) => handleCardKeyDown(event, area.id)}
-                      >
-                        <header className="goalsCard__header">
-                          <div className="goalsCard__title">
-                            <span className="goalsCard__icon" aria-hidden="true">
-                              {area.icon}
-                            </span>
-                            <div>
-                              <p>Área</p>
-                              <h3>{area.label}</h3>
-                            </div>
-                          </div>
-                          <span className="goalsCard__status">{area.status}</span>
-                        </header>
+          <section className="goalsAreasBoard">
+            <div className="goalsAreas">
+              {LIFE_AREAS.map((area) => {
+                const progressPercent = Math.round(area.progress * 100)
+                return (
+                  <article
+                    key={area.id}
+                    className={`goalsCard goalsCard--${area.id}`}
+                    onClick={() => handleCardSelect(area.id)}
+                  >
+                    <header className="goalsCard__header">
+                      <div className="goalsCard__title">
+                        <span className="goalsCard__icon">{area.icon}</span>
+                        <div><p>Área</p><h3>{area.label}</h3></div>
+                      </div>
+                      <span className="goalsCard__status">{area.status}</span>
+                    </header>
+                    <div className="goalsCard__north">
+                      <p>Meta norte</p>
+                      <h4>{area.northStar}</h4>
+                      <div className="goalsCard__progress">
+                        <span style={{ width: `${progressPercent}%` }} />
+                      </div>
+                    </div>
+                    <footer className="goalsCard__footer">
+                      <span>{area.metas.length} metas ativas</span>
+                      <span>{area.review}</span>
+                    </footer>
+                  </article>
+                )
+              })}
+            </div>
 
-                        <div className="goalsCard__north">
-                          <p>Meta norte</p>
-                          <h4>{area.northStar}</h4>
-                          <div className="goalsCard__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPercent}>
-                            <span style={{ width: `${progressPercent}%` }} />
-                          </div>
-                        </div>
-
-                        <footer className="goalsCard__footer">
-                          <span>{area.metas.length} metas ativas</span>
-                          <span>{area.review}</span>
-                        </footer>
-                      </article>
-                    )
-                  })}
+            <div className="dreamMap dreamMap--inline">
+              <header>
+                <div>
+                  <p className="dreamMap__eyebrow">Mapa dos sonhos</p>
+                  <h2>Visualize o que quer construir</h2>
                 </div>
+                <button type="button" className="dreamMap__addButton" onClick={() => setIsDreamModalOpen(true)}>
+                  Adicionar imagem
+                </button>
+              </header>
 
-                <div className="dreamMap dreamMap--inline">
-            <header>
-              <div>
-                <p className="dreamMap__eyebrow">Mapa dos sonhos</p>
-                <h2>Visualize o que quer construir</h2>
-                <p>Suba imagens que representem as suas metas principais e mantenha o quadro sempre visível.</p>
-              </div>
-              <button 
-                type="button" 
-                className="dreamMap__addButton"
-                onClick={() => setIsDreamModalOpen(true)}
-              >
-                Adicionar imagem
-              </button>
-            </header>
-
-            {dreamMaps.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
-                <p style={{ fontSize: '18px', marginBottom: '8px' }}>Seu mapa dos sonhos está vazio</p>
-                <p style={{ fontSize: '14px' }}>Clique em "Adicionar imagem" para começar a visualizar seus objetivos</p>
-              </div>
-            ) : (
-              <div className="dreamMap__grid">
-                {dreamMaps.map((dream) => (
-                  <figure key={dream.id} className="dreamCard">
-                    <img src={dream.imageUrl || dream.image_url} alt={dream.title} loading="lazy" />
-                    <figcaption>
-                      <span>{goals.find(g => g.id === dream.goalId || g.id === dream.goal_id)?.title || 'Meta'}</span>
-                      <strong>{dream.title}</strong>
-                    </figcaption>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteDream(dream.id)}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.6)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '4px 8px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </figure>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+              {dreamMaps.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Seu mapa está vazio</div>
+              ) : (
+                <div className="dreamMap__grid">
+                  {dreamMaps.map((dream) => (
+                    <figure key={dream.id} className="dreamCard">
+                      <img src={dream.imageUrl || dream.image_url} alt={dream.title} />
+                      <figcaption><strong>{dream.title}</strong></figcaption>
+                      <button onClick={() => handleDeleteDream(dream.id)} className="dreamMap__deleteBtn">✕</button>
+                    </figure>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </>
       )}
 
-      {/* Modais */}
       {isGoalModalOpen && (
         <CreateGoalModal
           open={isGoalModalOpen}
@@ -545,18 +437,14 @@ export default function Goals({ onNavigate, onLogout, user }) {
             setEditGoal(null)
           }}
           onSubmit={handleGoalSubmit}
+          onDelete={editGoal ? handleDeleteGoal : undefined} // Passa a função de deletar apenas se for edição
           areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
           initialData={editGoal}
         />
       )}
 
       {isDreamModalOpen && (
-        <DreamMapModal
-          open={isDreamModalOpen}
-          onClose={() => setIsDreamModalOpen(false)}
-          onSubmit={handleDreamSubmit}
-          goals={goals}
-        />
+        <DreamMapModal open={true} onClose={() => setIsDreamModalOpen(false)} onSubmit={handleDreamSubmit} goals={goals} />
       )}
     </div>
   )
