@@ -414,7 +414,6 @@ export default function Finance({ user, onNavigate, onLogout }) {
       <FloatingCreateButton
         label="Nova transação"
         caption="Adicionar"
-        icon="+"
         ariaLabel="Adicionar transação"
         onClick={handleOpenTransactionModal}
       />

@@ -2,9 +2,10 @@
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+  gap: 32px;
+  /* Remover max-width para seguir padrão das outras páginas */
+  /* max-width: 1200px; */
+  /* margin: 0 auto; */
   width: 100%;
 }
 

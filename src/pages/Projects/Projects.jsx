@@ -101,7 +101,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
   return (
     <div className="projects">
       <TopNav user={user} active="Projetos" onNavigate={handleNavigate} onLogout={onLogout} />
-      <FloatingCreateButton label="Novo projeto" icon="+" onClick={() => setModalOpen(true)} />
+      <FloatingCreateButton label="Novo projeto" onClick={() => setModalOpen(true)} />
 
       <section className="projectsBoard">
         {boardColumns.map((column) => (

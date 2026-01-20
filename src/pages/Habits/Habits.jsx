@@ -412,7 +412,6 @@ export default function Habits({ user, onNavigate, onLogout }) {
           label="Novo hábito"
           caption="Criar hábito"
           onClick={handleAddHabit}
-          icon="+"
           ariaLabel="Criar novo hábito"
         />
       </div>
