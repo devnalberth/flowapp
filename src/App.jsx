@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useLayoutEffect } from 'react'
 import { AppProvider, useApp } from './context/AppContext.jsx'
-import ErrorBoundary from './components/ErrorBoundary.jsx' // <--- IMPORTANTE
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
@@ -26,6 +26,17 @@ const INITIAL_USER = {
   avatarUrl: 'https://placehold.co/42x42',
 }
 
+// Função auxiliar para evitar travamento infinito no login
+const loginWithTimeout = (promise, ms = 10000) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error('O servidor demorou para responder. Verifique sua conexão e tente novamente.'));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
+
 function App() {
   const { userId } = useApp()
   const [page, setPage] = useState('Dashboard')
@@ -33,8 +44,10 @@ function App() {
   const [authInfoMessage, setAuthInfoMessage] = useState('')
   const [currentPath, setCurrentPath] = useState(getPathname())
 
+  // Se tiver userId, está autenticado. Simples assim.
   const isAuthenticated = !!userId
 
+  // Carrega dados visuais do usuário quando o ID muda
   useEffect(() => {
     if (userId) {
       const fetchUserData = async () => {
@@ -66,13 +79,6 @@ function App() {
     return () => window.removeEventListener('popstate', handlePop)
   }, [])
 
-  const replacePath = (nextPath) => {
-    if (typeof window !== 'undefined' && getPathname() !== nextPath) {
-      window.history.replaceState(null, '', nextPath)
-    }
-    setCurrentPath(nextPath)
-  }
-
   const handleNavigate = (next) => {
     if (SUPPORTED_PAGES.includes(next)) {
       setPage(next)
@@ -84,19 +90,28 @@ function App() {
 
     const preferSession = remember === false
     const targetPref = preferSession ? 'session' : 'local'
+    
+    // Usamos o cliente correto baseada na preferência "Lembrar de mim"
     const client = getSupabaseClient(!preferSession)
 
-    const { data, error } = await client.auth.signInWithPassword({ email, password })
+    try {
+      // CORREÇÃO: Usamos o wrapper com timeout para não travar o botão "Entrando..."
+      const { data, error } = await loginWithTimeout(
+        client.auth.signInWithPassword({ email, password })
+      )
 
-    if (error) throw new Error(error.message)
+      if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message)
 
-    if (data.user) {
-      setAuthInfoMessage('')
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(AUTH_STORAGE_KEY, targetPref)
+      if (data.user) {
+        setAuthInfoMessage('')
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(AUTH_STORAGE_KEY, targetPref)
+        }
+        // NÃO usamos reload(). O AppWrapper vai detectar o login via listener e atualizar o estado.
+        // Isso torna a transição instantânea.
       }
-      // CORREÇÃO: Força um recarregamento da página para garantir que o estado limpe e atualize
-      window.location.reload()
+    } catch (err) {
+      throw err // Repassa o erro para o componente de Login mostrar o alerta vermelho
     }
   }
 
@@ -105,16 +120,21 @@ function App() {
     await client.auth.signOut()
     setPage('Dashboard')
     setAuthInfoMessage('Você saiu com sucesso.')
-    replacePath('/')
-    // Opcional: reload para limpar memória
-    window.location.reload()
+    // Atualiza a URL sem recarregar
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/')
+      setCurrentPath('/')
+    }
   }
 
   const handleResetComplete = async (message) => {
     const client = getSupabaseClient(true)
     await client.auth.signOut()
     setAuthInfoMessage(message ?? 'Senha atualizada.')
-    replacePath('/')
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/')
+      setCurrentPath('/')
+    }
   }
 
   if (currentPath === '/recuperar-senha') {
@@ -127,7 +147,6 @@ function App() {
 
   const pageProps = { user: currentUser, onNavigate: handleNavigate, onLogout: handleLogout }
 
-  // WRAPPER DE SEGURANÇA: Se algo quebrar dentro das páginas, mostra o erro ao invés de tela branca
   return (
     <ErrorBoundary>
       {page === 'Projetos' && <Projects {...pageProps} />}
@@ -144,84 +163,120 @@ function App() {
 
 export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
-  const [isReady, setIsReady] = useState(false)
+  
+  // ESTRATÉGIA DE CARREGAMENTO INSTANTÂNEO:
+  // Verificamos o localStorage antes de qualquer renderização.
+  // Se NÃO houver token salvo, definimos isReady=true imediatamente.
+  // Isso faz a tela de login aparecer instantaneamente (0ms de tela preta).
+  const [isReady, setIsReady] = useState(() => {
+    if (typeof window === 'undefined') return false
+    
+    // Procura por tokens do Supabase ou nossa chave de preferência
+    const hasData = Object.keys(localStorage).some(k => k.startsWith('sb-') || k === AUTH_STORAGE_KEY)
+    
+    // Se não tem dados, está pronto para mostrar o Login. Se tem, espera verificar a sessão.
+    return !hasData 
+  })
 
+  // Timeout de segurança: Se tiver token mas a internet estiver ruim, libera após 5s
   useEffect(() => {
+    if (isReady) return
     const timer = setTimeout(() => {
-      if (!isReady) {
-        console.warn('AppWrapper: Auth check timeout - forcing ready state')
-        setIsReady(true)
-      }
-    }, 10000)
+      console.warn('AppWrapper: Timeout de verificação - liberando acesso')
+      setIsReady(true)
+    }, 5000)
     return () => clearTimeout(timer)
   }, [isReady])
 
   useEffect(() => {
     const clients = [supabasePersistent, supabaseSession]
+    let mounted = true
 
-    const loadFromClient = async (client) => {
+    // Função unificada para carregar e garantir usuário
+    const checkSession = async (client) => {
       try {
         const { data: { session } } = await client.auth.getSession()
         if (session?.user) {
-          const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
-          if (!ensured) {
-            console.warn('Falha ao garantir usuário. Mantendo sessão local.')
-            setCurrentUserId(null)
-            return true 
+          // Tenta garantir o usuário no banco (createIfMissing)
+          // Se falhar (offline), assume que está logado localmente para não bloquear
+          try {
+             await userService.ensureUser(session.user, { createIfMissing: true })
+          } catch (e) {
+             console.warn('Modo offline: não foi possível sincronizar usuário', e)
           }
-          setCurrentUserId(session.user.id)
-          return true 
+          
+          if (mounted) {
+            setCurrentUserId(session.user.id)
+            setIsReady(true) // Login confirmado -> Libera tela
+            return true
+          }
         }
         return false
-      } catch (error) {
-        console.error('Error ensuring user:', error)
+      } catch (err) {
+        console.error('Erro ao verificar sessão:', err)
         return false
       }
     }
 
-    let mounted = true
     const initAuth = async () => {
-      try {
-        for (const client of clients) {
-          if (!mounted) return
-          const found = await loadFromClient(client)
-          if (found) break
+      // Tenta recuperar sessão de qualquer cliente (Local ou Sessão)
+      let found = false
+      for (const client of clients) {
+        if (await checkSession(client)) {
+          found = true
+          break
         }
-      } catch (err) {
-        console.error('Fatal error during auth check:', err)
-      } finally {
-        if (mounted) setIsReady(true)
+      }
+      
+      // Se terminou de checar tudo e não achou, libera a tela (vai cair no Login)
+      if (mounted && !found) {
+        setIsReady(true)
       }
     }
+
     initAuth()
 
+    // Listener para mudanças de estado (Login/Logout) em tempo real
     const listeners = clients.map((client) =>
-      client.auth.onAuthStateChange(async (_event, session) => {
+      client.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return
+        
         if (session?.user) {
-          try {
-            const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
-            setCurrentUserId(ensured ? session.user.id : null)
-          } catch (error) {
-            console.error('Error ensuring user on change:', error)
-            setCurrentUserId(null)
-          }
-        } else {
-          setCurrentUserId(null)
+           setCurrentUserId(session.user.id)
+           setIsReady(true) // Garante que a tela libera ao logar
+        } else if (event === 'SIGNED_OUT') {
+           setCurrentUserId(null)
+           setIsReady(true) // Garante que a tela libera ao deslogar
         }
-      }),
+      })
     )
 
     return () => {
       mounted = false
-      listeners.forEach((l) => l?.data?.subscription?.unsubscribe())
+      listeners.forEach((l) => l.data.subscription.unsubscribe())
     }
   }, [])
   
   if (!isReady) {
+    // Loader minimalista com fundo branco (evita sensação de "tela preta quebrada")
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#09090b', color: '#ffffff', flexDirection: 'column', gap: '1rem' }}>
-        <span>Carregando FlowApp...</span>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh', 
+        backgroundColor: '#ffffff', 
+        color: '#333' 
+      }}>
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '3px solid #f3f3f3',
+          borderTop: '3px solid #3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}/>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
