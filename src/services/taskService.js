@@ -2,6 +2,8 @@ import { getSupabaseClient } from '../lib/supabaseClient';
 
 const normalizeTask = (task) => ({
   ...task,
+  // CORREÇÃO 1: Garante que tags seja sempre um array, evitando o erro .includes() no frontend
+  tags: task.tags || [], 
   startDate: task.start_date,
   dueDate: task.due_date,
   projectId: task.project_id,
@@ -34,6 +36,8 @@ export const taskService = {
         due_date: task.dueDate || null,
         project_id: task.projectId || null,
         clarify_items: task.clarifyItems || [],
+        // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
+        tags: task.tags || [], 
         user_id: userId,
       })
       .select()
@@ -49,19 +53,28 @@ export const taskService = {
 
   async updateTask(taskId, userId, updates) {
     const supabase = getSupabaseClient(true);
+    
+    // Prepara objeto de atualização apenas com campos definidos
+    const payload = {
+      title: updates.title,
+      description: updates.description,
+      status: updates.status,
+      priority: updates.priority,
+      start_date: updates.startDate,
+      due_date: updates.dueDate,
+      project_id: updates.projectId,
+      clarify_items: updates.clarifyItems,
+      // CORREÇÃO 3: Permite atualizar tags
+      tags: updates.tags, 
+      updated_at: new Date().toISOString(),
+    };
+
+    // Remove chaves undefined para não apagar dados acidentalmente
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
     const { data, error } = await supabase
       .from('tasks')
-      .update({
-        title: updates.title,
-        description: updates.description,
-        status: updates.status,
-        priority: updates.priority,
-        start_date: updates.startDate,
-        due_date: updates.dueDate,
-        project_id: updates.projectId,
-        clarify_items: updates.clarifyItems,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq('id', taskId)
       .eq('user_id', userId)
       .select()

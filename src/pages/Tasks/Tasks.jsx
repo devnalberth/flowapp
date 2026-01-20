@@ -244,7 +244,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
               if (filterId === 'done') {
                 return task.completed
               }
-              return task.tags.includes(filterId)
+              return (task.tags || []).includes(filterId)
             })
 
       return matchesTimeline && matchesStatus

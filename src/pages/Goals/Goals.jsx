@@ -43,12 +43,15 @@ function MetaDetail({ meta, onBack }) {
     return null
   }
 
-  const progressPercent = Math.round(meta.progress * 100)
+  const progressPercent = Math.round((meta.progress || 0) * 100)
   const infoItems = [
     { label: 'Status', value: meta.status },
     { label: 'Trimestre', value: meta.trimester },
     { label: 'Área', value: meta.areaLabel },
   ]
+
+  // Garante que projetos seja um array
+  const projectsList = meta.projects || []
 
   return (
     <section className="metaDetail">
@@ -111,29 +114,33 @@ function MetaDetail({ meta, onBack }) {
               <span>Status</span>
             </div>
             <ul>
-              {meta.projects.map((project) => {
-                const statusClass = project.status
-                  .normalize('NFD')
-                  .replace(/[\u0300-\u036f]/g, '')
-                  .replace(/\s+/g, '')
-                  .toLowerCase()
+              {projectsList.length === 0 ? (
+                <li style={{ padding: '1rem', color: 'var(--text-tertiary)' }}>Nenhum projeto vinculado</li>
+              ) : (
+                projectsList.map((project) => {
+                  const statusClass = (project.status || 'active')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/\s+/g, '')
+                    .toLowerCase()
 
-                return (
-                  <li key={project.id} className="metaProject">
-                    <div className="metaProject__info">
-                      <strong>{project.name}</strong>
-                    </div>
-                    <div className="metaProject__statusWrap">
-                      <span className={`metaProject__status metaProject__status--${statusClass}`}>
-                        {project.status}
-                      </span>
-                      <button type="button" className="metaProject__cta">
-                        Abrir
-                      </button>
-                    </div>
-                  </li>
-                )
-              })}
+                  return (
+                    <li key={project.id} className="metaProject">
+                      <div className="metaProject__info">
+                        <strong>{project.title}</strong>
+                      </div>
+                      <div className="metaProject__statusWrap">
+                        <span className={`metaProject__status metaProject__status--${statusClass}`}>
+                          {project.status || 'Ativo'}
+                        </span>
+                        <button type="button" className="metaProject__cta">
+                          Abrir
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })
+              )}
             </ul>
           </div>
           <div className="metaDetail__projectsTimeline">
@@ -144,12 +151,8 @@ function MetaDetail({ meta, onBack }) {
 
             <div className="metaTimeline__gantt">
               <div className="metaTimeline__ganttHeader">
-                <strong>janeiro de 2026</strong>
-                <div className="metaTimeline__ganttDays">
-                  {[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day) => (
-                    <span key={day}>{day}</span>
-                  ))}
-                </div>
+                <strong>Linha do Tempo</strong>
+                {/* Visualização simplificada da timeline */}
               </div>
 
               <div className="metaTimeline__ganttBody">
@@ -158,7 +161,7 @@ function MetaDetail({ meta, onBack }) {
                     <div
                       key={event.id}
                       className="metaTimeline__ganttBar"
-                      style={{ left: `${index * 220 + 24}px`, width: '200px' }}
+                      style={{ left: `${index * 150 + 24}px`, width: '140px' }}
                     >
                       <div className="metaTimeline__ganttBarHeader">
                         <span className="metaTimeline__ganttIcon" aria-hidden="true" />
@@ -241,7 +244,7 @@ function AreaDetail({ area, onBack }) {
                 <div className="kanbanColumn__body">
                   {column.metas.length === 0 && <p className="kanbanColumn__empty">Ainda sem metas neste trimestre</p>}
                   {column.metas.map((meta) => {
-                    const progressPercent = Math.round(meta.progress * 100)
+                    const progressPercent = Math.round((meta.progress || 0) * 100)
                     const isActive = meta.id === activeMetaId
                     return (
                       <article
@@ -284,7 +287,8 @@ function AreaDetail({ area, onBack }) {
 }
 
 export default function Goals({ onNavigate, onLogout, user }) {
-  const { goals, dreamMaps, addGoal, addDreamMap, deleteDreamMap, loading } = useApp()
+  // CORREÇÃO: Adicionado 'projects' aqui para vincular nas metas
+  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
@@ -307,16 +311,20 @@ export default function Goals({ onNavigate, onLogout, user }) {
             const start = new Date(goal.startDate)
             const startMonth = start.getMonth() + 1
             const quarterIndex = Math.ceil(startMonth / 3)
-            trimester = TRIMESTERS[quarterIndex - 1]
+            trimester = TRIMESTERS[quarterIndex - 1] || '4º Trimestre'
           }
+
+          // CORREÇÃO: Filtrar projetos vinculados a esta meta
+          const goalProjects = (projects || []).filter(p => p.goalId === goal.id || p.goal_id === goal.id)
           
           return {
             ...goal,
             trimester,
             areaLabel: area.label,
-            status: goal.progress >= 1 ? 'Concluída' : goal.progress > 0 ? 'Em progresso' : 'Não iniciada',
+            status: (goal.progress || 0) >= 1 ? 'Concluída' : (goal.progress || 0) > 0 ? 'Em progresso' : 'Não iniciada',
             reason: goal.target || 'Sem descrição',
             intention: goal.target || 'Sem intenção definida',
+            projects: goalProjects, // Adiciona os projetos à meta
             timeline: [
               { id: 1, label: 'Início', date: goal.startDate ? new Date(goal.startDate).toLocaleDateString('pt-BR') : 'A definir' },
               { id: 2, label: 'Fim', date: goal.endDate ? new Date(goal.endDate).toLocaleDateString('pt-BR') : 'A definir' },
@@ -337,7 +345,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
         metas: areaGoals,
       }
     })
-  }, [goals])
+  }, [goals, projects]) // Adicionado projects nas dependências
 
   const selectedArea = LIFE_AREAS.find((area) => area.id === selectedAreaId) ?? null
 
