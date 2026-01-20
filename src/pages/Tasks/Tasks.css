@@ -1,3 +1,4 @@
+/* --- BOTÃO DE EDIÇÃO NO MODAL --- */
 .taskModal__editBtn {
   background: linear-gradient(180deg, #ffb300 0%, #ff9100 100%);
   color: #fff;
@@ -13,6 +14,7 @@
   transform: translateY(-2px);
   box-shadow: 0 14px 40px rgba(255, 145, 0, 0.22);
 }
+
 .tasksPage {
   padding: var(--pad-page-y) var(--pad-page-x);
   display: flex;
@@ -20,283 +22,240 @@
   gap: 24px;
 }
 
+/* =========================================
+   NOVO ESTILO DO POMODORO (CORRIGIDO)
+   ========================================= */
+
 .pomodoroCard {
-  background: #000000 !important;
-  border-radius: 36px;
-  padding: 48px 42px;
+  background: #09090b !important; /* Quase preto, mais suave */
+  border-radius: 24px;
+  padding: 32px;
   color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  justify-content: center;
+  margin-bottom: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
-.pomodoroCard__brand {
+/* Cabeçalho: Técnicas e Config */
+.pomodoroCard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.pomodoroCard__techniques {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.techBtn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  align-self: flex-start;
-  opacity: 0.95;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.pomodoroCard__configBtn {
-  position: absolute;
-  top: 36px;
-  right: 42px;
-  border: 0;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.6);
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
+.techBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.techBtn--active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.configBtn {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(8px);
+  transition: all 0.2s;
 }
 
-.pomodoroCard__configBtn:hover {
-  background: rgba(255, 255, 255, 0.15);
+.configBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
-.pomodoroCard__quote {
-  margin: 8px 0 16px;
-  font-size: 13px;
-  font-style: italic;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.45);
+/* Display Central */
+.pomodoroCard__display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   width: 100%;
-  letter-spacing: 0.02em;
 }
 
-.pomodoroCard__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.pomodoroCard__focus {
+  margin-bottom: 12px;
+  animation: fadeIn 0.5s ease;
 }
 
-.pomodoroCard__logo {
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2));
-}
-
-.pomodoroCard__brandText {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.pomodoroCard__brandSub {
-  margin: 0;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+.focusLabel {
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 4px;
+  display: block;
 }
 
-.pomodoroCard__timer {
-  font-size: 128px;
-  font-weight: 200;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin: 24px 0 16px;
+.focusTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
   color: #fff;
 }
 
 .pomodoroCard__message {
-  margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 400;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.65);
-  max-width: 540px;
-  line-height: 1.5;
-  letter-spacing: 0.01em;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 16px;
 }
 
+.pomodoroCard__timer {
+  font-size: 96px; 
+  font-weight: 200;
+  line-height: 1;
+  font-variant-numeric: tabular-nums; /* Evita pulo dos números */
+  letter-spacing: -2px;
+  color: #fff;
+  margin: 16px 0;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+}
+
+/* Status e Sessões */
+.pomodoroCard__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.statusPill {
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusPill.focus {
+  background: rgba(255, 72, 0, 0.2);
+  color: #ff4800;
+  border: 1px solid rgba(255, 72, 0, 0.3);
+}
+
+.statusPill.break {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.statusPill.longBreak {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.sessionCount {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Botões de Controle (Correção do esticamento) */
 .pomodoroCard__controls {
   display: flex;
-  gap: 14px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
 }
 
 .pomodoroCard__btn {
-  border: 0;
-  border-radius: 9999px;
-  padding: 14px 36px;
-  font-size: 15px;
+  height: 56px; /* Altura fixa para não esticar */
+  border-radius: 28px;
+  border: none;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
 }
 
-.pomodoroCard__btn--primary {
+.pomodoroCard__btn:active {
+  transform: scale(0.96);
+}
+
+.pomodoroCard__btn.play,
+.pomodoroCard__btn.pause {
   background: #fff;
-  color: #0a0a0a;
+  color: #000;
+  padding: 0 40px;
+  min-width: 160px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
 }
 
-.pomodoroCard__btn--primary:hover {
-  transform: translateY(-2px);
-  background: #f8f8f8;
+.pomodoroCard__btn.play:hover,
+.pomodoroCard__btn.pause:hover {
+  background: #f0f0f0;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.25);
 }
 
-.pomodoroCard__btn--primary:active {
-  transform: translateY(0);
-}
-
-.pomodoroCard__btn--secondary {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
-}
-
-.pomodoroCard__btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+.pomodoroCard__btn.reset {
+  width: 56px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  transform: translateY(-2px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.pomodoroCard__btn--secondary:active {
-  transform: translateY(0);
+.pomodoroCard__btn.reset:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.pomodoroCard__stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 20px 32px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  margin: 8px 0;
-  width: 100%;
-  max-width: 400px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.pomodoroCard__statsLabel {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.pomodoroCard__statsValue {
-  margin: 0;
-  font-size: 48px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: #fff;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.pomodoroCard__statsSubtext {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.45);
-  letter-spacing: 0.01em;
-}
-
-.pomodoroCard__focused {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px 32px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  margin: 8px 0;
-  width: 100%;
-  max-width: 400px;
-}
-
-.pomodoroCard__focusedLabel {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.pomodoroCard__focusedTitle {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  text-align: center;
-  line-height: 1.4;
-}
-
-.pomodoroCard__sequence {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.pomodoroCard__bullet {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-}
-
-.pomodoroCard__bullet--completed {
-  background: #fff;
-  border-color: #fff;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
-}
-
-.pomodoroCard__bullet--active {
-  background: rgba(255, 255, 255, 0.4);
-  border-color: #fff;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-  animation: pulseBullet 2s ease-in-out infinite;
-}
-
-@keyframes pulseBullet {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.9;
-  }
-}
+/* =========================================
+   MODAL DE CONFIGURAÇÃO DO POMODORO
+   ========================================= */
 
 .pomodoroConfigModal {
   position: fixed;
@@ -340,12 +299,6 @@
   font-size: 24px;
 }
 
-.pomodoroConfigModal__header p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
 .pomodoroConfigModal__close {
   border: 0;
   background: rgba(0, 0, 0, 0.05);
@@ -366,61 +319,6 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-
-.pomodoroConfigModal__section label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 12px;
-}
-
-.pomodoroConfigModal__techniques {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.pomodoroTechnique {
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 16px;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pomodoroTechnique:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
-}
-
-.pomodoroTechnique--active {
-  border-color: #111827;
-  background: #f3f4f6;
-}
-
-.pomodoroTechnique strong {
-  display: block;
-  font-size: 15px;
-  color: #111827;
-}
-
-.pomodoroTechnique span {
-  display: block;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.pomodoroConfigModal__inputs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
 }
 
 .pomodoroInput {
@@ -486,6 +384,10 @@
   background: #e5e7eb;
 }
 
+/* =========================================
+   ESTILOS DE FILTROS E LISTA DE TAREFAS
+   ========================================= */
+
 .tasksListShell__filters {
   display: flex;
   flex-wrap: wrap;
@@ -532,45 +434,16 @@
   background: #2a2b32;
 }
 
-.tasksFilters__chip--active[data-tone='stone'] {
-  background: #6b6f7c;
-}
-
-.tasksFilters__chip--active[data-tone='stone']:hover {
-  background: #7a7e8b;
-}
-
-.tasksFilters__chip--active[data-tone='mint'] {
-  background: #0f9d92;
-}
-
-.tasksFilters__chip--active[data-tone='mint']:hover {
-  background: #12aea2;
-}
-
-.tasksFilters__chip--active[data-tone='sage'] {
-  background: #3c8b5f;
-}
-
-.tasksFilters__chip--active[data-tone='sage']:hover {
-  background: #47a070;
-}
-
-.tasksFilters__chip--active[data-tone='warning'] {
-  background: #c2410c;
-}
-
-.tasksFilters__chip--active[data-tone='warning']:hover {
-  background: #dc4a0e;
-}
-
-.tasksFilters__chip--active[data-tone='dawn'] {
-  background: #f2c94c;
-}
-
-.tasksFilters__chip--active[data-tone='dawn']:hover {
-  background: #f5d46d;
-}
+.tasksFilters__chip--active[data-tone='stone'] { background: #6b6f7c; }
+.tasksFilters__chip--active[data-tone='stone']:hover { background: #7a7e8b; }
+.tasksFilters__chip--active[data-tone='mint'] { background: #0f9d92; }
+.tasksFilters__chip--active[data-tone='mint']:hover { background: #12aea2; }
+.tasksFilters__chip--active[data-tone='sage'] { background: #3c8b5f; }
+.tasksFilters__chip--active[data-tone='sage']:hover { background: #47a070; }
+.tasksFilters__chip--active[data-tone='warning'] { background: #c2410c; }
+.tasksFilters__chip--active[data-tone='warning']:hover { background: #dc4a0e; }
+.tasksFilters__chip--active[data-tone='dawn'] { background: #f2c94c; }
+.tasksFilters__chip--active[data-tone='dawn']:hover { background: #f5d46d; }
 
 .tasksFilters__icon {
   width: 22px;
@@ -613,15 +486,6 @@
   line-height: 28px;
 }
 
-.tasksListShell__legend {
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 16px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: rgba(13, 13, 18, 0.55);
-}
-
 .tasksList {
   list-style: none;
   margin: 0;
@@ -630,6 +494,10 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* =========================================
+   ESTILO DO CARD DE TAREFA
+   ========================================= */
 
 .taskCard {
   display: flex;
@@ -656,6 +524,13 @@
 
 .taskCard--done {
   background: #f7f8fb;
+}
+
+/* Estado de Foco Ativo no Card */
+.taskCard--focused {
+  border-color: #111219;
+  background: #fafafa;
+  box-shadow: 0 0 0 2px rgba(17, 18, 25, 0.1);
 }
 
 .taskCard__checkbox {
@@ -767,6 +642,7 @@
   align-items: center;
 }
 
+/* Botão de Foco na Tarefa */
 .taskCard__focusBtn {
   display: inline-flex;
   align-items: center;
@@ -790,24 +666,15 @@
   transform: translateY(-1px);
 }
 
-.taskCard__focusBtn--active {
+.taskCard__focusBtn.active {
   background: #1c1d24;
   border-color: #1c1d24;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.taskCard__focusBtn--active:hover {
+.taskCard__focusBtn.active:hover {
   background: #2a2b32;
-  border-color: #2a2b32;
-  transform: translateY(-1px);
-}
-
-.taskCard__focusBtn svg {
-  transition: transform 0.3s ease;
-}
-
-.taskCard__focusBtn--active svg {
-  transform: rotate(72deg);
 }
 
 .taskChip {
@@ -822,121 +689,16 @@
   gap: 6px;
 }
 
-.taskChip--priority {
-  border-color: transparent;
-  color: #111219;
-}
-
-.taskChip--priority-baixa {
-  background: #e5e7eb;
-  color: #3f3f46;
-}
-
-.taskChip--priority-normal {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.taskChip--priority-alta {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.taskChip--priority-urgente {
-  background: #fee2e2;
-  color: #b91c1c;
-  box-shadow: none;
-  border-color: #fecaca;
-}
-
-.taskChip--priority-delegar {
-  background: #e0e0e5;
-  color: #4b5563;
-}
-
-.taskChip--status {
-  border-color: #e1e1e6;
-}
-
-.taskChip--dueState {
-  border-color: #e1e1e6;
-  background: #eef0f4;
-  color: #1b1c24;
-}
-
-.taskChip--dueState-ok {
-  border-color: #e1e1e6;
-  background: #eef0f4;
-  color: #1b1c24;
-}
-
-.taskChip--dueState-none {
-  background: #e5e7eb;
-  color: #3f3f46;
-  border-color: #e1e1e6;
-}
-
-.taskChip--dueState-done {
-  background: #e5e7eb;
-  color: #3f3f46;
-  border-color: #e1e1e6;
-}
-
-.taskChip--dueState-late {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
+/* Cores de Prioridade */
+.taskChip.priority-baixa { background: #e5e7eb; color: #3f3f46; border-color: transparent; }
+.taskChip.priority-média { background: #dbeafe; color: #1d4ed8; border-color: transparent; }
+.taskChip.priority-alta { background: #fef3c7; color: #92400e; border-color: transparent; }
+.taskChip.priority-urgente { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
 
 .taskCard__dueText {
   font-size: 12px;
   letter-spacing: 0.02em;
   color: rgba(13, 13, 18, 0.55);
-}
-
-.taskCard__footer {
-  display: grid;
-  grid-template-columns: minmax(180px, 2fr) auto auto;
-  gap: 16px;
-  align-items: center;
-}
-
-.taskCard__progress {
-  height: 6px;
-  border-radius: 999px;
-  background: #f2f2f5;
-  overflow: hidden;
-  border: 1px solid #ececf0;
-}
-
-.taskCard__progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #111219;
-  box-shadow: none;
-}
-
-.taskCard__xp {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(13, 13, 18, 0.6);
-}
-
-.taskCard__pomodoros {
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: rgba(13, 13, 18, 0.7);
-  font-weight: 600;
-}
-
-.taskCard__energy {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(13, 13, 18, 0.6);
-  text-align: right;
 }
 
 .taskCard__actions {
@@ -984,17 +746,6 @@
   border-radius: 22px;
   background: #f7f7fa;
   border: 1px solid #ececec;
-}
-
-.taskCard__detailsHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(0, 0, 0, 0.55);
-  margin-bottom: 12px;
 }
 
 .subtasksList {
@@ -1047,10 +798,6 @@
   color: #0d0d12;
 }
 
-.subtask__content small {
-  color: rgba(13, 13, 18, 0.5);
-}
-
 .subtask--done {
   border-color: rgba(0, 0, 0, 0.4);
   background: rgba(59, 130, 246, 0.12);
@@ -1065,6 +812,7 @@
   transform: rotate(-45deg) scale(1);
 }
 
+/* Efeitos de Celebração */
 .taskCard__celebration {
   position: absolute;
   inset: 0;
@@ -1091,24 +839,8 @@
   animation: confettiFall 1100ms ease-out forwards;
 }
 
-.taskCard__confetti--one {
-  left: 30%;
-  top: 0;
-}
-
-.taskCard__confetti--two {
-  left: 60%;
-  top: -10px;
-  background: #38bdf8;
-  animation-delay: 60ms;
-}
-
-.taskCard__confetti--three {
-  left: 45%;
-  top: -5px;
-  background: #f472b6;
-  animation-delay: 120ms;
-}
+.taskCard__confetti--one { left: 30%; top: 0; }
+.taskCard__confetti--two { left: 60%; top: -10px; background: #38bdf8; animation-delay: 60ms; }
 
 .taskCard--celebrate {
   border-color: rgba(59, 130, 246, 0.6);
@@ -1116,26 +848,18 @@
 }
 
 @keyframes confettiFall {
-  to {
-    transform: translateY(90px) rotate(180deg);
-    opacity: 0;
-  }
+  to { transform: translateY(90px) rotate(180deg); opacity: 0; }
 }
 
 @keyframes xpPop {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.9);
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-6px) scale(1.1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.8);
-  }
+  0% { opacity: 0; transform: translateY(10px) scale(0.9); }
+  30% { opacity: 1; transform: translateY(-6px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.8); }
 }
+
+/* =========================================
+   MODAL DE DETALHES/EDIÇÃO DA TAREFA
+   ========================================= */
 
 .taskModal {
   position: fixed;
@@ -1168,28 +892,13 @@
   gap: 18px;
 }
 
-.taskModal__header h3 {
-  margin: 4px 0;
-}
-
 .taskModal__header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
 }
 
-.taskModal__context {
-  margin: 0;
-  color: #5b5a64;
-}
-
-.taskModal__eyebrow {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 12px;
-  color: #4b5563;
-}
+.taskModal__header h3 { margin: 4px 0; }
 
 .taskModal__close {
   border: 0;
@@ -1208,56 +917,13 @@
   font-size: 14px;
 }
 
-.taskModal__clarifyTitle {
-  margin: 0 0 8px;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #5b5a64;
-}
-
-.taskModal__subtasks .subtask {
-  border-color: rgba(13, 13, 18, 0.08);
-  background: rgba(13, 13, 18, 0.04);
-  color: #0d0d12;
-}
-
-.taskModal__subtasks .subtask__check {
-  border-color: rgba(13, 13, 18, 0.25);
-}
-
-.taskModal__subtasks .subtask__check::after {
-  border-color: rgba(13, 13, 18, 0.9);
-}
-
-.taskModal__subtasks .subtask__content p {
-  color: #0d0d12;
-}
-
-.taskModal__subtasks .subtask__content small {
-  color: #5b5a64;
-}
-
-.taskModal__subtasks .subtask--done {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.taskModal__footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-/* Modal action buttons */
 .taskModal__footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .taskModal__closeBtn {
@@ -1267,10 +933,6 @@
   padding: 8px 14px;
   border-radius: 10px;
   cursor: pointer;
-}
-
-.taskModal__closeBtn:hover {
-  background: rgba(13,13,18,0.03);
 }
 
 .taskModal__deleteBtn {
@@ -1298,52 +960,19 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Responsividade */
 @media (max-width: 1200px) {
-  .tasksPage {
-    padding: 24px 32px;
-  }
-
-  .taskCard__header {
-    flex-direction: column;
-  }
-
-  .taskCard__badges {
-    justify-content: flex-start;
-  }
-
-  .taskCard__footer {
-    grid-template-columns: 1fr;
-    text-align: left;
-  }
+  .tasksPage { padding: 24px 32px; }
+  .taskCard__header { flex-direction: column; }
+  .taskCard__badges { justify-content: flex-start; }
+  .taskCard__footer { grid-template-columns: 1fr; text-align: left; }
 }
 
 @media (max-width: 768px) {
-  .tasksPage {
-    padding: 20px 16px;
-  }
-
-  .tasksListShell__filters {
-    border-radius: 32px;
-  }
-
-  .tasksListShell {
-    border-radius: 32px;
-    padding: 24px;
-  }
-
-  .taskCard {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .taskCard__checkbox {
-    width: 58px;
-    height: 58px;
-    border-radius: 999px;
-    align-self: flex-start;
-  }
-
-  .taskCard__context {
-    flex-direction: column;
-  }
+  .tasksPage { padding: 20px 16px; }
+  .tasksListShell__filters { border-radius: 32px; }
+  .tasksListShell { border-radius: 32px; padding: 24px; }
+  .taskCard { flex-direction: column; align-items: stretch; }
+  .taskCard__checkbox { width: 58px; height: 58px; align-self: flex-start; }
+  .taskCard__context { flex-direction: column; }
 }
