@@ -18,15 +18,7 @@ export function useApp() {
 }
 
 export function AppProvider({ children, userId }) {
-  useEffect(() => {
-    try {
-      if (userId) console.debug('AppProvider: userId changed =>', userId)
-    } catch (err) {
-      // ignore
-    }
-  }, [userId])
-
-  // State for all entities
+  // State for all entities - Inicializado sempre com Array Vazio
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [goals, setGoals] = useState([])
@@ -41,7 +33,6 @@ export function AppProvider({ children, userId }) {
     if (userId) {
       loadAllData()
     } else {
-      // Clear data when logged out
       setTasks([])
       setProjects([])
       setGoals([])
@@ -58,7 +49,6 @@ export function AppProvider({ children, userId }) {
     
     setLoading(true)
     try {
-      // Usamos allSettled para garantir que se um falhar, os outros carregam
       const results = await Promise.allSettled([
         taskService.getTasks(userId),
         projectService.getProjects(userId),
@@ -69,23 +59,28 @@ export function AppProvider({ children, userId }) {
         dreamMapService.getDreamMaps(userId),
       ])
       
-      // Helper para extrair dados ou retornar array vazio em caso de erro
-      const getVal = (res, label) => {
-        if (res.status === 'fulfilled') return res.value
-        console.error(`Falha ao carregar ${label}:`, res.reason)
+      // FUNÇÃO DE SEGURANÇA: Garante que o retorno seja sempre um Array
+      const safeArray = (res, label) => {
+        if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+          return res.value
+        }
+        if (res.status === 'rejected') {
+          console.error(`Erro ao carregar ${label}:`, res.reason)
+        }
+        // Se falhou ou não é array, retorna vazio para não quebrar a tela
         return []
       }
 
-      setTasks(getVal(results[0], 'tasks'))
-      setProjects(getVal(results[1], 'projects'))
-      setGoals(getVal(results[2], 'goals'))
-      setHabits(getVal(results[3], 'habits'))
-      setFinances(getVal(results[4], 'finances'))
-      setStudies(getVal(results[5], 'studies'))
-      setDreamMaps(getVal(results[6], 'dreamMaps'))
+      setTasks(safeArray(results[0], 'tasks'))
+      setProjects(safeArray(results[1], 'projects'))
+      setGoals(safeArray(results[2], 'goals'))
+      setHabits(safeArray(results[3], 'habits'))
+      setFinances(safeArray(results[4], 'finances'))
+      setStudies(safeArray(results[5], 'studies'))
+      setDreamMaps(safeArray(results[6], 'dreamMaps'))
 
     } catch (error) {
-      console.error('Erro geral no carregamento:', error)
+      console.error('Erro fatal no carregamento:', error)
     } finally {
       setLoading(false)
     }
@@ -94,374 +89,201 @@ export function AppProvider({ children, userId }) {
   // Task Actions
   const addTask = async (task) => {
     if (!userId) return
-    try {
-      const newTask = await taskService.createTask(userId, task)
-      setTasks((prev) => [newTask, ...prev])
-      return newTask
-    } catch (error) {
-      console.error('Error adding task:', error)
-      throw error
-    }
+    const newTask = await taskService.createTask(userId, task)
+    setTasks(prev => [newTask, ...prev])
+    return newTask
   }
 
   const updateTask = async (id, updates) => {
     if (!userId) return
-    try {
-      const updatedTask = await taskService.updateTask(id, userId, updates)
-      setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)))
-    } catch (error) {
-      console.error('Error updating task:', error)
-      throw error
-    }
+    const updatedTask = await taskService.updateTask(id, userId, updates)
+    setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))
   }
 
   const deleteTask = async (id) => {
     if (!userId) return
-    try {
-      await taskService.deleteTask(id, userId)
-      setTasks((prev) => prev.filter((t) => t.id !== id))
-    } catch (error) {
-      console.error('Error deleting task:', error)
-      throw error
-    }
+    await taskService.deleteTask(id, userId)
+    setTasks(prev => prev.filter(t => t.id !== id))
   }
 
   // Project Actions
   const addProject = async (project) => {
     if (!userId) return
-    try {
-      const newProject = await projectService.createProject(userId, project)
-      setProjects((prev) => [newProject, ...prev])
-      return newProject
-    } catch (error) {
-      console.error('Error adding project:', error)
-      throw error
-    }
+    const newProject = await projectService.createProject(userId, project)
+    setProjects(prev => [newProject, ...prev])
+    return newProject
   }
 
   const updateProject = async (id, updates) => {
     if (!userId) return
-    try {
-      const updatedProject = await projectService.updateProject(id, userId, updates)
-      setProjects((prev) => prev.map((p) => (p.id === id ? updatedProject : p)))
-    } catch (error) {
-      console.error('Error updating project:', error)
-      throw error
-    }
+    const updatedProject = await projectService.updateProject(id, userId, updates)
+    setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
   }
 
   const deleteProject = async (id) => {
     if (!userId) return
-    try {
-      await projectService.deleteProject(id, userId)
-      setProjects((prev) => prev.filter((p) => p.id !== id))
-    } catch (error) {
-      console.error('Error deleting project:', error)
-      throw error
-    }
+    await projectService.deleteProject(id, userId)
+    setProjects(prev => prev.filter(p => p.id !== id))
   }
 
   // Goal Actions
   const addGoal = async (goal) => {
     if (!userId) return
-    try {
-      const newGoal = await goalService.createGoal(userId, goal)
-      setGoals((prev) => [newGoal, ...prev])
-      return newGoal
-    } catch (error) {
-      console.error('Error adding goal:', error)
-      throw error
-    }
+    const newGoal = await goalService.createGoal(userId, goal)
+    setGoals(prev => [newGoal, ...prev])
+    return newGoal
   }
 
   const updateGoal = async (id, updates) => {
     if (!userId) return
-    try {
-      const updatedGoal = await goalService.updateGoal(id, userId, updates)
-      setGoals((prev) => prev.map((g) => (g.id === id ? updatedGoal : g)))
-    } catch (error) {
-      console.error('Error updating goal:', error)
-      throw error
-    }
+    const updatedGoal = await goalService.updateGoal(id, userId, updates)
+    setGoals(prev => prev.map(g => g.id === id ? updatedGoal : g))
   }
 
   const deleteGoal = async (id) => {
     if (!userId) return
-    try {
-      await goalService.deleteGoal(id, userId)
-      setGoals((prev) => prev.filter((g) => g.id !== id))
-    } catch (error) {
-      console.error('Error deleting goal:', error)
-      throw error
-    }
+    await goalService.deleteGoal(id, userId)
+    setGoals(prev => prev.filter(g => g.id !== id))
   }
 
   // Habit Actions
   const addHabit = async (habit) => {
     if (!userId) return
-    try {
-      const newHabit = await habitService.createHabit(userId, habit)
-      setHabits((prev) => [newHabit, ...prev])
-      return newHabit
-    } catch (error) {
-      console.error('Error adding habit:', error)
-      throw error
-    }
+    const newHabit = await habitService.createHabit(userId, habit)
+    setHabits(prev => [newHabit, ...prev])
+    return newHabit
   }
 
   const completeHabit = async (id) => {
     if (!userId) return
-    try {
-      const habit = habits.find((h) => h.id === id)
-      if (!habit) return
+    const habit = habits.find((h) => h.id === id)
+    if (!habit) return
 
-      const today = new Date().toISOString().split('T')[0]
-      
-      // CORREÇÃO: Usar o array 'completions' normalizado pelo serviço
-      // Garante que é sempre array para evitar erro .includes
-      const completedDates = Array.isArray(habit.completions) 
-        ? [...habit.completions] 
-        : []
-      
-      if (!completedDates.includes(today)) {
-        completedDates.push(today)
-        const currentStreak = (habit.currentStreak || 0) + 1
-        const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+    const today = new Date().toISOString().split('T')[0]
+    const completedDates = Array.isArray(habit.completions) ? [...habit.completions] : []
+    
+    if (!completedDates.includes(today)) {
+      completedDates.push(today)
+      const currentStreak = (habit.currentStreak || 0) + 1
+      const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
 
-        // Envia como array (completions), o serviço normaliza se precisar
-        const updatedHabit = await habitService.updateHabit(id, userId, {
-          ...habit,
-          completions: completedDates, 
-          currentStreak,
-          bestStreak,
-        })
-        
-        setHabits((prev) => prev.map((h) => (h.id === id ? updatedHabit : h)))
-      }
-    } catch (error) {
-      console.error('Error completing habit:', error)
-      throw error
+      const updatedHabit = await habitService.updateHabit(id, userId, {
+        ...habit,
+        completions: completedDates,
+        currentStreak,
+        bestStreak,
+      })
+      
+      setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
     }
   }
 
   const updateHabit = async (id, updates) => {
     if (!userId) return
-    try {
-      const updatedHabit = await habitService.updateHabit(id, userId, updates)
-      setHabits((prev) => prev.map((h) => (h.id === id ? updatedHabit : h)))
-    } catch (error) {
-      console.error('Error updating habit:', error)
-      throw error
-    }
+    const updatedHabit = await habitService.updateHabit(id, userId, updates)
+    setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
   }
 
   const deleteHabit = async (id) => {
     if (!userId) return
-    try {
-      await habitService.deleteHabit(id, userId)
-      setHabits((prev) => prev.filter((h) => h.id !== id))
-    } catch (error) {
-      console.error('Error deleting habit:', error)
-      throw error
-    }
+    await habitService.deleteHabit(id, userId)
+    setHabits(prev => prev.filter(h => h.id !== id))
   }
 
   // Finance Actions
   const addFinance = async (finance) => {
     if (!userId) return
-    try {
-      const newFinance = await financeService.createTransaction(userId, finance)
-      setFinances((prev) => [newFinance, ...prev])
-      return newFinance
-    } catch (error) {
-      console.error('Error adding finance:', error)
-      throw error
-    }
+    const newFinance = await financeService.createTransaction(userId, finance)
+    setFinances(prev => [newFinance, ...prev])
+    return newFinance
   }
 
   const updateFinance = async (id, updates) => {
     if (!userId) return
-    try {
-      const updatedFinance = await financeService.updateTransaction(id, userId, updates)
-      setFinances((prev) => prev.map((f) => (f.id === id ? updatedFinance : f)))
-    } catch (error) {
-      console.error('Error updating finance:', error)
-      throw error
-    }
+    const updatedFinance = await financeService.updateTransaction(id, userId, updates)
+    setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
   }
 
   const deleteFinance = async (id) => {
     if (!userId) return
-    try {
-      await financeService.deleteTransaction(id, userId)
-      setFinances((prev) => prev.filter((f) => f.id !== id))
-    } catch (error) {
-      console.error('Error deleting finance:', error)
-      throw error
-    }
+    await financeService.deleteTransaction(id, userId)
+    setFinances(prev => prev.filter(f => f.id !== id))
   }
 
   // Study Actions
   const addStudy = async (study) => {
     if (!userId) return
-    try {
-      const newStudy = await studyService.createStudy(userId, study)
-      // Reload para pegar com modules
-      const allStudies = await studyService.getStudies(userId)
-      setStudies(allStudies)
-      return newStudy
-    } catch (error) {
-      console.error('Error adding study:', error)
-      throw error
-    }
+    const newStudy = await studyService.createStudy(userId, study)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+    return newStudy
   }
 
   const updateStudy = async (id, updates) => {
     if (!userId) return
-    try {
-      await studyService.updateStudy(id, updates)
-      const allStudies = await studyService.getStudies(userId)
-      setStudies(allStudies)
-    } catch (error) {
-      console.error('Error updating study:', error)
-      throw error
-    }
+    await studyService.updateStudy(id, updates)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
   }
 
   const deleteStudy = async (id) => {
     if (!userId) return
-    try {
-      await studyService.deleteStudy(id)
-      setStudies((prev) => prev.filter((s) => s.id !== id))
-    } catch (error) {
-      console.error('Error deleting study:', error)
-      throw error
-    }
+    await studyService.deleteStudy(id)
+    setStudies(prev => prev.filter(s => s.id !== id))
   }
 
   const addStudyModule = async (studyItemId, moduleData) => {
     if (!userId) return
-    try {
-      await studyService.createModule(studyItemId, moduleData)
-      const allStudies = await studyService.getStudies(userId)
-      setStudies(allStudies)
-    } catch (error) {
-      console.error('Error adding module:', error)
-      throw error
-    }
+    await studyService.createModule(studyItemId, moduleData)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
   }
 
   const addStudyLesson = async (moduleId, lessonData) => {
     if (!userId) return
-    try {
-      await studyService.createLesson(moduleId, lessonData)
-      const allStudies = await studyService.getStudies(userId)
-      setStudies(allStudies)
-    } catch (error) {
-      console.error('Error adding lesson:', error)
-      throw error
-    }
+    await studyService.createLesson(moduleId, lessonData)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
   }
 
   const toggleStudyLesson = async (lessonId, isCompleted) => {
     if (!userId) return
-    try {
-      await studyService.toggleLessonComplete(lessonId, isCompleted)
-      const allStudies = await studyService.getStudies(userId)
-      setStudies(allStudies)
-    } catch (error) {
-      console.error('Error toggling lesson:', error)
-      throw error
-    }
+    await studyService.toggleLessonComplete(lessonId, isCompleted)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
   }
 
   // Dream Map Actions
   const addDreamMap = async (dreamMap, imageFile) => {
     if (!userId) return
-    try {
-      // Upload image first
-      const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
-      
-      // Create dream map with image URL
-      const newDreamMap = await dreamMapService.createDreamMap(userId, {
-        ...dreamMap,
-        imageUrl,
-      })
-      setDreamMaps([newDreamMap, ...dreamMaps])
-      return newDreamMap
-    } catch (error) {
-      console.error('Error adding dream map:', error)
-      throw error
-    }
+    const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
+    const newDreamMap = await dreamMapService.createDreamMap(userId, { ...dreamMap, imageUrl })
+    setDreamMaps([newDreamMap, ...dreamMaps])
+    return newDreamMap
   }
 
   const updateDreamMap = async (id, updates) => {
     if (!userId) return
-    try {
-      const updated = await dreamMapService.updateDreamMap(id, userId, updates)
-      setDreamMaps(dreamMaps.map((dm) => (dm.id === id ? updated : dm)))
-    } catch (error) {
-      console.error('Error updating dream map:', error)
-      throw error
-    }
+    const updated = await dreamMapService.updateDreamMap(id, userId, updates)
+    setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
   }
 
   const deleteDreamMap = async (id) => {
     if (!userId) return
-    try {
-      await dreamMapService.deleteDreamMap(id, userId)
-      setDreamMaps(dreamMaps.filter((dm) => dm.id !== id))
-    } catch (error) {
-      console.error('Error deleting dream map:', error)
-      throw error
-    }
+    await dreamMapService.deleteDreamMap(id, userId)
+    setDreamMaps(dreamMaps.filter(dm => dm.id !== id))
   }
 
   const value = {
-    // CORREÇÃO: Adicionado userId ao contexto
     userId,
-
-    // State
-    tasks,
-    projects,
-    goals,
-    habits,
-    finances,
-    studies,
-    dreamMaps,
-    loading,
-    // Task Actions
-    addTask,
-    updateTask,
-    deleteTask,
-    // Project Actions
-    addProject,
-    updateProject,
-    deleteProject,
-    // Goal Actions
-    addGoal,
-    updateGoal,
-    deleteGoal,
-    // Habit Actions
-    addHabit,
-    completeHabit,
-    updateHabit,
-    deleteHabit,
-    // Finance Actions
-    addFinance,
-    updateFinance,
-    deleteFinance,
-    // Study Actions
-    addStudy,
-    updateStudy,
-    deleteStudy,
-    addStudyModule,
-    addStudyLesson,
-    toggleStudyLesson,
-    // Dream Map Actions
-    addDreamMap,
-    updateDreamMap,
-    deleteDreamMap,
+    tasks, projects, goals, habits, finances, studies, dreamMaps, loading,
+    addTask, updateTask, deleteTask,
+    addProject, updateProject, deleteProject,
+    addGoal, updateGoal, deleteGoal,
+    addHabit, completeHabit, updateHabit, deleteHabit,
+    addFinance, updateFinance, deleteFinance,
+    addStudy, updateStudy, deleteStudy, addStudyModule, addStudyLesson, toggleStudyLesson,
+    addDreamMap, updateDreamMap, deleteDreamMap,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
