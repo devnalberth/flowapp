@@ -1,14 +1,32 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
 // Função auxiliar para traduzir do Banco (name) para o App (label)
-const normalizeHabit = (habit) => ({
-  ...habit,
-  // TRADUÇÃO: Banco (name) -> Frontend (label)
-  label: habit.name, 
-  currentStreak: habit.current_streak,
-  bestStreak: habit.best_streak,
-  completions: habit.completed_dates || {},
-});
+const normalizeHabit = (habit) => {
+  // CORREÇÃO CRÍTICA: Garante que 'completions' seja SEMPRE um array
+  // Se vier null, undefined, ou objeto {}, transformamos em []
+  let completions = [];
+  
+  if (Array.isArray(habit.completed_dates)) {
+    completions = habit.completed_dates;
+  } else if (typeof habit.completed_dates === 'string') {
+    // Caso venha como string do banco (legado)
+    try {
+      const parsed = JSON.parse(habit.completed_dates);
+      if (Array.isArray(parsed)) completions = parsed;
+    } catch (e) {
+      completions = [];
+    }
+  }
+  
+  return {
+    ...habit,
+    // Mantém compatibilidade: label para frontend, name do banco
+    label: habit.name, 
+    currentStreak: habit.current_streak,
+    bestStreak: habit.best_streak,
+    completions: completions,
+  };
+};
 
 export const habitService = {
   async getHabits(userId) {
@@ -26,8 +44,6 @@ export const habitService = {
   async createHabit(userId, habit) {
     const supabase = getSupabaseClient(true);
     
-    // TRADUÇÃO: Frontend (label ou name) -> Banco (name)
-    // O modal envia 'label', então usamos habit.label || habit.name
     const payload = {
       name: habit.label || habit.name, 
       category: habit.category,
@@ -35,7 +51,8 @@ export const habitService = {
       frequency: habit.frequency || 'daily',
       current_streak: habit.currentStreak || 0,
       best_streak: habit.bestStreak || 0,
-      completed_dates: habit.completions || {},
+      // CORREÇÃO: Salva sempre como Array vazio [] se não tiver dados, nunca {}
+      completed_dates: Array.isArray(habit.completions) ? habit.completions : [],
       user_id: userId,
     };
 
@@ -46,7 +63,7 @@ export const habitService = {
       .single();
     
     if (error) {
-      console.error('habitService.createHabit supabase response:', { data, error });
+      console.error('habitService.createHabit erro:', error);
       throw error;
     }
     
@@ -56,8 +73,8 @@ export const habitService = {
   async updateHabit(habitId, userId, updates) {
     const supabase = getSupabaseClient(true);
     
-    // TRADUÇÃO: Verifica se veio label ou name para atualizar
     const payload = {};
+    // Mapeamento inteligente de campos
     if (updates.label !== undefined) payload.name = updates.label;
     if (updates.name !== undefined) payload.name = updates.name;
     
@@ -66,7 +83,13 @@ export const habitService = {
     if (updates.frequency !== undefined) payload.frequency = updates.frequency;
     if (updates.currentStreak !== undefined) payload.current_streak = updates.currentStreak;
     if (updates.bestStreak !== undefined) payload.best_streak = updates.bestStreak;
-    if (updates.completions !== undefined) payload.completed_dates = updates.completions;
+    
+    // CORREÇÃO: Garante que ao atualizar, enviamos array
+    if (updates.completions !== undefined) {
+      payload.completed_dates = Array.isArray(updates.completions) 
+        ? updates.completions 
+        : []; 
+    }
     
     payload.updated_at = new Date().toISOString();
 
