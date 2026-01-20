@@ -84,40 +84,54 @@ export function AppProvider({ children, userId }) {
     }
   }
 
-  // Task Actions - CORREÇÃO DE FLICKER AQUI
+  // Task Actions
   const addTask = async (task) => {
     if (!userId) return
-    // Adiciona temporariamente para feedback instantâneo (com ID temporário se necessário, mas o service retorna rápido)
     const newTask = await taskService.createTask(userId, task)
     setTasks(prev => [newTask, ...prev])
     return newTask
   }
 
+  // === CORREÇÃO BLINDADA AQUI ===
   const updateTask = async (id, updates) => {
     if (!userId) return
     
-    // 1. ATUALIZAÇÃO OTIMISTA (A MÁGICA ACONTECE AQUI)
-    // Atualiza o estado global IMEDIATAMENTE, antes mesmo de chamar o servidor.
-    // Isso impede que a tarefa "volte" para o estado anterior enquanto o servidor processa.
+    // 1. OTIMISMO TOTAL: Atualiza a tela imediatamente e confia nisso
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
 
     try {
-      // 2. Chama o servidor em segundo plano
+      // 2. Envia para o servidor
       const updatedTask = await taskService.updateTask(id, userId, updates)
       
-      // 3. Confirmação silenciosa (só atualiza se o servidor devolver algo válido)
+      // 3. TRAVA DE SEGURANÇA:
+      // Só atualizamos o estado com a resposta do servidor se ela não contradizer
+      // a ação que acabamos de fazer (ex: marcar como concluída).
       if (updatedTask && updatedTask.id) {
-        setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))
+        setTasks(prev => prev.map(t => {
+            if (t.id !== id) return t;
+
+            // Se o usuário mandou completar (true) e o servidor devolveu incompleto (false),
+            // IGNORAMOS o servidor e mantemos a versão local (que é a correta visualmente).
+            if (updates.completed === true && !updatedTask.completed) {
+                return t; // Mantém o que já está na tela (true)
+            }
+
+            // O mesmo para desmarcar
+            if (updates.completed === false && updatedTask.completed) {
+                return t;
+            }
+            
+            return updatedTask;
+        }))
       }
     } catch (error) {
       console.error("Erro ao sincronizar tarefa:", error)
-      // Opcional: Reverter em caso de erro crítico, mas para UX é melhor manter o estado visual
+      // Se der erro de rede, aí sim poderíamos reverter, mas manter assim é melhor para UX
     }
   }
 
   const deleteTask = async (id) => {
     if (!userId) return
-    // Otimista também para exclusão
     setTasks(prev => prev.filter(t => t.id !== id))
     await taskService.deleteTask(id, userId)
   }
@@ -132,7 +146,6 @@ export function AppProvider({ children, userId }) {
 
   const updateProject = async (id, updates) => {
     if (!userId) return
-    // Otimista
     setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
     const updatedProject = await projectService.updateProject(id, userId, updates)
     if(updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
@@ -199,13 +212,8 @@ export function AppProvider({ children, userId }) {
       updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
     }
 
-    // Otimista: Atualiza localmente AGORA
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
-
-    // Envia pro servidor
     const updatedHabit = await habitService.updateHabit(id, userId, updates)
-    
-    // Confirma
     if (updatedHabit) {
         setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
     }
@@ -246,7 +254,7 @@ export function AppProvider({ children, userId }) {
     await financeService.deleteTransaction(id, userId)
   }
 
-  // Study & Dream Actions (Mantidos simples)
+  // Study & Dream Actions
   const addStudy = async (study) => {
     if (!userId) return
     const newStudy = await studyService.createStudy(userId, study)
@@ -257,7 +265,6 @@ export function AppProvider({ children, userId }) {
 
   const updateStudy = async (id, updates) => {
     if (!userId) return
-    // Otimista parcial
     setStudies(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
     await studyService.updateStudy(id, updates)
     const allStudies = await studyService.getStudies(userId)
@@ -293,7 +300,6 @@ export function AppProvider({ children, userId }) {
 
   const addDreamMap = async (dreamMap, imageFile) => {
     if (!userId) return
-    // Note: Upload de imagem é difícil de ser otimista visualmente sem preview local complexo
     const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
     const newDreamMap = await dreamMapService.createDreamMap(userId, { ...dreamMap, imageUrl })
     setDreamMaps([newDreamMap, ...dreamMaps])
