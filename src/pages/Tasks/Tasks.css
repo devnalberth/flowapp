@@ -238,7 +238,13 @@
 
 .pomodoroCard__btn.reset {
   width: 56px;
+  height: 56px; /* fixed height to match other buttons */
+  min-height: 0; /* override any global min-height (e.g. .reset) */
   padding: 0;
+  display: inline-flex; /* ensure correct centering */
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.1);

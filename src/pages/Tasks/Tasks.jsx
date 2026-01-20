@@ -425,7 +425,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" icon="+" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
+      <FloatingCreateButton label="Nova tarefa" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
       
       {isTaskModalOpen && (
         <CreateTaskModal
@@ -463,8 +463,74 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 // === Subcomponentes Visuais ===
 
 function FilterIcon({ name }) {
-  const icons = { list: '📅', spark: '✨', bolt: '⚡', check: '✓', sun: '☀️', 'calendar-late': '⚠️', 'calendar-off': '🚫' }
-  return <span>{icons[name] || '•'}</span>
+  // cast to any to avoid TS narrowing issues when spreading into JSX SVG props
+  const common = /** @type {any} */({ width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' })
+
+  switch (name) {
+    case 'list':
+      return (
+        <svg {...common} aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      )
+    case 'spark':
+      return (
+        <svg {...common} aria-hidden="true">
+          <polygon points="12 2 15 9 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 9 12 2" />
+        </svg>
+      )
+    case 'bolt':
+      return (
+        <svg {...common} aria-hidden="true">
+          <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      )
+    case 'sun':
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <line x1="12" y1="2" x2="12" y2="4" />
+          <line x1="12" y1="20" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="4" y2="12" />
+          <line x1="20" y1="12" x2="22" y2="12" />
+          <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" />
+          <line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
+          <line x1="4.2" y1="19.8" x2="5.6" y2="18.4" />
+          <line x1="18.4" y1="5.6" x2="19.8" y2="4.2" />
+        </svg>
+      )
+    case 'calendar-late':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <circle cx="12" cy="17" r="1" />
+        </svg>
+      )
+    case 'calendar-off':
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+        </svg>
+      )
+    default:
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )
+  }
 }
 
 function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
