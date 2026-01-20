@@ -216,25 +216,18 @@ function App() {
 // Wrap app with Context Provider
 export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
-  
+  const [isReady, setIsReady] = useState(false) // NOVO: Controle de estado inicial
+
   useEffect(() => {
-    // Listen on both persistent and session clients so we detect auth changes
-    // regardless of the storage preference used at login.
     const clients = [supabasePersistent, supabaseSession]
 
     const loadFromClient = async (client) => {
       try {
         const { data: { session } } = await client.auth.getSession()
-        // TEMP DEBUG: print session object and tokens — remove after debugging
-        try {
-          console.debug('AppWrapper: loadFromClient - clientType=', client === supabasePersistent ? 'persistent' : 'session', 'session=', session)
-          if (session?.access_token) console.debug('AppWrapper: access_token=', session.access_token)
-          if (session?.refresh_token) console.debug('AppWrapper: refresh_token=', session.refresh_token)
-        } catch (dbgErr) {
-          console.debug('AppWrapper: failed to log session debug info', dbgErr)
-        }
+        
         if (session?.user) {
-          const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
+          // ensureUser com false para não recriar usuário automaticamente apenas checando sessão
+          const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
           if (!ensured) {
             try { await client.auth.signOut() } catch (e) { console.error('Failed to sign out after missing user:', e) }
             try {
@@ -268,21 +261,14 @@ export default function AppWrapper() {
         const found = await loadFromClient(client)
         if (found) break
       }
+      if (mounted) setIsReady(true) // NOVO: Marca como pronto após finalizar verificações
     })()
 
     const listeners = clients.map((client) =>
       client.auth.onAuthStateChange(async (_event, session) => {
-        // TEMP DEBUG: log auth state change session and tokens
-        try {
-          console.debug('AppWrapper: onAuthStateChange - clientType=', client === supabasePersistent ? 'persistent' : 'session', 'session=', session)
-          if (session?.access_token) console.debug('AppWrapper: onAuthStateChange access_token=', session.access_token)
-        } catch (dbgErr) {
-          console.debug('AppWrapper: onAuthStateChange logging failed', dbgErr)
-        }
-
         if (session?.user) {
           try {
-            const ensured = await userService.ensureUser(session.user, { createIfMissing: true })
+            const ensured = await userService.ensureUser(session.user, { createIfMissing: false })
             if (!ensured) {
               try { await client.auth.signOut() } catch (e) { console.error('Failed signOut after missing user:', e) }
               try {
@@ -315,6 +301,23 @@ export default function AppWrapper() {
     }
   }, [])
   
+  // NOVO: Tela de carregamento enquanto verifica sessão
+  // Isso evita que o AppProvider monte com userId=null e limpe os dados
+  if (!isReady) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh', 
+        backgroundColor: '#09090b', 
+        color: '#ffffff' 
+      }}>
+        Carregando FlowApp...
+      </div>
+    )
+  }
+
   return (
     <AppProvider userId={currentUserId}>
       <App />
