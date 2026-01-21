@@ -20,17 +20,17 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
       // O Dashboard já entrega os dados sanitizados. 
       // Verificamos 'completions' (novo) ou 'completed_dates' (antigo) e garantimos que seja array.
       // NUNCA usamos JSON.parse aqui para evitar crashes.
-      const completedDates = Array.isArray(h.completions) 
-        ? h.completions 
+      const completedDates = Array.isArray(h.completions)
+        ? h.completions
         : (Array.isArray(h.completed_dates) ? h.completed_dates : [])
-      
+
       return completedDates.includes(today)
     }).length
 
     const current = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
-    
+
     // Cálculo seguro de streak
-    const avgStreak = totalHabits > 0 
+    const avgStreak = totalHabits > 0
       ? habits.reduce((sum, h) => sum + (Number(h.current_streak) || 0), 0) / totalHabits
       : 0
 
@@ -45,22 +45,78 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
   const goalData = useMemo(() => {
     // Proteção para goals
     const safeGoals = Array.isArray(goals) ? goals : []
-    
-    const completedGoals = safeGoals.filter(g => (g.progress || 0) >= 100).length
-    const totalGoals = safeGoals.length
-    const progress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+
+    // Filtrar metas pelo período selecionado
+    const filteredGoals = safeGoals.filter(g => {
+      // Usa target_date ou due_date ou created_at como fallback
+      const dateStr = g.target_date || g.due_date || g.created_at
+      if (!dateStr) return true // Sem data = inclui em todos os filtros
+
+      const goalDate = new Date(dateStr)
+      const goalMonth = goalDate.getMonth()
+      const goalYear = goalDate.getFullYear()
+
+      switch (goalFilter) {
+        case 'Mensal':
+          // Metas do mês atual
+          return goalMonth === currentMonth && goalYear === currentYear
+        case 'Trimestral':
+          // Metas do trimestre atual
+          const currentQuarter = Math.floor(currentMonth / 3)
+          const goalQuarter = Math.floor(goalMonth / 3)
+          return goalQuarter === currentQuarter && goalYear === currentYear
+        case 'Semestral':
+          // Metas do semestre atual
+          const currentSemester = currentMonth < 6 ? 0 : 1
+          const goalSemester = goalMonth < 6 ? 0 : 1
+          return goalSemester === currentSemester && goalYear === currentYear
+        case 'Anual':
+          // Metas do ano atual
+          return goalYear === currentYear
+        default:
+          return true
+      }
+    })
+
+    // Calcula progresso médio das metas filtradas
+    const totalGoals = filteredGoals.length
+    const avgProgress = totalGoals > 0
+      ? Math.round(filteredGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / totalGoals)
+      : 0
+
+    // Conta metas completas (progress >= 100 ou status completed)
+    const completedGoals = filteredGoals.filter(g =>
+      (g.progress || 0) >= 100 || g.status === 'completed' || g.status === 'done'
+    ).length
 
     // Grid de 4x4 representando progresso das metas
     const grid = Array(16).fill(false).map((_, i) => {
-      return i < Math.round((progress / 100) * 16)
+      return i < Math.round((avgProgress / 100) * 16)
     })
 
     let labels = ['Jan', 'Fev', 'Mar', 'Abr']
-    if (goalFilter === 'Trimestral') labels = ['T1', 'T2', 'T3', 'T4']
-    else if (goalFilter === 'Semestral') labels = ['1º Sem', '2º Sem', '', '']
-    else if (goalFilter === 'Anual') labels = ['2023', '2024', '2025', '2026']
+    if (goalFilter === 'Mensal') {
+      // Mostra as 4 semanas do mês
+      labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']
+    } else if (goalFilter === 'Trimestral') {
+      const quarterMonths = [
+        ['Jan', 'Fev', 'Mar'],
+        ['Abr', 'Mai', 'Jun'],
+        ['Jul', 'Ago', 'Set'],
+        ['Out', 'Nov', 'Dez']
+      ]
+      const q = Math.floor(currentMonth / 3)
+      labels = [...quarterMonths[q], '']
+    } else if (goalFilter === 'Semestral') {
+      labels = currentMonth < 6 ? ['Jan-Mar', 'Abr-Jun', '', ''] : ['Jul-Set', 'Out-Dez', '', '']
+    } else if (goalFilter === 'Anual') {
+      labels = ['T1', 'T2', 'T3', 'T4']
+    }
 
-    return { labels, grid, progress }
+    return { labels, grid, progress: avgProgress, totalGoals, completedGoals }
   }, [goals, goalFilter])
 
   // Cálculo da rotação do ponteiro (Gauge)
@@ -87,7 +143,7 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
           <span className="gh__ring gh__ring--outer" />
           <span className="gh__ring gh__ring--mid" />
           <span className="gh__ring gh__ring--inner" />
-          
+
           {/* Gauge radial */}
           <svg className="gh__gauge" viewBox="0 0 200 200">
             {/* Labels dos valores */}
@@ -95,7 +151,7 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
             <text x="25" y="108" className="gh__gaugeLabel">75</text>
             <text x="175" y="108" className="gh__gaugeLabel">25</text>
             <text x="100" y="182" className="gh__gaugeLabel">50</text>
-            
+
             {/* Marcações radiais */}
             {Array.from({ length: 12 }).map((_, i) => {
               const angle = (i * 30 - 90) * (Math.PI / 180)
@@ -118,7 +174,7 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
                 />
               )
             })}
-            
+
             {/* Círculo central pontilhado */}
             <circle
               cx="100"
@@ -126,7 +182,7 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
               r="38"
               className="gh__gaugeDashed"
             />
-            
+
             {/* Ponteiro */}
             <line
               x1="100"

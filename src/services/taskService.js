@@ -3,7 +3,7 @@ import { getSupabaseClient } from '../lib/supabaseClient';
 const normalizeTask = (task) => ({
   ...task,
   // CORREÇÃO 1: Garante que tags seja sempre um array, evitando o erro .includes() no frontend
-  tags: task.tags || [], 
+  tags: task.tags || [],
   startDate: task.start_date,
   dueDate: task.due_date,
   projectId: task.project_id,
@@ -18,7 +18,7 @@ export const taskService = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return (data || []).map(normalizeTask);
   },
@@ -37,12 +37,12 @@ export const taskService = {
         project_id: task.projectId || null,
         clarify_items: task.clarifyItems || [],
         // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
-        tags: task.tags || [], 
+        tags: task.tags || [],
         user_id: userId,
       })
       .select()
       .single();
-    
+
     if (error) {
       console.error('taskService.createTask supabase response:', { data, error });
       throw error;
@@ -53,7 +53,7 @@ export const taskService = {
 
   async updateTask(taskId, userId, updates) {
     const supabase = getSupabaseClient(true);
-    
+
     // Prepara objeto de atualização apenas com campos definidos
     const payload = {
       title: updates.title,
@@ -64,8 +64,11 @@ export const taskService = {
       due_date: updates.dueDate,
       project_id: updates.projectId,
       clarify_items: updates.clarifyItems,
+      // CORREÇÃO: Campos críticos que estavam faltando
+      completed: updates.completed,
+      time_spent: updates.time_spent,
       // CORREÇÃO 3: Permite atualizar tags
-      tags: updates.tags, 
+      tags: updates.tags,
       updated_at: new Date().toISOString(),
     };
 
@@ -79,7 +82,7 @@ export const taskService = {
       .eq('user_id', userId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return normalizeTask(data);
   },
@@ -91,7 +94,7 @@ export const taskService = {
       .delete()
       .eq('id', taskId)
       .eq('user_id', userId);
-    
+
     if (error) throw error;
   },
 };
