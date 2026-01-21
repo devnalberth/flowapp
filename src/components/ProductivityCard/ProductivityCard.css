@@ -25,6 +25,7 @@
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .prod__filter:hover {
@@ -75,13 +76,11 @@
   align-items: end;
   position: relative;
   background:
-    repeating-linear-gradient(
-      to top,
+    repeating-linear-gradient(to top,
       rgba(0, 0, 0, 0.06) 0,
       rgba(0, 0, 0, 0.06) 1px,
       transparent 1px,
-      transparent 30px
-    );
+      transparent 30px);
   padding-bottom: 8px;
 }
 
@@ -124,13 +123,12 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.5) 0 6px,
-    transparent 6px 12px
-  );
+  background-image: repeating-linear-gradient(135deg,
+      rgba(255, 255, 255, 0.5) 0 6px,
+      transparent 6px 12px);
   mix-blend-mode: screen;
 }
+
 .prod__labels {
   display: grid;
   gap: 16px;

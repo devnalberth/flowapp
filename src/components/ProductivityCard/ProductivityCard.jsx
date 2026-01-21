@@ -22,16 +22,16 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
         // Ajuste simples para horas negativas virarem dia anterior (visualização básica)
         const targetDate = new Date(now)
         targetDate.setHours(hour)
-        
+
         // Somar minutos das tarefas atualizadas nesta hora
         const minutesInHour = trackedTasks.reduce((acc, t) => {
           const updateDate = new Date(t.updated_at || t.created_at)
           // Verifica se foi atualizada nesta hora/dia
           if (updateDate.getHours() === targetDate.getHours() &&
-              updateDate.toDateString() === targetDate.toDateString()) {
-             // Se a tarefa foi mexida nesta hora, "chutamos" que o tempo dela conta aqui.
-             // (Sem tabela de logs históricos, usamos o total da tarefa como peso)
-             return acc + (Number(t.time_spent) || 0)
+            updateDate.toDateString() === targetDate.toDateString()) {
+            // Se a tarefa foi mexida nesta hora, "chutamos" que o tempo dela conta aqui.
+            // (Sem tabela de logs históricos, usamos o total da tarefa como peso)
+            return acc + (Number(t.time_spent) || 0)
           }
           return acc
         }, 0)
@@ -50,16 +50,16 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       // Últimos 7 dias
       const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
       const weekData = []
-      
+
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now)
         date.setDate(date.getDate() - i)
         date.setHours(0, 0, 0, 0)
-        
+
         const minutesInDay = trackedTasks.reduce((acc, t) => {
           const updateDate = new Date(t.updated_at || t.created_at)
           updateDate.setHours(0, 0, 0, 0)
-          
+
           if (updateDate.getTime() === date.getTime()) {
             return acc + (Number(t.time_spent) || 0)
           }
@@ -82,7 +82,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       const weekStart = new Date(now)
       weekStart.setDate(weekStart.getDate() - (i * 7))
       weekStart.setHours(0, 0, 0, 0)
-      
+
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekEnd.getDate() + 6)
       weekEnd.setHours(23, 59, 59, 999)
@@ -108,7 +108,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
   const stats = useMemo(() => {
     // Soma total de minutos de TODAS as tarefas carregadas
     const totalMinutes = tasks.reduce((acc, t) => acc + (Number(t.time_spent) || 0), 0)
-    
+
     const hours = Math.floor(totalMinutes / 60)
     const minutes = Math.round(totalMinutes % 60)
 
@@ -130,20 +130,19 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     <section className={`prod ui-card ${className}`.trim()}>
       <header className="prod__header">
         <div className="txt-cardTitle">Produtividade</div>
-        <div className="prod__filter">
-          <button 
-            className="prod__filterBtn"
-            onClick={() => {
-                const next = activeFilter === 'Dia' ? 'Semana' : activeFilter === 'Semana' ? 'Mês' : 'Dia'
-                setActiveFilter(next)
-            }}
-          >
-            {activeFilter}
-            <svg className="prod__arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-        </div>
+        <button
+          className="prod__filter"
+          type="button"
+          onClick={() => {
+            const next = activeFilter === 'Dia' ? 'Semana' : activeFilter === 'Semana' ? 'Mês' : 'Dia'
+            setActiveFilter(next)
+          }}
+        >
+          {activeFilter}
+          <svg className="prod__arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
       </header>
 
       <div className="prod__chart">
@@ -162,11 +161,11 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
             {chartData.map((bar, i) => (
               <div key={i} className="prod__group" data-active={bar.active || undefined}>
                 <div className="prod__barContainer">
-                    <span 
-                        className="prod__bar prod__bar--value"
-                        style={{ height: `${Math.max(bar.value, 4)}%` }} // Mínimo de 4% para aparecer visualmente
-                        title={`${Math.round(bar.value)}% da meta`}
-                    />
+                  <span
+                    className="prod__bar prod__bar--value"
+                    style={{ height: `${Math.max(bar.value, 4)}%` }} // Mínimo de 4% para aparecer visualmente
+                    title={`${Math.round(bar.value)}% da meta`}
+                  />
                 </div>
               </div>
             ))}
