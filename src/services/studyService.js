@@ -55,7 +55,13 @@ export const studyService = {
       return []
     }
 
-    return data || []
+    // Normaliza snake_case do banco para camelCase do frontend
+    return (data || []).map(study => ({
+      ...study,
+      coverUrl: study.cover_url || null,
+      createdAt: study.created_at,
+      updatedAt: study.updated_at,
+    }))
   },
 
   async createStudy(userId, studyData) {
