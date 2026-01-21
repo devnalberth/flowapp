@@ -1,0 +1,205 @@
+.lesson-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.lesson-modal {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.lesson-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
+}
+
+.lesson-modal__header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.lesson-modal__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lesson-modal__close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.lesson-modal__content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lesson-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson-modal__field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.lesson-modal__field input,
+.lesson-modal__field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
+  transition: all 0.2s;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.lesson-modal__field input:focus,
+.lesson-modal__field textarea:focus {
+  outline: none;
+  border-color: #ff5a00;
+}
+
+/* Stars */
+.lesson-modal__stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lesson-modal__star {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #d1d5db;
+  transition: all 0.2s;
+}
+
+.lesson-modal__star:hover {
+  transform: scale(1.1);
+}
+
+.lesson-modal__star.active {
+  color: #ff5a00;
+}
+
+.lesson-modal__clear-rating {
+  margin-left: 12px;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.lesson-modal__clear-rating:hover {
+  color: #6b7280;
+}
+
+/* Actions */
+.lesson-modal__actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.lesson-modal__cancel,
+.lesson-modal__save {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lesson-modal__cancel {
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.lesson-modal__cancel:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.lesson-modal__save {
+  border: none;
+  background: linear-gradient(135deg, #ff5a00, #ff8c00);
+  color: #ffffff;
+}
+
+.lesson-modal__save:hover {
+  background: linear-gradient(135deg, #e04e00, #ff7a00);
+}
+
+.lesson-modal__save:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}

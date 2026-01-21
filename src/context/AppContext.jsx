@@ -46,7 +46,7 @@ export function AppProvider({ children, userId }) {
 
   const loadAllData = async () => {
     if (!userId) return
-    
+
     setLoading(true)
     try {
       const results = await Promise.allSettled([
@@ -58,7 +58,7 @@ export function AppProvider({ children, userId }) {
         studyService.getStudies(userId),
         dreamMapService.getDreamMaps(userId),
       ])
-      
+
       const safeArray = (res, label) => {
         if (res.status === 'fulfilled' && Array.isArray(res.value)) {
           return res.value
@@ -95,33 +95,33 @@ export function AppProvider({ children, userId }) {
   // === CORREÇÃO BLINDADA AQUI ===
   const updateTask = async (id, updates) => {
     if (!userId) return
-    
+
     // 1. OTIMISMO TOTAL: Atualiza a tela imediatamente e confia nisso
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
 
     try {
       // 2. Envia para o servidor
       const updatedTask = await taskService.updateTask(id, userId, updates)
-      
+
       // 3. TRAVA DE SEGURANÇA:
       // Só atualizamos o estado com a resposta do servidor se ela não contradizer
       // a ação que acabamos de fazer (ex: marcar como concluída).
       if (updatedTask && updatedTask.id) {
         setTasks(prev => prev.map(t => {
-            if (t.id !== id) return t;
+          if (t.id !== id) return t;
 
-            // Se o usuário mandou completar (true) e o servidor devolveu incompleto (false),
-            // IGNORAMOS o servidor e mantemos a versão local (que é a correta visualmente).
-            if (updates.completed === true && !updatedTask.completed) {
-                return t; // Mantém o que já está na tela (true)
-            }
+          // Se o usuário mandou completar (true) e o servidor devolveu incompleto (false),
+          // IGNORAMOS o servidor e mantemos a versão local (que é a correta visualmente).
+          if (updates.completed === true && !updatedTask.completed) {
+            return t; // Mantém o que já está na tela (true)
+          }
 
-            // O mesmo para desmarcar
-            if (updates.completed === false && updatedTask.completed) {
-                return t;
-            }
-            
-            return updatedTask;
+          // O mesmo para desmarcar
+          if (updates.completed === false && updatedTask.completed) {
+            return t;
+          }
+
+          return updatedTask;
         }))
       }
     } catch (error) {
@@ -148,7 +148,7 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
     const updatedProject = await projectService.updateProject(id, userId, updates)
-    if(updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
+    if (updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
   }
 
   const deleteProject = async (id) => {
@@ -169,7 +169,7 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g))
     const updatedGoal = await goalService.updateGoal(id, userId, updates)
-    if(updatedGoal) setGoals(prev => prev.map(g => g.id === id ? updatedGoal : g))
+    if (updatedGoal) setGoals(prev => prev.map(g => g.id === id ? updatedGoal : g))
   }
 
   const deleteGoal = async (id) => {
@@ -196,8 +196,8 @@ export function AppProvider({ children, userId }) {
     const completedDates = Array.isArray(habit.completions)
       ? [...habit.completions]
       : Array.isArray(habit.completed_dates)
-      ? [...habit.completed_dates]
-      : []
+        ? [...habit.completed_dates]
+        : []
 
     let updates = {}
 
@@ -215,7 +215,7 @@ export function AppProvider({ children, userId }) {
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
     const updatedHabit = await habitService.updateHabit(id, userId, updates)
     if (updatedHabit) {
-        setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+      setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
     }
   }
 
@@ -245,7 +245,7 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setFinances(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f))
     const updatedFinance = await financeService.updateTransaction(id, userId, updates)
-    if(updatedFinance) setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
+    if (updatedFinance) setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
   }
 
   const deleteFinance = async (id) => {
@@ -284,9 +284,37 @@ export function AppProvider({ children, userId }) {
     setStudies(allStudies)
   }
 
+  const updateStudyModule = async (moduleId, updates) => {
+    if (!userId) return
+    await studyService.updateModule(moduleId, updates)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+  }
+
+  const deleteStudyModule = async (moduleId) => {
+    if (!userId) return
+    await studyService.deleteModule(moduleId)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+  }
+
   const addStudyLesson = async (moduleId, lessonData) => {
     if (!userId) return
     await studyService.createLesson(moduleId, lessonData)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+  }
+
+  const updateStudyLesson = async (lessonId, updates) => {
+    if (!userId) return
+    await studyService.updateLesson(lessonId, updates)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+  }
+
+  const deleteStudyLesson = async (lessonId) => {
+    if (!userId) return
+    await studyService.deleteLesson(lessonId)
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
   }
@@ -310,7 +338,7 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setDreamMaps(dreamMaps.map(dm => dm.id === id ? { ...dm, ...updates } : dm))
     const updated = await dreamMapService.updateDreamMap(id, userId, updates)
-    if(updated) setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
+    if (updated) setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
   }
 
   const deleteDreamMap = async (id) => {
@@ -327,7 +355,10 @@ export function AppProvider({ children, userId }) {
     addGoal, updateGoal, deleteGoal,
     addHabit, completeHabit, updateHabit, deleteHabit,
     addFinance, updateFinance, deleteFinance,
-    addStudy, updateStudy, deleteStudy, addStudyModule, addStudyLesson, toggleStudyLesson,
+    addStudy, updateStudy, deleteStudy,
+    addStudyModule, updateStudyModule, deleteStudyModule,
+    addStudyLesson, updateStudyLesson, deleteStudyLesson,
+    toggleStudyLesson,
     addDreamMap, updateDreamMap, deleteDreamMap,
   }
 

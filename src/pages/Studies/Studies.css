@@ -7,6 +7,7 @@
   background: var(--bg);
   color: var(--text);
 }
+
 .studiesWrapper {
   background: #f3f3f5;
   border-radius: 36px;
@@ -178,6 +179,122 @@
   color: var(--subtext);
 }
 
+/* Study Details Modal */
+.studyDetailModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 22, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.studyDetailModal__panel {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  background: #fff;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.25);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.studyDetailModal__close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f2f3fb;
+  border-radius: 10px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.studyDetailModal__close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* Study Detail Page (not modal) */
+.studyDetailPage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.studyDetailPage__back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.studyDetailPage__back:hover {
+  color: #ff5a00;
+}
+
+.studyDetailPage__deleteBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #fee2e2;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  transition: all 0.2s;
+}
+
+.studyDetailPage__deleteBtn:hover {
+  background: #fecaca;
+}
+
 .studyDetail {
   border-radius: 28px;
   border: 1px solid #ececf5;
@@ -268,6 +385,81 @@
   transform: rotate(180deg);
 }
 
+/* Module header with actions */
+.studyModule__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studyModule__header .studyModule__toggle {
+  flex: 1;
+}
+
+.studyModule__actions {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.studyModule__actionBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f2f3fb;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.studyModule__actionBtn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.studyModule__actionBtn--danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.studyModule__editInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #ff5a00;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Study Detail Modal Action Buttons */
+.studyDetailModal__actionBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f2f3fb;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.studyDetailModal__actionBtn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.studyDetailModal__actionBtn--danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .studyModule__content {
   display: none;
   padding: 0 20px 20px;
@@ -328,6 +520,53 @@
   font-size: 12px;
   color: #ff5a00;
   font-weight: 600;
+}
+
+.studyLesson__title {
+  flex: 1;
+}
+
+.studyLesson__actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.studyLesson__actionBtn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.studyLesson:hover .studyLesson__actionBtn {
+  opacity: 1;
+}
+
+.studyLesson__actionBtn:hover {
+  background: #f2f3fb;
+  color: #111827;
+}
+
+.studyLesson__actionBtn--danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.studyLesson__editInput {
+  flex: 1;
+  padding: 6px 10px;
+  border: 2px solid #ff5a00;
+  border-radius: 6px;
+  font-size: 14px;
 }
 
 .studyLessonForm {

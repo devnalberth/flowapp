@@ -143,6 +143,34 @@ export const studyService = {
     return data
   },
 
+  async updateModule(moduleId, updates) {
+    const { data, error } = await supabase
+      .from('study_modules')
+      .update({ title: updates.title })
+      .eq('id', moduleId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating module:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  async deleteModule(moduleId) {
+    const { error } = await supabase
+      .from('study_modules')
+      .delete()
+      .eq('id', moduleId)
+
+    if (error) {
+      console.error('Error deleting module:', error)
+      throw error
+    }
+  },
+
   async createLesson(moduleId, lessonData) {
     const { data, error } = await supabase
       .from('study_lessons')
@@ -163,6 +191,44 @@ export const studyService = {
     }
 
     return data
+  },
+
+  async updateLesson(lessonId, updates) {
+    const payload = {
+      title: updates.title,
+      video_url: updates.videoUrl,
+      notes: updates.notes,
+      description: updates.description,
+      rating: updates.rating,
+    }
+    // Remove undefined keys
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key])
+
+    const { data, error } = await supabase
+      .from('study_lessons')
+      .update(payload)
+      .eq('id', lessonId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating lesson:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  async deleteLesson(lessonId) {
+    const { error } = await supabase
+      .from('study_lessons')
+      .delete()
+      .eq('id', lessonId)
+
+    if (error) {
+      console.error('Error deleting lesson:', error)
+      throw error
+    }
   },
 
   async toggleLessonComplete(lessonId, isCompleted) {
