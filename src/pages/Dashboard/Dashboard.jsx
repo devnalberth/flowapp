@@ -19,12 +19,12 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
   // Normaliza os hábitos para garantir que arrays existam, evitando erros visuais
   const safeHabits = useMemo(() => {
     if (!Array.isArray(habits)) return []
-    
+
     return habits.map(h => {
       // O serviço novo usa 'completions', o antigo usava 'completed_dates'
       // Vamos garantir que AMBOS existam e sejam arrays
-      const datesArray = Array.isArray(h.completions) 
-        ? h.completions 
+      const datesArray = Array.isArray(h.completions)
+        ? h.completions
         : (Array.isArray(h.completed_dates) ? h.completed_dates : [])
 
       return {
@@ -39,24 +39,24 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
   const kpis = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     // Proteção extra: tasks pode ser undefined no primeiro render
     const safeTasks = Array.isArray(tasks) ? tasks : []
 
     // Tarefas para HOJE (que não estão concluídas)
     const tasksToday = safeTasks.filter(task => {
       if (!task.due_date || task.completed) return false
-      
+
       const dueDate = new Date(task.due_date)
       dueDate.setHours(0, 0, 0, 0)
-      
+
       // Ajuste de fuso horário se necessário (igual ao Tasks.jsx)
       const timezoneOffset = dueDate.getTimezoneOffset() * 60000
       if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
-         // Pequeno ajuste para garantir que a data do banco bata com o dia local
-         const adjusted = new Date(dueDate.getTime() + timezoneOffset)
-         adjusted.setHours(0,0,0,0)
-         return adjusted.getTime() === today.getTime()
+        // Pequeno ajuste para garantir que a data do banco bata com o dia local
+        const adjusted = new Date(dueDate.getTime() + timezoneOffset)
+        adjusted.setHours(0, 0, 0, 0)
+        return adjusted.getTime() === today.getTime()
       }
 
       return dueDate.getTime() === today.getTime()
@@ -99,10 +99,10 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
         </header>
 
         {loading ? (
-           <div style={{ padding: '4rem', textAlign: 'center', color: '#666', display: 'flex', justifyContent: 'center' }}>
-             <div style={{width: 24, height: 24, borderRadius: '50%', border: '3px solid #ccc', borderTopColor: '#000', animation: 'spin 1s infinite linear'}}></div>
-             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-           </div>
+          <div style={{ padding: '4rem', textAlign: 'center', color: '#666', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid #ccc', borderTopColor: '#000', animation: 'spin 1s infinite linear' }}></div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          </div>
         ) : (
           <>
             <section className="dash__kpis">
@@ -113,7 +113,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
             </section>
 
             <main className="dash__grid">
-              <ProjectOverviewCard className="bento bento--project" projects={projects || []} />
+              <ProjectOverviewCard className="bento bento--project" projects={projects || []} tasks={tasks || []} />
               <ProductivityCard className="bento bento--productivity" tasks={tasks || []} />
               <ChatbotCard className="bento bento--chat" />
               {/* Passamos safeHabits aqui para evitar o erro .includes dentro do card */}

@@ -123,7 +123,10 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     console.log(`Salvando foco: +${minutesToAdd.toFixed(2)} min na tarefa ${currentTask.title}`)
 
     // Atualiza otimista e no banco
-    await updateTask(focusedTaskId, { time_spent: newTimeSpent })
+    await updateTask(focusedTaskId, {
+      time_spent: newTimeSpent,
+      updated_at: new Date().toISOString()
+    })
   }
 
   const handleTimerComplete = () => {
@@ -311,7 +314,8 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 
     await updateTask(taskId, {
       completed: newCompleted,
-      status: newCompleted ? 'done' : (task.prevStatus || 'Capturar')
+      status: newCompleted ? 'done' : (task.prevStatus || 'Capturar'),
+      updated_at: new Date().toISOString()
     })
   }
 

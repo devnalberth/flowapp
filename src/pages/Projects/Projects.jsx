@@ -22,7 +22,7 @@ const TASK_PRIORITY_OPTIONS = ['Alta', 'Média', 'Baixa']
 export default function Projects({ onNavigate, onLogout, user }) {
   // CORREÇÃO 1: Pegando tasks, goals e deleteProject do contexto
   const { projects, goals, tasks, loading, addProject, updateProject, deleteProject, addTask } = useApp()
-  
+
   const [isModalOpen, setModalOpen] = useState(false)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [taskProject, setTaskProject] = useState('')
@@ -34,12 +34,20 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const boardColumns = useMemo(() => {
     return COLUMN_DEFINITIONS.map((column) => ({
       ...column,
-      items: projects.filter((project) => {
-          const status = project.status || 'todo'
-          return status === column.status || (column.status === 'todo' && status === 'active')
-        })
+      items: projects.map(project => {
+        // Cálculo dinâmico de progresso
+        const projectTasks = tasks.filter(t => t.projectId === project.id || t.project === project.title)
+        const totalTasks = projectTasks.length
+        const completedTasks = projectTasks.filter(t => t.completed).length
+        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+        return { ...project, progress }
+      }).filter((project) => {
+        const status = project.status || 'todo'
+        return status === column.status || (column.status === 'todo' && status === 'active')
+      })
     }))
-  }, [projects])
+  }, [projects, tasks])
 
   const projectOptions = useMemo(() => projects.map((p) => ({ id: p.id, label: p.title })), [projects])
 
@@ -96,7 +104,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
   }
 
   // --- Render ---
-  if (loading) return <div className="projects"><div style={{padding: '2rem'}}>Carregando...</div></div>
+  if (loading) return <div className="projects"><div style={{ padding: '2rem' }}>Carregando...</div></div>
 
   return (
     <div className="projects">
@@ -144,7 +152,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
       {isModalOpen && (
         <CreateProjectModal open={true} onClose={() => { setModalOpen(false); setEditProject(null) }} onSubmit={handleSubmitProject} goalOptions={goals} initialData={editProject} />
       )}
-      
+
       {isTaskModalOpen && (
         <CreateTaskModal open={true} onClose={() => setTaskModalOpen(false)} onSubmit={handleSubmitTask}
           projectsOptions={projectOptions} statusOptions={TASK_STATUS_OPTIONS} priorityOptions={TASK_PRIORITY_OPTIONS}
