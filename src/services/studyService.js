@@ -1,6 +1,35 @@
 import { supabase } from '../lib/supabaseClient.js'
 
 export const studyService = {
+  // Upload de imagem de capa para o Supabase Storage
+  async uploadCoverImage(file, userId) {
+    if (!file || !userId) return null
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}/${Date.now()}.${fileExt}`
+
+    const { data, error } = await supabase.storage
+      .from('study-covers')
+      .upload(fileName, file)
+
+    if (error) {
+      console.error('Error uploading cover image:', error)
+      // Se o bucket não existir, retorna null graciosamente
+      if (error.message?.includes('bucket') || error.message?.includes('not found')) {
+        console.warn('Bucket may not exist. Cover upload skipped.')
+        return null
+      }
+      throw error
+    }
+
+    // Gera URL pública
+    const { data: urlData } = supabase.storage
+      .from('study-covers')
+      .getPublicUrl(fileName)
+
+    return urlData?.publicUrl || null
+  },
+
   async getStudies(userId) {
     if (!userId) {
       console.log('No userId provided to getStudies')
@@ -37,8 +66,11 @@ export const studyService = {
           user_id: userId,
           title: studyData.title,
           type: studyData.type,
+          category: studyData.category || null,
           status: studyData.status || 'NOT_STARTED',
+          url: studyData.url || null,
           cover_url: studyData.coverUrl,
+          description: studyData.description || null,
         },
       ])
       .select()
@@ -58,8 +90,11 @@ export const studyService = {
       .update({
         title: updates.title,
         type: updates.type,
+        category: updates.category,
         status: updates.status,
+        url: updates.url,
         cover_url: updates.coverUrl,
+        description: updates.description,
       })
       .eq('id', studyId)
       .select()

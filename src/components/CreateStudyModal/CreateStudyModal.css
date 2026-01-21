@@ -15,6 +15,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -27,6 +28,12 @@
   max-width: 500px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.study-modal--expanded {
+  max-width: 560px;
 }
 
 @keyframes slideUp {
@@ -34,6 +41,7 @@
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -46,6 +54,10 @@
   justify-content: space-between;
   padding: 24px;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
 }
 
 .study-modal__header h2 {
@@ -90,7 +102,9 @@
   margin-bottom: 8px;
 }
 
-.study-modal__field input {
+.study-modal__field input,
+.study-modal__field select,
+.study-modal__field textarea {
   width: 100%;
   padding: 12px 16px;
   border: 2px solid #e5e7eb;
@@ -98,11 +112,30 @@
   font-size: 15px;
   color: #111827;
   transition: all 0.2s;
+  background: #ffffff;
+  font-family: inherit;
 }
 
-.study-modal__field input:focus {
+.study-modal__field input:focus,
+.study-modal__field select:focus,
+.study-modal__field textarea:focus {
   outline: none;
   border-color: #ff4800;
+}
+
+.study-modal__field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Row layout for side-by-side fields */
+.study-modal__row {
+  display: flex;
+  gap: 16px;
+}
+
+.study-modal__field--half {
+  flex: 1;
 }
 
 .study-modal__types {
@@ -138,6 +171,70 @@
   color: #ffffff;
 }
 
+/* Upload area */
+.study-modal__upload {
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.study-modal__upload:hover {
+  border-color: #ff4800;
+  background: #fff5f0;
+}
+
+.study-modal__upload.has-preview {
+  padding: 0;
+  border-style: solid;
+}
+
+.study-modal__upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+}
+
+.study-modal__upload-placeholder span {
+  font-size: 14px;
+}
+
+.study-modal__preview-wrapper {
+  position: relative;
+}
+
+.study-modal__preview-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.study-modal__remove-cover {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.study-modal__remove-cover:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
 .study-modal__preview {
   margin-bottom: 20px;
   border-radius: 12px;
@@ -155,6 +252,11 @@
   display: flex;
   gap: 12px;
   margin-top: 24px;
+  position: sticky;
+  bottom: 0;
+  background: #ffffff;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 }
 
 .study-modal__cancel,

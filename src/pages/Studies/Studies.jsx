@@ -66,6 +66,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
   const handleCreateStudy = async (studyData) => {
     try {
+      // O studyData já vem com o coverUrl (se houver upload feito no modal)
       await addStudy(studyData)
       setModalOpen(false)
     } catch (error) {
@@ -130,178 +131,179 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
       <div className="studiesWrapper">
         <section className="studiesFilters">
-        <div className="studiesFilters__group">
-          <button type="button" className={statusFilter === 'ALL' ? 'is-active' : ''} onClick={() => setStatusFilter('ALL')}>
-            Todos
-          </button>
-          <button
-            type="button"
-            className={statusFilter === 'IN_PROGRESS' ? 'is-active' : ''}
-            onClick={() => setStatusFilter('IN_PROGRESS')}
-          >
-            Em andamento
-          </button>
-          <button
-            type="button"
-            className={statusFilter === 'COMPLETED' ? 'is-active' : ''}
-            onClick={() => setStatusFilter('COMPLETED')}
-          >
-            Concluídos
-          </button>
-        </div>
-        <div className="studiesFilters__group">
-          <button type="button" className={typeFilter === 'ALL' ? 'is-active' : ''} onClick={() => setTypeFilter('ALL')}>
-            Todos
-          </button>
-          <button type="button" className={typeFilter === 'COURSE' ? 'is-active' : ''} onClick={() => setTypeFilter('COURSE')}>
-            Cursos
-          </button>
-          <button type="button" className={typeFilter === 'BOOK' ? 'is-active' : ''} onClick={() => setTypeFilter('BOOK')}>
-            Livros
-          </button>
-          <button type="button" className={typeFilter === 'UNIVERSITY' ? 'is-active' : ''} onClick={() => setTypeFilter('UNIVERSITY')}>
-            Faculdade
-          </button>
-        </div>
-      </section>
-
-      <section className="studiesGrid">
-        {filteredStudies.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1', color: '#999' }}>
-            <p>Nenhum estudo cadastrado. Clique em "Novo Estudo" para começar.</p>
-          </div>
-        ) : (
-          filteredStudies.map((study) => {
-            const progress = calcProgress(study.modules || [])
-            return (
-              <article key={study.id} className="studyCard" onClick={() => setActiveStudyId(study.id)} role="button">
-                <div className="studyCard__cover">
-                  {study.coverUrl ? <img src={study.coverUrl} alt={study.title} /> : <div className="studyCard__coverFallback" />}
-                  <div className="studyCard__progress">
-                    <span style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-                <div className="studyCard__content">
-                  <div className="studyCard__meta">
-                    <span className="studyCard__badge">{typeLabelMap[study.type]}</span>
-                  </div>
-                  <h3>{study.title}</h3>
-                  <p>{statusLabelMap[study.status]}</p>
-                </div>
-              </article>
-            )
-          })
-        )}
-      </section>
-
-      {activeStudy ? (
-        <section className="studyDetail">
-          <header className="studyDetail__header">
-            <div>
-              <p className="txt-pill">{typeLabelMap[activeStudy.type]}</p>
-              <h2>{activeStudy.title}</h2>
-              <p>{activeStudy.topic}</p>
-            </div>
-            <div className="studyDetail__progress">
-              <span>{calcProgress(activeStudy.modules)}% concluído</span>
-              <div>
-                <span style={{ width: `${calcProgress(activeStudy.modules)}%` }} />
-              </div>
-            </div>
-          </header>
-
-          <div className="studyDetail__actions">
-            <input
-              type="text"
-              placeholder="Novo módulo"
-              value={newModuleTitle}
-              onChange={(event) => setNewModuleTitle(event.target.value)}
-            />
-            <button type="button" onClick={handleAddModule}>
-              Novo módulo
+          <div className="studiesFilters__group">
+            <button type="button" className={statusFilter === 'ALL' ? 'is-active' : ''} onClick={() => setStatusFilter('ALL')}>
+              Todos
+            </button>
+            <button
+              type="button"
+              className={statusFilter === 'IN_PROGRESS' ? 'is-active' : ''}
+              onClick={() => setStatusFilter('IN_PROGRESS')}
+            >
+              Em andamento
+            </button>
+            <button
+              type="button"
+              className={statusFilter === 'COMPLETED' ? 'is-active' : ''}
+              onClick={() => setStatusFilter('COMPLETED')}
+            >
+              Concluídos
             </button>
           </div>
+          <div className="studiesFilters__group">
+            <button type="button" className={typeFilter === 'ALL' ? 'is-active' : ''} onClick={() => setTypeFilter('ALL')}>
+              Todos
+            </button>
+            <button type="button" className={typeFilter === 'COURSE' ? 'is-active' : ''} onClick={() => setTypeFilter('COURSE')}>
+              Cursos
+            </button>
+            <button type="button" className={typeFilter === 'BOOK' ? 'is-active' : ''} onClick={() => setTypeFilter('BOOK')}>
+              Livros
+            </button>
+            <button type="button" className={typeFilter === 'UNIVERSITY' ? 'is-active' : ''} onClick={() => setTypeFilter('UNIVERSITY')}>
+              Faculdade
+            </button>
+          </div>
+        </section>
 
-          <div className="studyModules">
-            {activeStudy.modules.map((module) => {
-              const moduleProgress = calcProgress([module])
-              const lessonInput = newLessonInputs[module.id] ?? { title: '', duration: '', accessUrl: '' }
+        <section className="studiesGrid">
+          {filteredStudies.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1', color: '#999' }}>
+              <p>Nenhum estudo cadastrado. Clique em "Novo Estudo" para começar.</p>
+            </div>
+          ) : (
+            filteredStudies.map((study) => {
+              const progress = calcProgress(study.modules || [])
               return (
-                <article key={module.id} className="studyModule">
-                  <button type="button" className="studyModule__toggle" onClick={() => handleToggleModule(module.id)}>
-                    <div>
-                      <h3>{module.title}</h3>
-                      <span>{moduleProgress}% concluído</span>
+                <article key={study.id} className="studyCard" onClick={() => setActiveStudyId(study.id)} role="button">
+                  <div className="studyCard__cover">
+                    {study.coverUrl ? <img src={study.coverUrl} alt={study.title} /> : <div className="studyCard__coverFallback" />}
+                    <div className="studyCard__progress">
+                      <span style={{ width: `${progress}%` }} />
                     </div>
-                    <span className={expandedModules[module.id] ? 'is-open' : ''}>⌄</span>
-                  </button>
-                  <div className={`studyModule__content ${expandedModules[module.id] ? 'is-open' : ''}`}>
-                    <div className="studyModule__progress">
-                      <span style={{ width: `${moduleProgress}%` }} />
+                  </div>
+                  <div className="studyCard__content">
+                    <div className="studyCard__meta">
+                      <span className="studyCard__badge">{typeLabelMap[study.type]}</span>
                     </div>
-                    <div className="studyLessons">
-                      {module.lessons.map((lesson) => (
-                        <label key={lesson.id} className="studyLesson">
-                          <input
-                            type="checkbox"
-                            checked={lesson.isCompleted || false}
-                            onChange={() => handleToggleLesson(module.id, lesson.id, lesson.isCompleted)}
-                          />
-                          <div>
-                            <strong>{lesson.title}</strong>
-                          </div>
-                          {lesson.accessUrl ? (
-                            <a href={lesson.accessUrl} target="_blank" rel="noreferrer">
-                              Abrir
-                            </a>
-                          ) : null}
-                        </label>
-                      ))}
-                    </div>
-                    <div className="studyLessonForm">
-                      <input
-                        type="text"
-                        placeholder="Nova aula"
-                        value={lessonInput.title}
-                        onChange={(event) => handleLessonInputChange(module.id, 'title', event.target.value)}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Duração (opcional)"
-                        value={lessonInput.duration}
-                        onChange={(event) => handleLessonInputChange(module.id, 'duration', event.target.value)}
-                      />
-                      <input
-                        type="url"
-                        placeholder="Link (opcional)"
-                        value={lessonInput.accessUrl}
-                        onChange={(event) => handleLessonInputChange(module.id, 'accessUrl', event.target.value)}
-                      />
-                      <button type="button" onClick={() => handleAddLesson(module.id)}>
-                        Nova aula
-                      </button>
-                    </div>
+                    <h3>{study.title}</h3>
+                    <p>{statusLabelMap[study.status]}</p>
                   </div>
                 </article>
               )
-            })}
-          </div>
+            })
+          )}
         </section>
-      ) : null}
 
-      {isModalOpen && (
-        <CreateStudyModal
-          onClose={() => setModalOpen(false)}
-          onSubmit={handleCreateStudy}
+        {activeStudy ? (
+          <section className="studyDetail">
+            <header className="studyDetail__header">
+              <div>
+                <p className="txt-pill">{typeLabelMap[activeStudy.type]}</p>
+                <h2>{activeStudy.title}</h2>
+                <p>{activeStudy.topic}</p>
+              </div>
+              <div className="studyDetail__progress">
+                <span>{calcProgress(activeStudy.modules)}% concluído</span>
+                <div>
+                  <span style={{ width: `${calcProgress(activeStudy.modules)}%` }} />
+                </div>
+              </div>
+            </header>
+
+            <div className="studyDetail__actions">
+              <input
+                type="text"
+                placeholder="Novo módulo"
+                value={newModuleTitle}
+                onChange={(event) => setNewModuleTitle(event.target.value)}
+              />
+              <button type="button" onClick={handleAddModule}>
+                Novo módulo
+              </button>
+            </div>
+
+            <div className="studyModules">
+              {activeStudy.modules.map((module) => {
+                const moduleProgress = calcProgress([module])
+                const lessonInput = newLessonInputs[module.id] ?? { title: '', duration: '', accessUrl: '' }
+                return (
+                  <article key={module.id} className="studyModule">
+                    <button type="button" className="studyModule__toggle" onClick={() => handleToggleModule(module.id)}>
+                      <div>
+                        <h3>{module.title}</h3>
+                        <span>{moduleProgress}% concluído</span>
+                      </div>
+                      <span className={expandedModules[module.id] ? 'is-open' : ''}>⌄</span>
+                    </button>
+                    <div className={`studyModule__content ${expandedModules[module.id] ? 'is-open' : ''}`}>
+                      <div className="studyModule__progress">
+                        <span style={{ width: `${moduleProgress}%` }} />
+                      </div>
+                      <div className="studyLessons">
+                        {module.lessons.map((lesson) => (
+                          <label key={lesson.id} className="studyLesson">
+                            <input
+                              type="checkbox"
+                              checked={lesson.isCompleted || false}
+                              onChange={() => handleToggleLesson(module.id, lesson.id, lesson.isCompleted)}
+                            />
+                            <div>
+                              <strong>{lesson.title}</strong>
+                            </div>
+                            {lesson.accessUrl ? (
+                              <a href={lesson.accessUrl} target="_blank" rel="noreferrer">
+                                Abrir
+                              </a>
+                            ) : null}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="studyLessonForm">
+                        <input
+                          type="text"
+                          placeholder="Nova aula"
+                          value={lessonInput.title}
+                          onChange={(event) => handleLessonInputChange(module.id, 'title', event.target.value)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Duração (opcional)"
+                          value={lessonInput.duration}
+                          onChange={(event) => handleLessonInputChange(module.id, 'duration', event.target.value)}
+                        />
+                        <input
+                          type="url"
+                          placeholder="Link (opcional)"
+                          value={lessonInput.accessUrl}
+                          onChange={(event) => handleLessonInputChange(module.id, 'accessUrl', event.target.value)}
+                        />
+                        <button type="button" onClick={() => handleAddLesson(module.id)}>
+                          Nova aula
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {isModalOpen && (
+          <CreateStudyModal
+            onClose={() => setModalOpen(false)}
+            onSubmit={handleCreateStudy}
+            userId={user?.id}
+          />
+        )}
+
+        <FloatingCreateButton
+          label="Novo estudo"
+          caption="Criar estudo"
+          ariaLabel="Criar novo estudo"
+          onClick={handleOpenModal}
         />
-      )}
-
-      <FloatingCreateButton
-        label="Novo estudo"
-        caption="Criar estudo"
-        ariaLabel="Criar novo estudo"
-        onClick={handleOpenModal}
-      />
       </div>
     </div>
   )
