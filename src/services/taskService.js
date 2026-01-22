@@ -8,6 +8,8 @@ const normalizeTask = (task) => ({
   dueDate: task.due_date,
   projectId: task.project_id,
   clarifyItems: task.clarify_items || [],
+  // CORREÇÃO: Garante que time_spent seja sempre um número para o ProductivityCard
+  time_spent: Number(task.time_spent) || 0,
 });
 
 export const taskService = {

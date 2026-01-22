@@ -6,9 +6,13 @@ const FILTERS = ['Dia', 'Semana', 'Mês']
 export default function ProductivityCard({ className = '', tasks = [] }) {
   const [activeFilter, setActiveFilter] = useState('Semana')
 
-  // Filtra tarefas que têm algum tempo registrado (produtividade real)
+  // Filtra tarefas que têm algum tempo de foco registrado via Pomodoro
   const trackedTasks = useMemo(() => {
-    return tasks.filter(t => (t.time_spent && t.time_spent > 0) || t.status === 'done')
+    // Inclui tarefas com tempo de foco registrado OU tarefas concluídas
+    return tasks.filter(t => {
+      const timeSpent = Number(t.time_spent) || 0
+      return timeSpent > 0 || t.status === 'done' || t.completed
+    })
   }, [tasks])
 
   const chartData = useMemo(() => {
