@@ -49,7 +49,7 @@ const ICON_OPTIONS = [
 const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Habits({ user, onNavigate, onLogout }) {
-  const { habits, addHabit, updateHabit, deleteHabit, completeHabit } = useApp()
+  const { habits, addHabit, updateHabit, deleteHabit, completeHabit, completeHabitForDate } = useApp()
 
   const [viewMode, setViewMode] = useState('daily')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -377,7 +377,17 @@ export default function Habits({ user, onNavigate, onLogout }) {
                     const category = CATEGORIES.find(c => c.id === habit.category)
 
                     return (
-                      <li key={habit.id} className={`dayModal__item ${habit.isCompleted ? 'dayModal__item--completed' : ''}`}>
+                      <li
+                        key={habit.id}
+                        className={`dayModal__item ${habit.isCompleted ? 'dayModal__item--completed' : ''}`}
+                        onClick={() => {
+                          if (selectedDayData?.dateStr) {
+                            completeHabitForDate(habit.id, selectedDayData.dateStr)
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                        title="Clique para marcar/desmarcar"
+                      >
                         <div className="dayModal__itemIcon" style={{ backgroundColor: category?.color || '#ff4800' }}>
                           <IconComponent size={18} />
                         </div>
@@ -536,7 +546,9 @@ export default function Habits({ user, onNavigate, onLogout }) {
                         <span className="weekDayCard__number">{slot.dayNumber}</span>
                       </div>
 
-                      <div className="weekDayCard__ring" style={{ '--progress': progressPercent }}>
+                      <div className="weekDayCard__ring" style={{ 
+// @ts-ignore
+                      '--progress': progressPercent }}>
                         <svg viewBox="0 0 36 36">
                           <path
                             className="weekDayCard__ringBg"

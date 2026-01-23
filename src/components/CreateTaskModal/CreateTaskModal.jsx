@@ -1,23 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Calendar, Clock, ChevronDown, Briefcase, Heart, Wallet, Activity, User, X, Check } from 'lucide-react'
+import {
+  Calendar, Clock, ChevronDown, Briefcase, Heart, Wallet, Activity, User, X, Check,
+  ClipboardList, RefreshCw, CheckCircle2, Archive, Circle, AlertCircle, Flame
+} from 'lucide-react'
 import './CreateTaskModal.css'
 
 const DESCRIPTION_LIMIT = 500
 
 // Novos status padronizados
 const STATUS_OPTIONS = [
-  { id: 'todo', label: 'A Fazer', color: '#6b7280', icon: '📋' },
-  { id: 'in_progress', label: 'Em Andamento', color: '#3b82f6', icon: '🔄' },
-  { id: 'done', label: 'Concluída', color: '#10b981', icon: '✅' },
-  { id: 'archived', label: 'Arquivada', color: '#9ca3af', icon: '📦' },
+  { id: 'todo', label: 'A Fazer', color: '#6b7280', icon: ClipboardList },
+  { id: 'in_progress', label: 'Em Andamento', color: '#3b82f6', icon: RefreshCw },
+  { id: 'done', label: 'Concluída', color: '#10b981', icon: CheckCircle2 },
+  { id: 'archived', label: 'Arquivada', color: '#9ca3af', icon: Archive },
 ]
 
 // Prioridades na ordem correta
 const PRIORITY_OPTIONS = [
-  { id: 'Baixa', label: 'Baixa', color: '#10b981', icon: '🟢' },
-  { id: 'Normal', label: 'Normal', color: '#6b7280', icon: '⚪' },
-  { id: 'Alta', label: 'Alta', color: '#f59e0b', icon: '🟡' },
-  { id: 'Urgente', label: 'Urgente', color: '#ef4444', icon: '🔴' },
+  { id: 'Baixa', label: 'Baixa', color: '#10b981', icon: Circle },
+  { id: 'Normal', label: 'Normal', color: '#6b7280', icon: Circle },
+  { id: 'Alta', label: 'Alta', color: '#f59e0b', icon: AlertCircle },
+  { id: 'Urgente', label: 'Urgente', color: '#ef4444', icon: Flame },
 ]
 
 // Áreas da tarefa
@@ -249,7 +252,7 @@ export default function CreateTaskModal({
                   onClick={() => { setShowStatus(!showStatus); setShowPriority(false); setShowArea(false); setShowProject(false) }}
                   style={{ '--accent': selectedStatus.color }}
                 >
-                  <span className="ctm__dropdownIcon">{selectedStatus.icon}</span>
+                  <span className="ctm__dropdownIcon">{(() => { const Icon = selectedStatus.icon; return <Icon size={16} /> })()}</span>
                   <span>{selectedStatus.label}</span>
                   <ChevronDown size={16} className={showStatus ? 'rotated' : ''} />
                 </button>
@@ -262,7 +265,7 @@ export default function CreateTaskModal({
                         className={`ctm__dropdownItem ${form.status === opt.id ? 'active' : ''}`}
                         onClick={() => { updateField('status', opt.id); setShowStatus(false) }}
                       >
-                        <span>{opt.icon}</span>
+                        {(() => { const Icon = opt.icon; return <Icon size={16} /> })()}
                         <span>{opt.label}</span>
                         {form.status === opt.id && <Check size={14} />}
                       </button>
@@ -287,7 +290,7 @@ export default function CreateTaskModal({
                   onClick={() => { setShowPriority(!showPriority); setShowStatus(false); setShowArea(false); setShowProject(false) }}
                   style={{ '--accent': selectedPriority.color }}
                 >
-                  <span className="ctm__dropdownIcon">{selectedPriority.icon}</span>
+                  <span className="ctm__dropdownIcon">{(() => { const Icon = selectedPriority.icon; return <Icon size={16} /> })()}</span>
                   <span>{selectedPriority.label}</span>
                   <ChevronDown size={16} className={showPriority ? 'rotated' : ''} />
                 </button>
@@ -300,7 +303,7 @@ export default function CreateTaskModal({
                         className={`ctm__dropdownItem ${form.priority === opt.id ? 'active' : ''}`}
                         onClick={() => { updateField('priority', opt.id); setShowPriority(false) }}
                       >
-                        <span>{opt.icon}</span>
+                        {(() => { const Icon = opt.icon; return <Icon size={16} /> })()}
                         <span>{opt.label}</span>
                         {(opt.id === 'Alta' || opt.id === 'Urgente') && <span className="ctm__flowTag">Flow</span>}
                         {form.priority === opt.id && <Check size={14} />}

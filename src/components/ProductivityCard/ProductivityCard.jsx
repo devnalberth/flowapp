@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Settings } from 'lucide-react'
+import { focusLogService } from '../../services/focusLogService'
 import './ProductivityCard.css'
 
 const FILTERS = ['Dia', 'Semana', 'Mês']
@@ -8,7 +9,7 @@ const FILTERS = ['Dia', 'Semana', 'Mês']
 const DEFAULT_DAILY_GOAL = 240
 
 export default function ProductivityCard({ className = '', tasks = [] }) {
-  const [activeFilter, setActiveFilter] = useState('Dia')
+  const [activeFilter, setActiveFilter] = useState('Semana')
   const [showGoalModal, setShowGoalModal] = useState(false)
 
   // Meta diária em minutos (persistida no localStorage)
@@ -21,8 +22,13 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     localStorage.setItem('productivityDailyGoal', String(dailyGoal))
   }, [dailyGoal])
 
-  // Calcula o tempo de foco por dia usando updated_at como referência
-  const focusTimeByDate = useMemo(() => {
+  // Obtém log de foco do localStorage (fonte de verdade para tempo diário)
+  const focusLog = useMemo(() => {
+    return focusLogService.getAll()
+  }, [tasks]) // Recalcula quando tasks mudam (força refresh)
+
+  // Fallback: calcula tempo por dia a partir das tarefas (para compatibilidade com dados antigos)
+  const focusTimeByDateFromTasks = useMemo(() => {
     const byDate = {}
 
     tasks.forEach(t => {
@@ -41,6 +47,14 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     return byDate
   }, [tasks])
 
+  // Combina log de foco (localStorage) com fallback de tasks
+  const getFocusTimeForDate = (dateStr) => {
+    // Prioriza o focusLog (mais preciso)
+    if (focusLog[dateStr]) return focusLog[dateStr]
+    // Fallback para dados antigos baseados em updated_at
+    return focusTimeByDateFromTasks[dateStr] || 0
+  }
+
   const chartData = useMemo(() => {
     const now = new Date()
 
@@ -48,7 +62,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       // Últimas 7 horas do dia atual
       const hours = []
       const todayStr = now.toISOString().split('T')[0]
-      const todayMinutes = focusTimeByDate[todayStr] || 0
+      const todayMinutes = getFocusTimeForDate(todayStr)
 
       for (let i = 6; i >= 0; i--) {
         const targetDate = new Date(now)
@@ -80,13 +94,14 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
         date.setDate(date.getDate() - i)
         const dateStr = date.toISOString().split('T')[0]
 
-        const minutesInDay = focusTimeByDate[dateStr] || 0
+        const minutesInDay = getFocusTimeForDate(dateStr)
 
         weekData.push({
           label: days[date.getDay()],
           value: Math.min((minutesInDay / dailyGoal) * 100, 100),
           active: i === 0,
           minutes: minutesInDay,
+          dateStr, // Para debug
         })
       }
       return weekData
@@ -95,20 +110,14 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     // Mês - últimas 4 semanas
     const monthData = []
     for (let i = 3; i >= 0; i--) {
-      const weekStart = new Date(now)
-      weekStart.setDate(weekStart.getDate() - (i * 7) - 6)
-
-      const weekEnd = new Date(now)
-      weekEnd.setDate(weekEnd.getDate() - (i * 7))
-
       let minutesInWeek = 0
 
       // Soma os minutos de cada dia da semana
       for (let d = 0; d < 7; d++) {
-        const date = new Date(weekStart)
-        date.setDate(date.getDate() + d)
+        const date = new Date(now)
+        date.setDate(date.getDate() - (i * 7) - (6 - d))
         const dateStr = date.toISOString().split('T')[0]
-        minutesInWeek += focusTimeByDate[dateStr] || 0
+        minutesInWeek += getFocusTimeForDate(dateStr)
       }
 
       // Meta semanal = meta diária * 7
@@ -122,18 +131,25 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       })
     }
     return monthData
-  }, [focusTimeByDate, activeFilter, dailyGoal])
+  }, [focusLog, focusTimeByDateFromTasks, activeFilter, dailyGoal])
 
   const stats = useMemo(() => {
     // Calcula minutos do dia atual para determinar o nível
     const todayStr = new Date().toISOString().split('T')[0]
-    const todayMinutes = focusTimeByDate[todayStr] || 0
+    const todayMinutes = getFocusTimeForDate(todayStr)
 
-    // Soma total de todos os tempos (histórico completo)
-    const totalMinutes = tasks.reduce((acc, t) => acc + (Number(t.time_spent) || 0), 0)
+    // Soma total da semana atual (últimos 7 dias)
+    let weekMinutes = 0
+    const now = new Date()
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      weekMinutes += getFocusTimeForDate(dateStr)
+    }
 
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = Math.round(totalMinutes % 60)
+    const hours = Math.floor(weekMinutes / 60)
+    const minutes = Math.round(weekMinutes % 60)
 
     // Lógica de Nível baseada na META DIÁRIA
     // Baixa: menos de 25% da meta
@@ -151,7 +167,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       todayMinutes,
       progressPercent: Math.min(progressPercent, 100),
     }
-  }, [tasks, focusTimeByDate, dailyGoal])
+  }, [focusLog, focusTimeByDateFromTasks, dailyGoal])
 
   const columnCount = chartData.length
 
@@ -227,7 +243,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
       <footer className="prod__footer">
         <div>
-          <p className="prod__label">Horas de Foco Total</p>
+          <p className="prod__label">Foco Semanal</p>
           <p className="prod__value">{stats.totalHours}</p>
         </div>
         <div className="prod__right">

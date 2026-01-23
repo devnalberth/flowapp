@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, X, CheckCircle2, Clock, TrendingUp, Calendar, Wallet, Target } from 'lucide-react'
+import { focusLogService } from '../../services/focusLogService'
 import './CalendarCard.css'
 
 const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
@@ -173,17 +174,23 @@ export default function CalendarCard({
         financeDate.getFullYear() === viewYear
     })
 
-    // Produtividade do dia
-    const focusMinutes = tasks.reduce((acc, t) => {
-      if (!t.updated_at) return acc
-      const updateDate = new Date(t.updated_at)
-      if (updateDate.getDate() === selectedDay &&
-        updateDate.getMonth() === viewMonth &&
-        updateDate.getFullYear() === viewYear) {
-        return acc + (Number(t.time_spent) || 0)
-      }
-      return acc
-    }, 0)
+    // Produtividade do dia - usa focusLogService (localStorage) como fonte primária
+    const dateStrForFocus = selectedDate.toISOString().split('T')[0]
+    let focusMinutes = focusLogService.getTimeForDate(dateStrForFocus)
+
+    // Fallback: se não tiver log, tenta calcular a partir das tasks (dados antigos)
+    if (focusMinutes === 0) {
+      focusMinutes = tasks.reduce((acc, t) => {
+        if (!t.updated_at) return acc
+        const updateDate = new Date(t.updated_at)
+        if (updateDate.getDate() === selectedDay &&
+          updateDate.getMonth() === viewMonth &&
+          updateDate.getFullYear() === viewYear) {
+          return acc + (Number(t.time_spent) || 0)
+        }
+        return acc
+      }, 0)
+    }
 
     const completedTasksCount = dayTasks.filter(t => t.completed || t.status === 'done').length
 

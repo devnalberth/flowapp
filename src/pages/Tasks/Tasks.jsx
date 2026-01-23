@@ -5,7 +5,8 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive } from 'lucide-react'
+import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock } from 'lucide-react'
+import { focusLogService } from '../../services/focusLogService'
 
 import './Tasks.css'
 
@@ -143,6 +144,10 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     const newTimeSpent = (currentTask.time_spent || 0) + minutesToAdd
 
     console.log(`Salvando foco: +${minutesToAdd.toFixed(2)} min na tarefa ${currentTask.title}`)
+
+    // NOVO: Registra no log diário de foco (localStorage)
+    const todayStr = new Date().toISOString().split('T')[0]
+    focusLogService.addTime(todayStr, minutesToAdd)
 
     // Atualiza otimista e no banco
     await updateTask(focusedTaskId, {
@@ -539,13 +544,13 @@ export default function Tasks({ onNavigate, onLogout, user }) {
                 className={`tasksListShell__sortBtn ${sortBy === 'time' ? 'active' : ''}`}
                 onClick={() => setSortBy('time')}
               >
-                🕐 Horário
+                <Clock size={14} /> Horário
               </button>
               <button
                 className={`tasksListShell__sortBtn ${sortBy === 'priority' ? 'active' : ''}`}
                 onClick={() => setSortBy('priority')}
               >
-                ⚡ Prioridade
+                <Zap size={14} /> Prioridade
               </button>
             </div>
           </div>

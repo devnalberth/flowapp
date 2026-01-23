@@ -100,8 +100,17 @@ export function AppProvider({ children, userId }) {
   const updateTask = async (id, updates) => {
     if (!userId) return
 
+    // CORREÇÃO: Normaliza os campos para snake_case para que o filtro funcione corretamente
+    const normalizedUpdates = {
+      ...updates,
+      // Converte dueDate para due_date se existir
+      due_date: updates.dueDate || updates.due_date,
+      start_date: updates.startDate || updates.start_date,
+      project_id: updates.projectId || updates.project_id,
+    }
+
     // 1. OTIMISMO TOTAL: Atualiza a tela imediatamente e confia nisso
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...normalizedUpdates } : t))
 
     try {
       // 2. Envia para o servidor
@@ -214,6 +223,37 @@ export function AppProvider({ children, userId }) {
       const currentStreak = (habit.currentStreak || 0) + 1
       const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
       updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
+    }
+
+    setHabits(prev => prev.map(h => h.id === id ? updates : h))
+    const updatedHabit = await habitService.updateHabit(id, userId, updates)
+    if (updatedHabit) {
+      setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+    }
+  }
+
+  // NOVA FUNÇÃO: Permite marcar/desmarcar hábito para uma data específica
+  const completeHabitForDate = async (id, dateStr) => {
+    if (!userId) return
+    const habit = habits.find((h) => h.id === id)
+    if (!habit) return
+
+    const completedDates = Array.isArray(habit.completions)
+      ? [...habit.completions]
+      : Array.isArray(habit.completed_dates)
+        ? [...habit.completed_dates]
+        : []
+
+    let updates = {}
+
+    if (completedDates.includes(dateStr)) {
+      // Desmarcar
+      const newDates = completedDates.filter(d => d !== dateStr)
+      updates = { ...habit, completions: newDates }
+    } else {
+      // Marcar
+      completedDates.push(dateStr)
+      updates = { ...habit, completions: completedDates }
     }
 
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
@@ -378,7 +418,7 @@ export function AppProvider({ children, userId }) {
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
     addGoal, updateGoal, deleteGoal,
-    addHabit, completeHabit, updateHabit, deleteHabit,
+    addHabit, completeHabit, completeHabitForDate, updateHabit, deleteHabit,
     addFinance, updateFinance, deleteFinance,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
