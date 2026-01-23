@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import StatCard from '../../components/StatCard/StatCard.jsx'
@@ -8,12 +8,19 @@ import ProjectOverviewCard from '../../components/ProjectOverviewCard/ProjectOve
 import ProductivityCard from '../../components/ProductivityCard/ProductivityCard.jsx'
 import CalendarCard from '../../components/CalendarCard/CalendarCard.jsx'
 import GoalsHabitsCard from '../../components/GoalsHabitsCard/GoalsHabitsCard.jsx'
+import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
+import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
+import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import { Calendar, CheckCircle2 } from 'lucide-react'
 
 import './Dashboard.css'
 
 export default function Dashboard({ onNavigate, onLogout, user }) {
   // Garantimos valores padrão vazios caso o contexto falhe momentaneamente
-  const { tasks = [], projects = [], goals = [], habits = [], loading } = useApp()
+  const { tasks = [], projects = [], goals = [], habits = [], finances = [], events = [], loading, addTask, addEvent } = useApp()
+
+  const [isTaskModalOpen, setTaskModalOpen] = useState(false)
+  const [isEventModalOpen, setEventModalOpen] = useState(false)
 
   // 1. CAMADA DE SEGURANÇA (FIREWALL DE DADOS)
   // Normaliza os hábitos para garantir que arrays existam, evitando erros visuais
@@ -109,7 +116,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
               <StatCard title="Tarefas Totais" value={kpis.total} variant="total" />
               <StatCard title="Tarefas Pendentes" value={kpis.pending} variant="pending" />
               <StatCard title="Tarefas Finalizadas" value={kpis.done} variant="done" />
-              <NextMeetingCard meeting={null} />
+              <NextMeetingCard events={events || []} />
             </section>
 
             <main className="dash__grid">
@@ -118,11 +125,42 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
               <ChatbotCard className="bento bento--chat" />
               {/* Passamos safeHabits aqui para evitar o erro .includes dentro do card */}
               <GoalsHabitsCard className="bento bento--goals" goals={goals || []} habits={safeHabits} />
-              <CalendarCard className="bento bento--calendar" tasks={tasks || []} />
+              <CalendarCard className="bento bento--calendar" tasks={tasks || []} habits={safeHabits} finances={finances || []} events={events || []} />
             </main>
           </>
         )}
       </div>
+
+      <FloatingCreateButton
+        label="Criar novo"
+        options={[
+          { label: 'Nova Tarefa', icon: CheckCircle2, onClick: () => setTaskModalOpen(true), color: '#3b82f6' },
+          { label: 'Novo Evento', icon: Calendar, onClick: () => setEventModalOpen(true), color: '#f59e0b' }
+        ]}
+      />
+
+      {isTaskModalOpen && (
+        <CreateTaskModal
+          open={true}
+          onClose={() => setTaskModalOpen(false)}
+          onSubmit={async (data) => {
+            await addTask(data)
+            setTaskModalOpen(false)
+          }}
+          projectsOptions={projects.map(p => ({ id: p.id, label: p.title }))}
+        />
+      )}
+
+      {isEventModalOpen && (
+        <CreateEventModal
+          open={true}
+          onClose={() => setEventModalOpen(false)}
+          onSubmit={async (data) => {
+            await addEvent(data)
+            setEventModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }

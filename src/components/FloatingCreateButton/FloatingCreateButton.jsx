@@ -1,15 +1,18 @@
 import './FloatingCreateButton.css'
-import { isValidElement } from 'react'
+import { isValidElement, useState } from 'react'
+import { Plus, X } from 'lucide-react'
 
 /**
- * @typedef {{label?: string, caption?: string, onClick?: ()=>void, icon?: any, ariaLabel?: string}} FloatingCreateButtonProps
+ * @typedef {{label: string, icon: any, onClick: () => void, color?: string}} SpeedDialOption
+ * @typedef {{label?: string, caption?: string, onClick?: ()=>void, icon?: any, ariaLabel?: string, options?: SpeedDialOption[]}} FloatingCreateButtonProps
  */
 
 /**
  * @param {FloatingCreateButtonProps} props
  */
 export default function FloatingCreateButton(props) {
-  const { label, caption, onClick, icon, ariaLabel } = props
+  const { label, caption, onClick, icon, ariaLabel, options } = props
+  const [isOpen, setIsOpen] = useState(false)
 
   const renderIcon = () => {
     if (!icon) {
@@ -40,18 +43,60 @@ export default function FloatingCreateButton(props) {
     }
   }
 
+  const handleMainClick = () => {
+    if (options && options.length > 0) {
+      setIsOpen(!isOpen)
+    } else {
+      onClick?.()
+    }
+  }
+
   return (
-    <button
-      type="button"
-      className="floatingCreateButton"
-      aria-label={ariaLabel || label || 'Criar novo item'}
-      onClick={onClick}
-    >
-      <span className="floatingCreateButton__glow" aria-hidden="true" />
-      <span className="floatingCreateButton__icon" aria-hidden="true">
-        {renderIcon()}
-      </span>
-      {caption ? <span className="floatingCreateButton__caption">{caption}</span> : null}
-    </button>
+    <div className={`floatingCreateContainer ${isOpen ? 'open' : ''}`}>
+      {options && isOpen && (
+        <div className="floatingCreateOptions">
+          {options.map((opt, idx) => {
+            const OptIcon = opt.icon
+            return (
+              <button
+                key={idx}
+                className="floatingCreateOption"
+                onClick={() => {
+                  opt.onClick()
+                  setIsOpen(false)
+                }}
+                style={{ '--delay': `${idx * 0.05}s`, '--opt-color': opt.color || '#3b82f6' }}
+                aria-label={opt.label}
+              >
+                <span className="floatingCreateOption__label">{opt.label}</span>
+                <span className="floatingCreateOption__icon">
+                  {isValidElement(OptIcon) ? OptIcon : <OptIcon size={20} />}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Backdrop para fechar ao clicar fora quando aberto */}
+      {isOpen && <div className="floatingCreateBackdrop" onClick={() => setIsOpen(false)} />}
+
+      <button
+        type="button"
+        className={`floatingCreateButton ${isOpen ? 'active' : ''}`}
+        aria-label={ariaLabel || label || 'Criar novo item'}
+        onClick={handleMainClick}
+      >
+        <span className="floatingCreateButton__glow" aria-hidden="true" />
+        <span className="floatingCreateButton__icon" aria-hidden="true">
+          {options ? (
+            isOpen ? <X size={28} /> : (icon ? renderIcon() : <Plus size={28} />)
+          ) : (
+            renderIcon()
+          )}
+        </span>
+        {caption ? <span className="floatingCreateButton__caption">{caption}</span> : null}
+      </button>
+    </div>
   )
 }

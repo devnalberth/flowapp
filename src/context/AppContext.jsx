@@ -6,6 +6,7 @@ import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
 import { studyService } from '../services/studyService'
 import { dreamMapService } from '../services/dreamMapService'
+import { eventService } from '../services/eventService'
 
 const AppContext = createContext(null)
 
@@ -26,6 +27,7 @@ export function AppProvider({ children, userId }) {
   const [finances, setFinances] = useState([])
   const [studies, setStudies] = useState([])
   const [dreamMaps, setDreamMaps] = useState([])
+  const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Load all data when userId changes
@@ -57,6 +59,7 @@ export function AppProvider({ children, userId }) {
         financeService.getTransactions(userId),
         studyService.getStudies(userId),
         dreamMapService.getDreamMaps(userId),
+        eventService.getEvents(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -76,6 +79,7 @@ export function AppProvider({ children, userId }) {
       setFinances(safeArray(results[4], 'finances'))
       setStudies(safeArray(results[5], 'studies'))
       setDreamMaps(safeArray(results[6], 'dreamMaps'))
+      setEvents(safeArray(results[7], 'events'))
 
     } catch (error) {
       console.error('Erro fatal no carregamento:', error)
@@ -347,9 +351,30 @@ export function AppProvider({ children, userId }) {
     await dreamMapService.deleteDreamMap(id, userId)
   }
 
+  // Event Actions
+  const addEvent = async (event) => {
+    if (!userId) return
+    const newEvent = await eventService.createEvent(userId, event)
+    setEvents(prev => [newEvent, ...prev])
+    return newEvent
+  }
+
+  const updateEvent = async (id, updates) => {
+    if (!userId) return
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e))
+    const updatedEvent = await eventService.updateEvent(id, userId, updates)
+    if (updatedEvent) setEvents(prev => prev.map(e => e.id === id ? updatedEvent : e))
+  }
+
+  const deleteEvent = async (id) => {
+    if (!userId) return
+    setEvents(prev => prev.filter(e => e.id !== id))
+    await eventService.deleteEvent(id, userId)
+  }
+
   const value = {
     userId,
-    tasks, projects, goals, habits, finances, studies, dreamMaps, loading,
+    tasks, projects, goals, habits, finances, studies, dreamMaps, events, loading,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
     addGoal, updateGoal, deleteGoal,
@@ -360,6 +385,7 @@ export function AppProvider({ children, userId }) {
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
     toggleStudyLesson,
     addDreamMap, updateDreamMap, deleteDreamMap,
+    addEvent, updateEvent, deleteEvent,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

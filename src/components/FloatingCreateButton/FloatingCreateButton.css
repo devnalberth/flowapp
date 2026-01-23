@@ -1,7 +1,6 @@
 .floatingCreateButton {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
+  position: relative;
+  /* Mudado de fixed para relative dentro do container */
   width: 68px;
   height: 68px;
   border-radius: 9999px;
@@ -14,9 +13,112 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
   z-index: 120;
   isolation: isolate;
+}
+
+.floatingCreateButton.active {
+  background: #374151;
+  /* Dark grey when open */
+  transform: rotate(90deg);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+}
+
+.floatingCreateContainer {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.floatingCreateBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  z-index: 110;
+  animation: fadeIn 0.2s ease;
+}
+
+.floatingCreateOptions {
+  display: flex;
+  flex-direction: column-reverse;
+  /* Bottom to top */
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  z-index: 120;
+}
+
+.floatingCreateOption {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay);
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.floatingCreateOption__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--opt-color);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+.floatingCreateOption:hover .floatingCreateOption__icon {
+  transform: scale(1.1);
+  background: var(--opt-color);
+  color: #fff;
+}
+
+.floatingCreateOption__label {
+  background: #111;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .floatingCreateButton svg {
@@ -27,6 +129,7 @@
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .floatingCreateButton__icon {
@@ -63,8 +166,8 @@
   pointer-events: none;
 }
 
-.floatingCreateButton:hover,
-.floatingCreateButton:focus-visible {
+.floatingCreateButton:not(.active):hover,
+.floatingCreateButton:not(.active):focus-visible {
   transform: translateY(-4px) scale(1.03);
   box-shadow:
     0 16px 40px rgba(255, 81, 0, 0.5),
@@ -88,14 +191,22 @@
 }
 
 @media (max-width: 640px) {
-  .floatingCreateButton {
+  .floatingCreateContainer {
     bottom: 20px;
     right: 20px;
+  }
+
+  .floatingCreateButton {
     width: 60px;
     height: 60px;
   }
 
   .floatingCreateButton__caption {
     display: none;
+  }
+
+  .floatingCreateOption__icon {
+    width: 48px;
+    height: 48px;
   }
 }

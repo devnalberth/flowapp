@@ -1,22 +1,44 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-
+import { Calendar, Clock, ChevronDown, Briefcase, Heart, Wallet, Activity, User, X, Check } from 'lucide-react'
 import './CreateTaskModal.css'
 
-const DESCRIPTION_LIMIT = 200
+const DESCRIPTION_LIMIT = 500
+
+// Novos status padronizados
+const STATUS_OPTIONS = [
+  { id: 'todo', label: 'A Fazer', color: '#6b7280', icon: '📋' },
+  { id: 'in_progress', label: 'Em Andamento', color: '#3b82f6', icon: '🔄' },
+  { id: 'done', label: 'Concluída', color: '#10b981', icon: '✅' },
+  { id: 'archived', label: 'Arquivada', color: '#9ca3af', icon: '📦' },
+]
+
+// Prioridades na ordem correta
+const PRIORITY_OPTIONS = [
+  { id: 'Baixa', label: 'Baixa', color: '#10b981', icon: '🟢' },
+  { id: 'Normal', label: 'Normal', color: '#6b7280', icon: '⚪' },
+  { id: 'Alta', label: 'Alta', color: '#f59e0b', icon: '🟡' },
+  { id: 'Urgente', label: 'Urgente', color: '#ef4444', icon: '🔴' },
+]
+
+// Áreas da tarefa
+const AREA_OPTIONS = [
+  { id: 'pessoal', label: 'Pessoal', color: '#8b5cf6', icon: User },
+  { id: 'profissional', label: 'Profissional', color: '#3b82f6', icon: Briefcase },
+  { id: 'saude', label: 'Saúde', color: '#10b981', icon: Activity },
+  { id: 'financeiro', label: 'Financeiro', color: '#f59e0b', icon: Wallet },
+  { id: 'relacionamento', label: 'Relacionamento', color: '#ec4899', icon: Heart },
+]
 
 export default function CreateTaskModal({
   open,
   onClose,
   onSubmit,
   projectsOptions = [],
-  statusOptions = [],
-  priorityOptions = [],
   initialProject = '',
   initialData = null,
 }) {
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
-  const dueDateRef = useRef(null)
 
   const normalizedProjects = useMemo(() => {
     return projectsOptions.map((option) =>
@@ -38,47 +60,69 @@ export default function CreateTaskModal({
     () => ({
       title: '',
       dueDate: '',
-      status: statusOptions[0] ?? '',
-      priority: priorityOptions[0] ?? '',
+      dueTime: '',
+      status: 'todo',
+      priority: 'Normal',
+      area: 'pessoal',
       description: '',
       projectId: defaultProjectId,
       subtasks: [],
     }),
-    [defaultProjectId, priorityOptions, statusOptions],
+    [defaultProjectId],
   )
 
-  const [form, setForm] = useState(initialData ? {
-    ...defaultForm,
-    ...initialData,
-    dueDate: initialData?.due_date || initialData?.dueDate || '',
-    projectId: initialData?.projectId || initialData?.project_id || defaultProjectId,
-    subtasks: initialData?.subtasks || [],
-  } : defaultForm)
+  const [form, setForm] = useState(defaultForm)
   const [subtaskDraft, setSubtaskDraft] = useState('')
+
+  // Dropdowns
+  const [showStatus, setShowStatus] = useState(false)
+  const [showPriority, setShowPriority] = useState(false)
+  const [showArea, setShowArea] = useState(false)
+  const [showProject, setShowProject] = useState(false)
 
   const charCounter = useMemo(() => `${form.description.length}/${DESCRIPTION_LIMIT}`, [form.description.length])
 
   useEffect(() => {
     if (open) {
       if (initialData) {
+        // Extrai data e hora se existir
+        let dueDate = ''
+        let dueTime = ''
+        if (initialData.due_date || initialData.dueDate) {
+          const dateVal = initialData.due_date || initialData.dueDate
+          if (dateVal.includes('T')) {
+            [dueDate, dueTime] = dateVal.split('T')
+            dueTime = dueTime.slice(0, 5)
+          } else {
+            dueDate = dateVal
+          }
+        }
+
         setForm({
           ...defaultForm,
           ...initialData,
-          dueDate: initialData?.due_date || initialData?.dueDate || '',
-          projectId: initialData?.projectId || initialData?.project_id || defaultProjectId,
-          subtasks: initialData?.subtasks || [],
+          dueDate,
+          dueTime,
+          status: initialData.status || 'todo',
+          priority: initialData.priority || 'Normal',
+          area: initialData.area || initialData.context || 'pessoal',
+          projectId: initialData.projectId || initialData.project_id || defaultProjectId,
+          subtasks: initialData.subtasks || [],
         })
       } else {
         setForm(defaultForm)
       }
       setSubtaskDraft('')
+      // Fecha todos os dropdowns
+      setShowStatus(false)
+      setShowPriority(false)
+      setShowArea(false)
+      setShowProject(false)
     }
   }, [open, defaultForm, initialData, defaultProjectId])
 
   useEffect(() => {
-    if (!open) {
-      return undefined
-    }
+    if (!open) return undefined
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -88,42 +132,51 @@ export default function CreateTaskModal({
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [open, onClose])
 
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
-      requestAnimationFrame(() => {
-        nameRef.current?.focus()
-      })
+      requestAnimationFrame(() => nameRef.current?.focus())
     }
-
-    return () => {
-      document.body.style.overflow = ''
-    }
+    return () => { document.body.style.overflow = '' }
   }, [open])
 
-  if (!open) {
-    return null
-  }
+  if (!open) return null
 
-  const updateField = (field) => (event) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }))
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    // Converte `datetime-local` (valor local) para ISO antes de enviar
+
+    // Combina data e hora
+    let finalDueDate = null
+    if (form.dueDate) {
+      finalDueDate = form.dueTime
+        ? new Date(`${form.dueDate}T${form.dueTime}`).toISOString()
+        : new Date(`${form.dueDate}T00:00:00`).toISOString()
+    }
+
+    // Determina se é Flow automaticamente (Alta ou Urgente = Flow)
+    const isFlow = form.priority === 'Alta' || form.priority === 'Urgente'
+
     const payload = {
       ...form,
-      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+      dueDate: finalDueDate,
+      context: form.area, // Salva área como context para compatibilidade
+      tags: isFlow ? ['flow'] : [], // Adiciona tag flow para prioridades altas
     }
 
     onSubmit?.(payload)
   }
+
+  const selectedStatus = STATUS_OPTIONS.find(s => s.id === form.status) || STATUS_OPTIONS[0]
+  const selectedPriority = PRIORITY_OPTIONS.find(p => p.id === form.priority) || PRIORITY_OPTIONS[1]
+  const selectedArea = AREA_OPTIONS.find(a => a.id === form.area) || AREA_OPTIONS[0]
+  const selectedProject = normalizedProjects.find(p => p.id === form.projectId)
 
   return (
     <div className="createTaskModal" role="dialog" aria-modal="true">
@@ -131,158 +184,244 @@ export default function CreateTaskModal({
 
       <section className="createTaskModal__panel" ref={dialogRef}>
         <header className="createTaskModal__header">
-          <h2 className="createTaskModal__title">Criar nova tarefa</h2>
-          <button type="button" className="createTaskModal__iconBtn" onClick={onClose} aria-label="Fechar modal">
-            <span className="createTaskModal__closeIcon" aria-hidden="true" />
+          <h2 className="createTaskModal__title">
+            {initialData ? 'Editar tarefa' : 'Nova tarefa'}
+          </h2>
+          <button type="button" className="createTaskModal__closeBtn" onClick={onClose} aria-label="Fechar">
+            <X size={20} />
           </button>
         </header>
 
         <form className="createTaskModal__form" onSubmit={handleSubmit}>
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Nome da tarefa <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
+          {/* Nome da Tarefa */}
+          <div className="ctm__field">
+            <label className="ctm__label">
+              Nome da tarefa <span className="ctm__required">*</span>
+            </label>
             <input
               ref={nameRef}
               type="text"
-              name="title"
-              className="createTaskModal__input"
-              placeholder="Nome da tarefa"
+              className="ctm__input ctm__input--lg"
+              placeholder="O que você precisa fazer?"
               value={form.title}
-              onChange={updateField('title')}
+              onChange={(e) => updateField('title', e.target.value)}
               required
             />
-          </label>
-
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Data e hora da tarefa <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <div className="createTaskModal__dateRange">
-              <input
-                ref={dueDateRef}
-                type="datetime-local"
-                name="dueDate"
-                value={form.dueDate}
-                onChange={updateField('dueDate')}
-                className="createTaskModal__dateInput"
-                required
-              />
-              <button
-                type="button"
-                className="createTaskModal__calendarBtn"
-                onClick={() => dueDateRef.current?.showPicker?.()}
-                aria-label="Abrir seletor de data e hora"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </button>
-            </div>
-          </label>
-
-          <div className="createTaskModal__grid">
-            <label className="createTaskModal__field">
-              <span className="createTaskModal__label">
-                Status <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-              </span>
-              <select
-                className="createTaskModal__input createTaskModal__input--select"
-                name="status"
-                value={form.status}
-                onChange={updateField('status')}
-                required
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="createTaskModal__field">
-              <span className="createTaskModal__label">
-                Prioridade <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-              </span>
-              <select
-                className="createTaskModal__input createTaskModal__input--select"
-                name="priority"
-                value={form.priority}
-                onChange={updateField('priority')}
-                required
-              >
-                {priorityOptions.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Descrição <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <div className="createTaskModal__textareaWrap">
+          {/* Data e Hora - Design Moderno */}
+          <div className="ctm__row">
+            <div className="ctm__field ctm__field--flex">
+              <label className="ctm__label">
+                <Calendar size={14} />
+                Data
+              </label>
+              <input
+                type="date"
+                className="ctm__dateInput"
+                value={form.dueDate}
+                onChange={(e) => updateField('dueDate', e.target.value)}
+              />
+            </div>
+            <div className="ctm__field ctm__field--flex">
+              <label className="ctm__label">
+                <Clock size={14} />
+                Horário
+              </label>
+              <input
+                type="time"
+                className="ctm__timeInput"
+                value={form.dueTime}
+                onChange={(e) => updateField('dueTime', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Status e Prioridade - Chips Modernos */}
+          <div className="ctm__row">
+            {/* Status Dropdown */}
+            <div className="ctm__field">
+              <label className="ctm__label">Status</label>
+              <div className="ctm__dropdown">
+                <button
+                  type="button"
+                  className="ctm__dropdownBtn"
+                  onClick={() => { setShowStatus(!showStatus); setShowPriority(false); setShowArea(false); setShowProject(false) }}
+                  style={{ '--accent': selectedStatus.color }}
+                >
+                  <span className="ctm__dropdownIcon">{selectedStatus.icon}</span>
+                  <span>{selectedStatus.label}</span>
+                  <ChevronDown size={16} className={showStatus ? 'rotated' : ''} />
+                </button>
+                {showStatus && (
+                  <div className="ctm__dropdownMenu">
+                    {STATUS_OPTIONS.map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        className={`ctm__dropdownItem ${form.status === opt.id ? 'active' : ''}`}
+                        onClick={() => { updateField('status', opt.id); setShowStatus(false) }}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                        {form.status === opt.id && <Check size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Prioridade Dropdown */}
+            <div className="ctm__field">
+              <label className="ctm__label">
+                Prioridade
+                {(form.priority === 'Alta' || form.priority === 'Urgente') && (
+                  <span className="ctm__flowBadge">⚡ Flow</span>
+                )}
+              </label>
+              <div className="ctm__dropdown">
+                <button
+                  type="button"
+                  className="ctm__dropdownBtn"
+                  onClick={() => { setShowPriority(!showPriority); setShowStatus(false); setShowArea(false); setShowProject(false) }}
+                  style={{ '--accent': selectedPriority.color }}
+                >
+                  <span className="ctm__dropdownIcon">{selectedPriority.icon}</span>
+                  <span>{selectedPriority.label}</span>
+                  <ChevronDown size={16} className={showPriority ? 'rotated' : ''} />
+                </button>
+                {showPriority && (
+                  <div className="ctm__dropdownMenu">
+                    {PRIORITY_OPTIONS.map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        className={`ctm__dropdownItem ${form.priority === opt.id ? 'active' : ''}`}
+                        onClick={() => { updateField('priority', opt.id); setShowPriority(false) }}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                        {(opt.id === 'Alta' || opt.id === 'Urgente') && <span className="ctm__flowTag">Flow</span>}
+                        {form.priority === opt.id && <Check size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Área e Projeto */}
+          <div className="ctm__row">
+            {/* Área Dropdown */}
+            <div className="ctm__field">
+              <label className="ctm__label">Área</label>
+              <div className="ctm__dropdown">
+                <button
+                  type="button"
+                  className="ctm__dropdownBtn"
+                  onClick={() => { setShowArea(!showArea); setShowStatus(false); setShowPriority(false); setShowProject(false) }}
+                  style={{ '--accent': selectedArea.color }}
+                >
+                  {(() => { const Icon = selectedArea.icon; return <Icon size={16} /> })()}
+                  <span>{selectedArea.label}</span>
+                  <ChevronDown size={16} className={showArea ? 'rotated' : ''} />
+                </button>
+                {showArea && (
+                  <div className="ctm__dropdownMenu">
+                    {AREA_OPTIONS.map(opt => {
+                      const Icon = opt.icon
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          className={`ctm__dropdownItem ${form.area === opt.id ? 'active' : ''}`}
+                          onClick={() => { updateField('area', opt.id); setShowArea(false) }}
+                          style={{ '--item-color': opt.color }}
+                        >
+                          <Icon size={16} style={{ color: opt.color }} />
+                          <span>{opt.label}</span>
+                          {form.area === opt.id && <Check size={14} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Projeto Dropdown */}
+            <div className="ctm__field">
+              <label className="ctm__label">Projeto</label>
+              <div className="ctm__dropdown">
+                <button
+                  type="button"
+                  className="ctm__dropdownBtn ctm__dropdownBtn--secondary"
+                  onClick={() => { setShowProject(!showProject); setShowStatus(false); setShowPriority(false); setShowArea(false) }}
+                >
+                  <span>{selectedProject?.label || 'Sem projeto'}</span>
+                  <ChevronDown size={16} className={showProject ? 'rotated' : ''} />
+                </button>
+                {showProject && (
+                  <div className="ctm__dropdownMenu">
+                    <button
+                      type="button"
+                      className={`ctm__dropdownItem ${!form.projectId ? 'active' : ''}`}
+                      onClick={() => { updateField('projectId', ''); setShowProject(false) }}
+                    >
+                      <span>Sem projeto</span>
+                      {!form.projectId && <Check size={14} />}
+                    </button>
+                    {normalizedProjects.map(project => (
+                      <button
+                        key={project.id}
+                        type="button"
+                        className={`ctm__dropdownItem ${form.projectId === project.id ? 'active' : ''}`}
+                        onClick={() => { updateField('projectId', project.id); setShowProject(false) }}
+                      >
+                        <span>{project.label}</span>
+                        {form.projectId === project.id && <Check size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Descrição - Opcional */}
+          <div className="ctm__field">
+            <label className="ctm__label">Descrição</label>
+            <div className="ctm__textareaWrap">
               <textarea
-                className="createTaskModal__textarea"
-                name="description"
-                placeholder="Descreva a tarefa em detalhes"
+                className="ctm__textarea"
+                placeholder="Detalhes adicionais sobre a tarefa (opcional)"
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.description}
-                onChange={updateField('description')}
+                onChange={(e) => updateField('description', e.target.value)}
                 rows={3}
-                required
               />
-              <span className="createTaskModal__counter">{charCounter}</span>
+              <span className="ctm__counter">{charCounter}</span>
             </div>
-          </label>
+          </div>
 
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">
-              Projeto vinculado <span className="createTaskModal__asterisk" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="createTaskModal__input createTaskModal__input--select"
-              name="projectId"
-              value={form.projectId}
-              onChange={updateField('projectId')}
-              required
-            >
-              <option value="" disabled>
-                Selecione o projeto
-              </option>
-              {normalizedProjects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="createTaskModal__field">
-            <span className="createTaskModal__label">Subtarefas para clarificar</span>
-            <div className="createTaskModal__subtasks">
-              <div className="subtaskInput">
+          {/* Subtarefas */}
+          <div className="ctm__field">
+            <label className="ctm__label">Subtarefas</label>
+            <div className="ctm__subtasks">
+              <div className="ctm__subtaskInput">
                 <input
                   type="text"
-                  placeholder="Ex: Definir próximo passo"
+                  placeholder="Adicionar subtarefa..."
                   value={subtaskDraft}
-                  onChange={(event) => setSubtaskDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault()
+                  onChange={(e) => setSubtaskDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
                       if (!subtaskDraft.trim()) return
                       const newSubtask = {
-                        id:
-                          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-                            ? crypto.randomUUID()
-                            : String(Date.now()),
+                        id: crypto.randomUUID?.() || String(Date.now()),
                         title: subtaskDraft.trim(),
                       }
                       setForm((prev) => ({
@@ -295,13 +434,11 @@ export default function CreateTaskModal({
                 />
                 <button
                   type="button"
+                  className="ctm__addBtn"
                   onClick={() => {
                     if (!subtaskDraft.trim()) return
                     const newSubtask = {
-                      id:
-                        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-                          ? crypto.randomUUID()
-                          : String(Date.now()),
+                      id: crypto.randomUUID?.() || String(Date.now()),
                       title: subtaskDraft.trim(),
                     }
                     setForm((prev) => ({
@@ -311,11 +448,11 @@ export default function CreateTaskModal({
                     setSubtaskDraft('')
                   }}
                 >
-                  Adicionar
+                  +
                 </button>
               </div>
               {form.subtasks.length > 0 && (
-                <ul className="createTaskModal__subtaskList">
+                <ul className="ctm__subtaskList">
                   {form.subtasks.map((subtask, index) => (
                     <li key={subtask.id || index}>
                       <span>{subtask.title}</span>
@@ -328,25 +465,22 @@ export default function CreateTaskModal({
                           }))
                         }
                       >
-                        ×
+                        <X size={14} />
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </label>
+          </div>
 
-          <footer className="createTaskModal__footer">
-            <button
-              type="button"
-              className="createTaskModal__btn createTaskModal__btn--ghost"
-              onClick={onClose}
-            >
+          {/* Footer */}
+          <footer className="ctm__footer">
+            <button type="button" className="ctm__btn ctm__btn--ghost" onClick={onClose}>
               Cancelar
             </button>
-            <button type="submit" className="createTaskModal__btn createTaskModal__btn--primary">
-              {initialData ? 'Salvar alterações' : 'Criar tarefa'}
+            <button type="submit" className="ctm__btn ctm__btn--primary">
+              {initialData ? 'Salvar' : 'Criar tarefa'}
             </button>
           </footer>
         </form>

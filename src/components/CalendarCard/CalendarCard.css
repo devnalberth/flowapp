@@ -19,6 +19,60 @@
   color: #121212;
 }
 
+/* Navegação de Mês */
+.cal__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal__navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.cal__navBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cal__monthBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 6px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.cal__monthBtn:hover {
+  border-color: #ff6a00;
+  color: #ff6a00;
+}
+
+.cal__year {
+  font-size: 10px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
 .cal__filter {
   display: inline-flex;
   align-items: center;
@@ -53,10 +107,11 @@
 .cal__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  gap: 6px;
 }
 
 .cal__day {
+  position: relative;
   height: 36px;
   border-radius: 40px;
   border: 0;
@@ -64,7 +119,17 @@
   color: #99a3ad;
   font-size: 12px;
   cursor: pointer;
-  transition: background 160ms ease, color 160ms ease;
+  transition: all 160ms ease;
+}
+
+.cal__day:hover:not(.cal__day--empty):not(.cal__day--today) {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cal__day--empty {
+  background: transparent;
+  cursor: default;
 }
 
 .cal__day--today {
@@ -84,4 +149,366 @@
   border: 2px solid #ff6a00;
   color: #ff6a00;
   font-weight: 600;
+}
+
+.cal__day--hasContent::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff6a00;
+}
+
+.cal__day--today.cal__day--hasContent::after {
+  background: white;
+}
+
+.cal__dayDot {
+  display: none;
+}
+
+/* Day Summary Modal */
+.dayModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dayModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.dayModal__panel {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideUp 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dayModal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.dayModal__eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ff6a00;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 4px;
+}
+
+.dayModal__date {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.dayModal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.dayModal__close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.dayModal__content {
+  padding: 16px 24px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Mini Stats */
+.dayModal__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dayModal__stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.dayModal__stat svg {
+  color: #ff6a00;
+  flex-shrink: 0;
+}
+
+.dayModal__stat>div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dayModal__statValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dayModal__statLabel {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Sections */
+.dayModal__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dayModal__sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.dayModal__sectionTitle svg {
+  color: #9ca3af;
+}
+
+.dayModal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Tasks */
+.dayModal__task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.dayModal__task.completed {
+  opacity: 0.6;
+}
+
+.dayModal__taskCheck {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dayModal__taskCheck.checked {
+  background: #10b981;
+  border-color: #10b981;
+  position: relative;
+}
+
+.dayModal__taskCheck.checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: white;
+}
+
+.dayModal__taskTitle {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+}
+
+.dayModal__task.completed .dayModal__taskTitle {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.dayModal__taskPriority {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.dayModal__taskPriority.priority--alta,
+.dayModal__taskPriority.priority--urgente {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.dayModal__taskPriority.priority--média {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.dayModal__taskPriority.priority--baixa {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* Habits */
+.dayModal__habit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.dayModal__habitEmoji {
+  font-size: 16px;
+}
+
+/* Events */
+.dayModal__event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #eff6ff;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #1e40af;
+}
+
+.dayModal__eventTime {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: rgba(30, 64, 175, 0.1);
+  border-radius: 4px;
+}
+
+/* Finances */
+.dayModal__financeList {
+  gap: 4px;
+}
+
+.dayModal__finance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.dayModal__financeDesc {
+  color: #374151;
+}
+
+.dayModal__financeAmount {
+  font-weight: 600;
+}
+
+.dayModal__financeAmount.income {
+  color: #16a34a;
+}
+
+.dayModal__financeAmount.expense {
+  color: #dc2626;
+}
+
+.dayModal__financeBalance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.dayModal__financeBalance .positive {
+  color: #16a34a;
+}
+
+.dayModal__financeBalance .negative {
+  color: #dc2626;
+}
+
+/* Empty State */
+.dayModal__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.dayModal__empty p {
+  margin: 0;
+  font-size: 14px;
 }

@@ -3,8 +3,9 @@ import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
+import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles } from 'lucide-react'
+import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive } from 'lucide-react'
 
 import './Tasks.css'
 
@@ -27,26 +28,47 @@ const FILTERS = [
   { id: 'flow', label: 'Flow', group: 'status', icon: 'spark', tone: 'amber' },
   { id: 'quick', label: 'Tarefa Rápida', group: 'status', icon: 'bolt', tone: 'mint' },
   { id: 'done', label: 'Finalizada', group: 'status', icon: 'check', tone: 'sage' },
+  { id: 'archived', label: 'Arquivadas', group: 'status', icon: 'archive', tone: 'stone' },
   { id: 'tomorrow', label: 'Amanhã', group: 'timeline', icon: 'sun', tone: 'dawn' },
   { id: 'late', label: 'Atrasadas', group: 'timeline', icon: 'calendar-late', tone: 'warning' },
   { id: 'unscheduled', label: 'Sem Agendamento', group: 'timeline', icon: 'calendar-off', tone: 'stone' },
 ]
 
-const TASK_MODAL_STATUS = ['Capturar', 'Clarificar', 'Executar', 'Rever', 'Flow']
-const TASK_MODAL_PRIORITY = ['Alta', 'Média', 'Baixa', 'Urgente']
+// Calcula o início da semana atual (Domingo)
+const getWeekStart = () => {
+  const now = new Date()
+  const dayOfWeek = now.getDay() // 0 = Domingo
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - dayOfWeek)
+  weekStart.setHours(0, 0, 0, 0)
+  return weekStart
+}
+
+// Calcula o fim da semana atual (Sábado)
+const getWeekEnd = () => {
+  const weekStart = getWeekStart()
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 6)
+  weekEnd.setHours(23, 59, 59, 999)
+  return weekEnd
+}
+
+// Status e Prioridades agora são definidos dentro do CreateTaskModal
 
 export default function Tasks({ onNavigate, onLogout, user }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask } = useApp()
+  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
 
   // --- Estados de Filtro ---
   const [timelineFilter, setTimelineFilter] = useState('today')
   const [statusFilters, setStatusFilters] = useState([])
+  const [sortBy, setSortBy] = useState('time') // 'time' ou 'priority'
 
   // --- Estados de Dados ---
   const [tasks, setTasks] = useState([])
   const [editTask, setEditTask] = useState(null)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
+  const [isEventModalOpen, setEventModalOpen] = useState(false)
   const [expandedTaskId, setExpandedTaskId] = useState(null)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [celebratingTask, setCelebratingTask] = useState(null)
@@ -241,6 +263,10 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    // Semana atual (Domingo a Sábado)
+    const weekStart = getWeekStart()
+    const weekEnd = getWeekEnd()
+
     const matched = tasks.filter((task) => {
       let dueDate = null
       if (task.due_date) {
@@ -252,10 +278,32 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         }
       }
 
+      // Verifica se está atrasada
+      const isLate = dueDate && dueDate < today && !task.completed
+
+      // Verifica se está arquivada (status = 'archived')
+      const isArchived = task.status === 'archived'
+
+      // Se filtro de Arquivadas está ativo, mostra APENAS arquivadas
+      if (statusFilters.includes('archived')) {
+        return isArchived
+      }
+
+      // Para outros filtros, EXCLUI tarefas arquivadas
+      if (isArchived) return false
+
+      // Exclui tarefas finalizadas de semanas anteriores (já deveriam estar arquivadas)
+      if (task.completed) {
+        const completedDate = task.updated_at ? new Date(task.updated_at) : null
+        if (completedDate && completedDate < weekStart) {
+          return false // Esconde tarefas finalizadas de semanas anteriores
+        }
+      }
+
       let matchesTimeline = false
       if (timelineFilter === 'today') matchesTimeline = dueDate && dueDate.getTime() === today.getTime()
       else if (timelineFilter === 'tomorrow') matchesTimeline = dueDate && dueDate.getTime() === tomorrow.getTime()
-      else if (timelineFilter === 'late') matchesTimeline = dueDate && dueDate < today && !task.completed
+      else if (timelineFilter === 'late') matchesTimeline = isLate
       else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDate
       else if (timelineFilter === 'any') matchesTimeline = true
 
@@ -263,13 +311,17 @@ export default function Tasks({ onNavigate, onLogout, user }) {
       if (statusFilters.length > 0) {
         matchesStatus = statusFilters.some(filterId => {
           if (filterId === 'done') return !!task.completed
-          if (filterId === 'flow') return (task.tags || []).includes('flow') || task.status === 'Flow' || task.priority === 'Urgente'
+          // FLOW: Apenas Alta e Urgente, E que NÃO estão atrasadas
+          if (filterId === 'flow') {
+            const isHighPriority = task.priority === 'Alta' || task.priority === 'Urgente'
+            return isHighPriority && !isLate && !task.completed
+          }
           if (filterId === 'quick') return (task.tags || []).includes('quick') || task.estimatedMinutes <= 15
           return false
         })
       }
 
-      // Se o filtro "Finalizada" estiver ativo, mostra APENAS as finalizadas
+      // Se o filtro "Finalizada" estiver ativo, mostra APENAS as finalizadas da semana atual
       if (statusFilters.includes('done')) return !!task.completed
 
       // Se não houver filtro de status (Minhas Tarefas padrão), ESCONDE as finalizadas
@@ -279,12 +331,42 @@ export default function Tasks({ onNavigate, onLogout, user }) {
       return matchesStatus
     })
 
+    // Ordenação
     return matched.sort((a, b) => {
-      const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
-      const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
-      return timeA - timeB
+      if (sortBy === 'priority') {
+        // Ordenar por prioridade: Urgente > Alta > Normal > Baixa
+        const priorityOrder = { 'Urgente': 0, 'Alta': 1, 'Normal': 2, 'Baixa': 3 }
+        const priorityA = priorityOrder[a.priority] ?? 4
+        const priorityB = priorityOrder[b.priority] ?? 4
+        if (priorityA !== priorityB) return priorityA - priorityB
+        // Se mesma prioridade, ordena por horário
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
+        return timeA - timeB
+      } else {
+        // Ordenar por horário (padrão)
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
+        return timeA - timeB
+      }
     })
-  }, [tasks, timelineFilter, statusFilters])
+  }, [tasks, timelineFilter, statusFilters, sortBy])
+
+  // Função para arquivar todas as tarefas finalizadas
+  const archiveCompletedTasks = async () => {
+    const completedTasks = tasks.filter(t => t.completed && t.status !== 'archived')
+
+    if (completedTasks.length === 0) {
+      alert('Não há tarefas finalizadas para arquivar.')
+      return
+    }
+
+    if (!confirm(`Arquivar ${completedTasks.length} tarefa(s) finalizada(s)?`)) return
+
+    for (const task of completedTasks) {
+      await updateTask(task.id, { status: 'archived' })
+    }
+  }
 
   const handleFilterClick = (filter) => {
     if (filter.group === 'timeline') {
@@ -439,6 +521,34 @@ export default function Tasks({ onNavigate, onLogout, user }) {
 
         <header className="tasksListShell__head">
           <div><p className="tasksListShell__eyebrow">Checklist</p><h2>Minhas Tarefas</h2></div>
+          <div className="tasksListShell__actions">
+            {/* Botão de Arquivar aparece quando filtro Finalizada está ativo */}
+            {statusFilters.includes('done') && (
+              <button
+                className="tasksListShell__archiveBtn"
+                onClick={archiveCompletedTasks}
+                title="Arquivar todas as tarefas finalizadas"
+              >
+                <Archive size={14} />
+                Arquivar Todas
+              </button>
+            )}
+            <div className="tasksListShell__sort">
+              <span className="tasksListShell__sortLabel">Ordenar:</span>
+              <button
+                className={`tasksListShell__sortBtn ${sortBy === 'time' ? 'active' : ''}`}
+                onClick={() => setSortBy('time')}
+              >
+                🕐 Horário
+              </button>
+              <button
+                className={`tasksListShell__sortBtn ${sortBy === 'priority' ? 'active' : ''}`}
+                onClick={() => setSortBy('priority')}
+              >
+                ⚡ Prioridade
+              </button>
+            </div>
+          </div>
         </header>
 
         <ul className="tasksList">
@@ -526,19 +636,38 @@ export default function Tasks({ onNavigate, onLogout, user }) {
         {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
       </section>
 
-      <FloatingCreateButton label="Nova tarefa" onClick={() => { setEditTask(null); setTaskModalOpen(true) }} />
+      <FloatingCreateButton
+        label="Criar novo"
+        options={[
+          { label: 'Nova Tarefa', icon: CheckCircle2, onClick: () => { setEditTask(null); setTaskModalOpen(true) }, color: '#3b82f6' },
+          { label: 'Novo Evento', icon: Calendar, onClick: () => setEventModalOpen(true), color: '#f59e0b' }
+        ]}
+      />
 
-      {isTaskModalOpen && (
-        <CreateTaskModal
-          open={true}
-          onClose={() => { setTaskModalOpen(false); setEditTask(null) }}
-          onSubmit={handleTaskSubmit}
-          projectsOptions={projectOptions}
-          statusOptions={TASK_MODAL_STATUS}
-          priorityOptions={TASK_MODAL_PRIORITY}
-          initialData={editTask}
-        />
-      )}
+      {
+        isTaskModalOpen && (
+          <CreateTaskModal
+            open={true}
+            onClose={() => { setTaskModalOpen(false); setEditTask(null) }}
+            onSubmit={handleTaskSubmit}
+            projectsOptions={projectOptions}
+            initialData={editTask}
+          />
+        )
+      }
+
+      {
+        isEventModalOpen && (
+          <CreateEventModal
+            open={true}
+            onClose={() => setEventModalOpen(false)}
+            onSubmit={async (data) => {
+              await addEvent(data)
+              setEventModalOpen(false)
+            }}
+          />
+        )
+      }
 
       <PomodoroConfigModal
         show={showPomodoroConfig}
@@ -569,6 +698,7 @@ function FilterIcon({ name }) {
     spark: <Sparkles size={14} />,
     bolt: <Zap size={14} />,
     check: <CheckCircle2 size={14} />,
+    archive: <Archive size={14} />,
     sun: <Sun size={14} />,
     'calendar-late': <AlertTriangle size={14} />,
     'calendar-off': <CalendarOff size={14} />

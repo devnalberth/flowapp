@@ -1,0 +1,358 @@
+/* CreateEventModal.css */
+/* Herança visual do CreateTaskModal com ajustes específicos */
+
+.createEventModal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.createEventModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.createEventModal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: visible;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Header */
+.createEventModal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.createEventModal__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.createEventModal__closeBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.createEventModal__closeBtn:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+/* Form */
+.createEventModal__form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cem__row {
+  display: flex;
+  gap: 1rem;
+}
+
+.cem__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cem__field--grow {
+  flex: 1;
+}
+
+.cem__field--flex {
+  flex: 1;
+}
+
+.cem__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.cem__required {
+  color: #ef4444;
+}
+
+.cem__flowBadge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+/* Inputs */
+.cem__input,
+.cem__textarea,
+.cem__dateInput,
+.cem__timeInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 0.925rem;
+  color: #1f2937;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.cem__input:hover,
+.cem__textarea:hover,
+.cem__dateInput:hover,
+.cem__timeInput:hover {
+  background: #fff;
+  border-color: #d1d5db;
+}
+
+.cem__input:focus,
+.cem__textarea:focus,
+.cem__dateInput:focus,
+.cem__timeInput:focus {
+  background: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.cem__input--lg {
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 0.85rem 1rem;
+}
+
+.cem__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.cem__textareaWrap {
+  position: relative;
+}
+
+.cem__counter {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Dropdowns e Buttons - Modern Style */
+.cem__dropdown {
+  position: relative;
+}
+
+.cem__dropdownBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.925rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.cem__dropdownBtn:hover {
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.cem__dropdownIcon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Indicador de cor */
+.cem__dropdownBtn::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent, transparent);
+  margin-right: -4px;
+}
+
+.cem__dropdownBtn svg:last-child {
+  margin-left: auto;
+  color: #9ca3af;
+  transition: transform 0.2s;
+}
+
+.cem__dropdownBtn svg.rotated {
+  transform: rotate(180deg);
+}
+
+.cem__dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.cem__dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #4b5563;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.cem__dropdownItem:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.cem__dropdownItem.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.cem__dropdownItem svg:last-child {
+  margin-left: auto;
+}
+
+/* Footer */
+.cem__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  margin-top: auto;
+}
+
+.cem__btn {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.925rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.cem__btn--ghost {
+  background: transparent;
+  color: #6b7280;
+}
+
+.cem__btn--ghost:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cem__btn--primary {
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cem__btn--primary:hover {
+  background: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+  .createEventModal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .createEventModal__panel {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+  }
+
+  .cem__row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}

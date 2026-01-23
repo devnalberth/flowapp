@@ -3,20 +3,23 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import CreateHabitModal from '../../components/CreateHabitModal/CreateHabitModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { 
-  Calendar, 
-  BarChart3, 
-  TrendingUp, 
-  Search, 
-  Sparkles, 
-  Dumbbell, 
-  Brain, 
-  BookOpen, 
+import {
+  Calendar,
+  BarChart3,
+  TrendingUp,
+  Search,
+  Sparkles,
+  Dumbbell,
+  Brain,
+  BookOpen,
   Book,
   Plus,
   Edit2,
   Trash2,
-  Check
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 import './Habits.css'
@@ -43,21 +46,23 @@ const ICON_OPTIONS = [
   { id: 'book', icon: Book, label: 'Book' },
 ]
 
-// Matriz do mês para visualização mensal
-const MONTH_MATRIX = [
-  { label: 'Semana 1', days: [{ day: 1, inMonth: true, score: 0.8 }, { day: 2, inMonth: true, score: 0.6 }, { day: 3, inMonth: true, score: 0.9 }, { day: 4, inMonth: true, score: 0.7 }, { day: 5, inMonth: true, score: 0.85 }, { day: 6, inMonth: true, score: 0.5 }, { day: 7, inMonth: true, score: 0.3 }]},
-  { label: 'Semana 2', days: [{ day: 8, inMonth: true, score: 0.75 }, { day: 9, inMonth: true, score: 0.9 }, { day: 10, inMonth: true, score: 0.85 }, { day: 11, inMonth: true, score: 0.7 }, { day: 12, inMonth: true, score: 0.65 }, { day: 13, inMonth: true, score: 0.8 }, { day: 14, inMonth: true, score: 0.4 }]},
-  { label: 'Semana 3', days: [{ day: 15, inMonth: true, score: 0.9 }, { day: 16, inMonth: true, score: 0.85 }, { day: 17, inMonth: true, score: 0.7 }, { day: 18, inMonth: true, score: 0.75 }, { day: 19, inMonth: true, score: 0.8 }, { day: 20, inMonth: true, score: 0.6 }, { day: 21, inMonth: true, score: 0.5 }]},
-]
+const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Habits({ user, onNavigate, onLogout }) {
   const { habits, addHabit, updateHabit, deleteHabit, completeHabit } = useApp()
-  
+
   const [viewMode, setViewMode] = useState('daily')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingHabit, setEditingHabit] = useState(null)
+
+  // Estado para visualizações semanal/mensal
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [showDayModal, setShowDayModal] = useState(false)
+
+  // Estado para navegação do mês
+  const [currentMonth, setCurrentMonth] = useState(new Date())
 
   // Obter ícone por ID
   const getIcon = (iconId) => {
@@ -74,36 +79,34 @@ export default function Habits({ user, onNavigate, onLogout }) {
     }))
   }, [habits])
 
-  // === LÓGICA DE FILTRAGEM CORRIGIDA ===
+  // === LÓGICA DE FILTRAGEM ===
   const filteredHabits = useMemo(() => {
     const today = new Date()
-    const currentDayOfWeek = today.getDay() // 0 = Domingo, 1 = Segunda...
+    const currentDayOfWeek = today.getDay()
 
     return habitsWithMeta.filter((habit) => {
-      // 1. Filtro de Categoria e Busca
       const matchesCategory = categoryFilter === 'all' || habit.category === categoryFilter
       const matchesSearch = (habit.label || habit.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-      
+
       if (!matchesCategory || !matchesSearch) return false
 
-      // 2. Filtro de Frequência
       if (!habit.frequency || habit.frequency === 'daily') return true
-      
+
       if (habit.frequency === 'custom' || habit.frequency === 'weekly') {
         let days = []
-        
+
         if (Array.isArray(habit.customDays)) days = habit.customDays
         else if (Array.isArray(habit.selectedDays)) days = habit.selectedDays
         else if (typeof habit.customDays === 'string') {
-            try { days = JSON.parse(habit.customDays) } catch (e) { 
-                days = habit.customDays.split(',').map(d => parseInt(d.trim()))
-            }
+          try { days = JSON.parse(habit.customDays) } catch (e) {
+            days = habit.customDays.split(',').map(d => parseInt(d.trim()))
+          }
         }
 
         const numericDays = days.map(d => Number(d))
 
         if (numericDays.length === 0) return false;
-        
+
         return numericDays.includes(currentDayOfWeek);
       }
 
@@ -119,57 +122,164 @@ export default function Habits({ user, onNavigate, onLogout }) {
   }
 
   const isHabitComplete = (habit, dateStr) => {
-    const list = Array.isArray(habit.completions) 
-      ? habit.completions 
+    const list = Array.isArray(habit.completions)
+      ? habit.completions
       : (Array.isArray(habit.completed_dates) ? habit.completed_dates : [])
-    
+
     return list.includes(dateStr)
   }
 
-  const getDateString = (daysOffset = 0) => {
-    const date = new Date()
-    date.setDate(date.getDate() + daysOffset)
+  const getDateString = (date) => {
+    if (typeof date === 'number') {
+      const d = new Date()
+      d.setDate(d.getDate() + date)
+      return d.toISOString().split('T')[0]
+    }
     return date.toISOString().split('T')[0]
   }
 
-  // Dados para visualização Semanal
+  // Gera dados para a semana atual
   const weeklyData = useMemo(() => {
-    const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
-    
-    return days.map((day, index) => {
-      const today = new Date()
-      const currentDay = today.getDay()
+    const today = new Date()
+    const currentDay = today.getDay()
+
+    return WEEKDAY_NAMES.map((day, index) => {
       const offset = index - currentDay
-      const date = getDateString(offset)
-      const dateObj = new Date()
-      dateObj.setDate(dateObj.getDate() + offset)
-      
+      const date = new Date()
+      date.setDate(date.getDate() + offset)
+      const dateStr = getDateString(date)
+
       const activeHabitsForDay = habitsWithMeta.filter(h => {
-         if (!h.frequency || h.frequency === 'daily') return true;
-         
-         let days = [];
-         if (Array.isArray(h.customDays)) days = h.customDays;
-         else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch(e){} }
-         
-         const numericDays = days.map(d => Number(d))
-         if (numericDays.length > 0) return numericDays.includes(index);
-         return false;
+        if (!h.frequency || h.frequency === 'daily') return true;
+
+        let days = [];
+        if (Array.isArray(h.customDays)) days = h.customDays;
+        else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
+
+        const numericDays = days.map(d => Number(d))
+        if (numericDays.length > 0) return numericDays.includes(index);
+        return false;
       });
 
-      const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, date))
+      const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, dateStr))
       const completion = activeHabitsForDay.length > 0 ? completed.length / activeHabitsForDay.length : 0
-      
+
       return {
-        day,
-        date: dateObj.getDate().toString(),
-        dateString: date,
+        dayName: day,
+        dayNumber: date.getDate(),
+        dateString: dateStr,
+        dateObj: new Date(date),
         completion,
+        completedCount: completed.length,
         total: activeHabitsForDay.length,
+        isToday: index === currentDay,
       }
     })
   }, [habitsWithMeta])
 
-  // Handlers do Modal
+  // Gera calendário dinâmico para o mês
+  const monthlyCalendar = useMemo(() => {
+    const year = currentMonth.getFullYear()
+    const month = currentMonth.getMonth()
+
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startingDayOfWeek = firstDay.getDay()
+
+    const calendar = []
+    let currentWeek = []
+
+    // Adiciona dias vazios no início
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      currentWeek.push(null)
+    }
+
+    // Adiciona os dias do mês
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day)
+      const dateStr = getDateString(date)
+
+      // Calcula progresso do dia
+      const activeHabitsForDay = habitsWithMeta.filter(h => {
+        if (!h.frequency || h.frequency === 'daily') return true;
+
+        let days = [];
+        if (Array.isArray(h.customDays)) days = h.customDays;
+        else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
+
+        const numericDays = days.map(d => Number(d))
+        if (numericDays.length > 0) return numericDays.includes(date.getDay());
+        return h.frequency === 'daily';
+      });
+
+      const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, dateStr))
+      const completion = activeHabitsForDay.length > 0 ? completed.length / activeHabitsForDay.length : 0
+
+      currentWeek.push({
+        day,
+        dateString: dateStr,
+        dateObj: date,
+        completion,
+        completedCount: completed.length,
+        total: activeHabitsForDay.length,
+        isToday: new Date().toDateString() === date.toDateString(),
+      })
+
+      if (currentWeek.length === 7) {
+        calendar.push(currentWeek)
+        currentWeek = []
+      }
+    }
+
+    // Completa a última semana com dias vazios
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push(null)
+      }
+      calendar.push(currentWeek)
+    }
+
+    return calendar
+  }, [currentMonth, habitsWithMeta])
+
+  // Dados do dia selecionado para o modal
+  const selectedDayData = useMemo(() => {
+    if (!selectedDate) return null
+
+    const dateStr = getDateString(selectedDate)
+    const dayOfWeek = selectedDate.getDay()
+
+    const habitsForDay = habitsWithMeta.filter(h => {
+      if (!h.frequency || h.frequency === 'daily') return true;
+
+      let days = [];
+      if (Array.isArray(h.customDays)) days = h.customDays;
+      else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
+
+      const numericDays = days.map(d => Number(d))
+      if (numericDays.length > 0) return numericDays.includes(dayOfWeek);
+      return h.frequency === 'daily';
+    }).map(h => ({
+      ...h,
+      isCompleted: isHabitComplete(h, dateStr)
+    }))
+
+    return {
+      date: selectedDate,
+      dateStr,
+      habits: habitsForDay,
+      completedCount: habitsForDay.filter(h => h.isCompleted).length,
+      total: habitsForDay.length,
+    }
+  }, [selectedDate, habitsWithMeta])
+
+  // Handlers
+  const handleDayClick = (dateObj) => {
+    setSelectedDate(dateObj)
+    setShowDayModal(true)
+  }
+
   const handleAddHabit = () => {
     setEditingHabit(null)
     setShowModal(true)
@@ -208,10 +318,26 @@ export default function Habits({ user, onNavigate, onLogout }) {
     }
   }
 
+  const navigateMonth = (direction) => {
+    setCurrentMonth(prev => {
+      const newDate = new Date(prev)
+      newDate.setMonth(newDate.getMonth() + direction)
+      return newDate
+    })
+  }
+
+  // Função para obter cor baseada no progresso
+  const getProgressColor = (completion) => {
+    if (completion >= 0.8) return '#10b981' // Verde
+    if (completion >= 0.5) return '#f59e0b' // Amarelo
+    if (completion > 0) return '#ef4444' // Vermelho
+    return '#e5e7eb' // Cinza
+  }
+
   return (
     <div className="habitsPage">
       <TopNav user={user} active="Hábitos" onNavigate={onNavigate} onLogout={onLogout} />
-      
+
       {showModal && (
         <CreateHabitModal
           habit={editingHabit}
@@ -222,6 +348,58 @@ export default function Habits({ user, onNavigate, onLogout }) {
           onSubmit={handleSaveHabit}
           onDelete={editingHabit ? handleDeleteHabit : undefined}
         />
+      )}
+
+      {/* Modal de Detalhes do Dia */}
+      {showDayModal && selectedDayData && (
+        <div className="dayModal">
+          <div className="dayModal__backdrop" onClick={() => setShowDayModal(false)} />
+          <div className="dayModal__panel">
+            <header className="dayModal__header">
+              <div>
+                <h3>{selectedDayData.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+                <p>{selectedDayData.completedCount} de {selectedDayData.total} hábitos concluídos</p>
+              </div>
+              <button className="dayModal__close" onClick={() => setShowDayModal(false)}>
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className="dayModal__content">
+              {selectedDayData.habits.length === 0 ? (
+                <div className="dayModal__empty">
+                  <p>Nenhum hábito programado para este dia.</p>
+                </div>
+              ) : (
+                <ul className="dayModal__list">
+                  {selectedDayData.habits.map(habit => {
+                    const IconComponent = habit.icon
+                    const category = CATEGORIES.find(c => c.id === habit.category)
+
+                    return (
+                      <li key={habit.id} className={`dayModal__item ${habit.isCompleted ? 'dayModal__item--completed' : ''}`}>
+                        <div className="dayModal__itemIcon" style={{ backgroundColor: category?.color || '#ff4800' }}>
+                          <IconComponent size={18} />
+                        </div>
+                        <div className="dayModal__itemContent">
+                          <span className="dayModal__itemLabel">{habit.label || habit.name}</span>
+                          {habit.focus && <span className="dayModal__itemFocus">{habit.focus}</span>}
+                        </div>
+                        <div className={`dayModal__itemStatus ${habit.isCompleted ? 'completed' : 'pending'}`}>
+                          {habit.isCompleted ? (
+                            <><Check size={14} /> Concluído</>
+                          ) : (
+                            <><X size={14} /> Pendente</>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="habitsWrapper">
@@ -255,7 +433,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
               />
             </div>
             <div className="categoryFilters">
-                {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
@@ -272,7 +450,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
 
         {/* Board de Conteúdo */}
         <section className="habitsBoard">
-          
+
           {/* VISUALIZAÇÃO DIÁRIA */}
           {viewMode === 'daily' && (
             <div className="habitsDaily">
@@ -286,7 +464,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
                   <span>Adicionar hábito</span>
                 </button>
               </div>
-              
+
               <div className="dailyChecklist">
                 {filteredHabits.length === 0 ? (
                   <div className="habitsEmpty">
@@ -298,22 +476,22 @@ export default function Habits({ user, onNavigate, onLogout }) {
                     const IconComponent = habit.icon
                     const todayStr = getDateString(0)
                     const isChecked = isHabitComplete(habit, todayStr)
-                    
+
                     return (
-                      <div 
-                        key={habit.id} 
+                      <div
+                        key={habit.id}
                         className={`dailyCheckItem ${isChecked ? 'dailyCheckItem--checked' : ''}`}
                         style={/** @type {any} */ ({ '--item-color': category?.color || '#ff4800' })}
                       >
                         <div className="dailyCheckItem__checkbox">
-                           <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleHabitCompletion(habit.id, todayStr)}
                           />
                         </div>
-                        
-                        <div 
+
+                        <div
                           className="dailyCheckItem__content"
                           onClick={() => handleEditHabit(habit)}
                         >
@@ -321,12 +499,12 @@ export default function Habits({ user, onNavigate, onLogout }) {
                           <span className="dailyCheckItem__label">{habit.label || habit.name}</span>
                           {habit.focus && <span className="dailyCheckItem__focus">{habit.focus}</span>}
                         </div>
-                        
+
                         <div className="dailyCheckItem__actions">
-                           <span className="dailyCheckItem__streak">🔥 {habit.streak}</span>
-                           <button className="iconBtn" onClick={() => handleEditHabit(habit)}>
-                             <Edit2 size={16} />
-                           </button>
+                          <span className="dailyCheckItem__streak">🔥 {habit.streak}</span>
+                          <button className="iconBtn" onClick={() => handleEditHabit(habit)}>
+                            <Edit2 size={16} />
+                          </button>
                         </div>
                       </div>
                     )
@@ -336,58 +514,125 @@ export default function Habits({ user, onNavigate, onLogout }) {
             </div>
           )}
 
-          {/* VISUALIZAÇÃO SEMANAL */}
+          {/* VISUALIZAÇÃO SEMANAL - REDESIGNED */}
           {viewMode === 'weekly' && (
-            <div className="habitsWeekly">
-              {weeklyData.map((slot) => {
-                const progressPercent = Math.round(slot.completion * 100)
-                return (
-                  <article key={slot.dateString} className="weekCard">
-                    <div className="weekCard__header">
-                      <div className="weekCard__date">
-                        <span className="weekCard__day">{slot.day}</span>
-                        <span className="weekCard__num">{slot.date}</span>
+            <div className="habitsWeeklyNew">
+              <header className="habitsWeeklyNew__header">
+                <h3>Semana Atual</h3>
+                <p>Clique em um dia para ver detalhes</p>
+              </header>
+
+              <div className="habitsWeeklyNew__grid">
+                {weeklyData.map((slot) => {
+                  const progressPercent = Math.round(slot.completion * 100)
+                  return (
+                    <button
+                      key={slot.dateString}
+                      className={`weekDayCard ${slot.isToday ? 'weekDayCard--today' : ''}`}
+                      onClick={() => handleDayClick(slot.dateObj)}
+                    >
+                      <div className="weekDayCard__header">
+                        <span className="weekDayCard__name">{slot.dayName}</span>
+                        <span className="weekDayCard__number">{slot.dayNumber}</span>
                       </div>
-                      <span className="weekCard__percent">{progressPercent}%</span>
-                    </div>
-                    <div className="weekCard__progress">
-                      <div className="weekCard__bar" style={{ width: `${progressPercent}%` }} />
-                    </div>
-                    <div style={{marginTop: '8px', fontSize: '12px', color: '#666'}}>
-                        {slot.total} hábitos
-                    </div>
-                  </article>
-                )
-              })}
+
+                      <div className="weekDayCard__ring" style={{ '--progress': progressPercent }}>
+                        <svg viewBox="0 0 36 36">
+                          <path
+                            className="weekDayCard__ringBg"
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                          <path
+                            className="weekDayCard__ringFill"
+                            strokeDasharray={`${progressPercent}, 100`}
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                            style={{ stroke: getProgressColor(slot.completion) }}
+                          />
+                        </svg>
+                        <span className="weekDayCard__percent">{progressPercent}%</span>
+                      </div>
+
+                      <div className="weekDayCard__stats">
+                        <span>{slot.completedCount}/{slot.total}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
 
-          {/* VISUALIZAÇÃO MENSAL */}
+          {/* VISUALIZAÇÃO MENSAL - REDESIGNED */}
           {viewMode === 'monthly' && (
-            <div className="habitsMonthly ui-card">
-              <header>
-                <div>
-                  <p>Visão Geral</p>
-                  <h3>Calendário de Calor</h3>
+            <div className="habitsMonthlyNew">
+              <header className="habitsMonthlyNew__header">
+                <div className="habitsMonthlyNew__title">
+                  <h3>Calendário de Hábitos</h3>
+                  <p>Clique em um dia para ver detalhes</p>
+                </div>
+                <div className="habitsMonthlyNew__nav">
+                  <button onClick={() => navigateMonth(-1)}>
+                    <ChevronLeft size={20} />
+                  </button>
+                  <span>{currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                  <button onClick={() => navigateMonth(1)}>
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
               </header>
-              <div className="habitsMonthly__grid">
-                {MONTH_MATRIX.map((week, idx) => (
-                  <div key={idx} className="habitsMonthly__week">
-                    {week.days.map((day) => (
-                      <article key={`${week.label}-${day.day}`} className={day.inMonth ? '' : 'is-muted'}>
-                        <header>
-                          <span>{day.day}</span>
-                        </header>
-                        {day.inMonth && (
-                          <div className="habitsMonthly__track">
-                            <span style={{ width: `${day.score * 100}%` }} />
-                          </div>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                ))}
+
+              <div className="habitsMonthlyNew__calendar">
+                <div className="habitsMonthlyNew__weekdays">
+                  {WEEKDAY_NAMES.map(day => (
+                    <span key={day}>{day}</span>
+                  ))}
+                </div>
+
+                <div className="habitsMonthlyNew__grid">
+                  {monthlyCalendar.map((week, weekIdx) => (
+                    <div key={weekIdx} className="habitsMonthlyNew__week">
+                      {week.map((day, dayIdx) => {
+                        if (!day) {
+                          return <div key={dayIdx} className="monthDayCell monthDayCell--empty" />
+                        }
+
+                        const progressPercent = Math.round(day.completion * 100)
+
+                        return (
+                          <button
+                            key={day.dateString}
+                            className={`monthDayCell ${day.isToday ? 'monthDayCell--today' : ''}`}
+                            onClick={() => handleDayClick(day.dateObj)}
+                          >
+                            <span className="monthDayCell__number">{day.day}</span>
+                            <div
+                              className="monthDayCell__bar"
+                              style={{
+                                width: `${progressPercent}%`,
+                                backgroundColor: getProgressColor(day.completion)
+                              }}
+                            />
+                            {day.total > 0 && (
+                              <span className="monthDayCell__count">{day.completedCount}/{day.total}</span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Legenda */}
+              <div className="habitsMonthlyNew__legend">
+                <span><span className="legendDot" style={{ backgroundColor: '#e5e7eb' }} /> Sem hábitos</span>
+                <span><span className="legendDot" style={{ backgroundColor: '#ef4444' }} /> &lt; 50%</span>
+                <span><span className="legendDot" style={{ backgroundColor: '#f59e0b' }} /> 50-80%</span>
+                <span><span className="legendDot" style={{ backgroundColor: '#10b981' }} /> &gt; 80%</span>
               </div>
             </div>
           )}

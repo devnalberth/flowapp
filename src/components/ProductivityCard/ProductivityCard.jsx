@@ -1,50 +1,70 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { Settings } from 'lucide-react'
 import './ProductivityCard.css'
 
 const FILTERS = ['Dia', 'Semana', 'Mês']
 
-export default function ProductivityCard({ className = '', tasks = [] }) {
-  const [activeFilter, setActiveFilter] = useState('Semana')
+// Meta padrão: 4 horas (240 minutos) por dia
+const DEFAULT_DAILY_GOAL = 240
 
-  // Filtra tarefas que têm algum tempo de foco registrado via Pomodoro
-  const trackedTasks = useMemo(() => {
-    // Inclui tarefas com tempo de foco registrado OU tarefas concluídas
-    return tasks.filter(t => {
+export default function ProductivityCard({ className = '', tasks = [] }) {
+  const [activeFilter, setActiveFilter] = useState('Dia')
+  const [showGoalModal, setShowGoalModal] = useState(false)
+
+  // Meta diária em minutos (persistida no localStorage)
+  const [dailyGoal, setDailyGoal] = useState(() => {
+    const saved = localStorage.getItem('productivityDailyGoal')
+    return saved ? Number(saved) : DEFAULT_DAILY_GOAL
+  })
+
+  useEffect(() => {
+    localStorage.setItem('productivityDailyGoal', String(dailyGoal))
+  }, [dailyGoal])
+
+  // Calcula o tempo de foco por dia usando updated_at como referência
+  const focusTimeByDate = useMemo(() => {
+    const byDate = {}
+
+    tasks.forEach(t => {
       const timeSpent = Number(t.time_spent) || 0
-      return timeSpent > 0 || t.status === 'done' || t.completed
+      if (timeSpent <= 0) return
+
+      // Usa updated_at como referência do dia em que o tempo foi registrado
+      const dateStr = t.updated_at
+        ? new Date(t.updated_at).toISOString().split('T')[0]
+        : new Date(t.created_at).toISOString().split('T')[0]
+
+      if (!byDate[dateStr]) byDate[dateStr] = 0
+      byDate[dateStr] += timeSpent
     })
+
+    return byDate
   }, [tasks])
 
   const chartData = useMemo(() => {
     const now = new Date()
 
     if (activeFilter === 'Dia') {
-      // Últimas 7 horas
+      // Últimas 7 horas do dia atual
       const hours = []
+      const todayStr = now.toISOString().split('T')[0]
+      const todayMinutes = focusTimeByDate[todayStr] || 0
+
       for (let i = 6; i >= 0; i--) {
-        const hour = now.getHours() - i
-        // Ajuste simples para horas negativas virarem dia anterior (visualização básica)
         const targetDate = new Date(now)
-        targetDate.setHours(hour)
+        targetDate.setHours(now.getHours() - i)
 
-        // Somar minutos das tarefas atualizadas nesta hora
-        const minutesInHour = trackedTasks.reduce((acc, t) => {
-          const updateDate = new Date(t.updated_at || t.created_at)
-          // Verifica se foi atualizada nesta hora/dia
-          if (updateDate.getHours() === targetDate.getHours() &&
-            updateDate.toDateString() === targetDate.toDateString()) {
-            // Se a tarefa foi mexida nesta hora, "chutamos" que o tempo dela conta aqui.
-            // (Sem tabela de logs históricos, usamos o total da tarefa como peso)
-            return acc + (Number(t.time_spent) || 0)
-          }
-          return acc
-        }, 0)
+        // Para visualização horária, distribuímos proporcionalmente
+        // (Como não temos log por hora, mostramos uma barra de progresso geral)
+        const isCurrentHour = i === 0
 
-        // Meta: 60 minutos de foco por hora = 100%
         hours.push({
           label: `${targetDate.getHours()}h`,
-          value: Math.min((minutesInHour / 60) * 100, 100),
-          active: i === 0,
+          // Se for a hora atual, mostra o progresso do dia todo
+          // Senão, mostra uma barra mínima indicando que passou
+          value: isCurrentHour ? Math.min((todayMinutes / dailyGoal) * 100, 100) : 0,
+          active: isCurrentHour,
+          minutes: isCurrentHour ? todayMinutes : 0,
         })
       }
       return hours
@@ -58,82 +78,101 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now)
         date.setDate(date.getDate() - i)
-        date.setHours(0, 0, 0, 0)
+        const dateStr = date.toISOString().split('T')[0]
 
-        const minutesInDay = trackedTasks.reduce((acc, t) => {
-          const updateDate = new Date(t.updated_at || t.created_at)
-          updateDate.setHours(0, 0, 0, 0)
+        const minutesInDay = focusTimeByDate[dateStr] || 0
 
-          if (updateDate.getTime() === date.getTime()) {
-            return acc + (Number(t.time_spent) || 0)
-          }
-          return acc
-        }, 0)
-
-        // Meta: 8 horas (480 min) por dia = 100%
         weekData.push({
           label: days[date.getDay()],
-          value: Math.min((minutesInDay / 480) * 100, 100),
+          value: Math.min((minutesInDay / dailyGoal) * 100, 100),
           active: i === 0,
+          minutes: minutesInDay,
         })
       }
       return weekData
     }
 
     // Mês - últimas 4 semanas
-    const weekData = []
+    const monthData = []
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now)
-      weekStart.setDate(weekStart.getDate() - (i * 7))
-      weekStart.setHours(0, 0, 0, 0)
+      weekStart.setDate(weekStart.getDate() - (i * 7) - 6)
 
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekEnd.getDate() + 6)
-      weekEnd.setHours(23, 59, 59, 999)
+      const weekEnd = new Date(now)
+      weekEnd.setDate(weekEnd.getDate() - (i * 7))
 
-      const minutesInWeek = trackedTasks.reduce((acc, t) => {
-        const updateDate = new Date(t.updated_at || t.created_at)
-        if (updateDate >= weekStart && updateDate <= weekEnd) {
-          return acc + (Number(t.time_spent) || 0)
-        }
-        return acc
-      }, 0)
+      let minutesInWeek = 0
 
-      // Meta: 40 horas (2400 min) por semana = 100%
-      weekData.push({
+      // Soma os minutos de cada dia da semana
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(weekStart)
+        date.setDate(date.getDate() + d)
+        const dateStr = date.toISOString().split('T')[0]
+        minutesInWeek += focusTimeByDate[dateStr] || 0
+      }
+
+      // Meta semanal = meta diária * 7
+      const weeklyGoal = dailyGoal * 7
+
+      monthData.push({
         label: `Sem ${4 - i}`,
-        value: Math.min((minutesInWeek / 2400) * 100, 100),
+        value: Math.min((minutesInWeek / weeklyGoal) * 100, 100),
         active: i === 0,
+        minutes: minutesInWeek,
       })
     }
-    return weekData
-  }, [trackedTasks, activeFilter])
+    return monthData
+  }, [focusTimeByDate, activeFilter, dailyGoal])
 
   const stats = useMemo(() => {
-    // Soma total de minutos de TODAS as tarefas carregadas
+    // Calcula minutos do dia atual para determinar o nível
+    const todayStr = new Date().toISOString().split('T')[0]
+    const todayMinutes = focusTimeByDate[todayStr] || 0
+
+    // Soma total de todos os tempos (histórico completo)
     const totalMinutes = tasks.reduce((acc, t) => acc + (Number(t.time_spent) || 0), 0)
 
     const hours = Math.floor(totalMinutes / 60)
     const minutes = Math.round(totalMinutes % 60)
 
-    // Lógica de Nível baseada em HORAS TOTAIS trabalhadas (acumulado)
-    let productivity = 'Iniciando'
-    if (totalMinutes > 2400) productivity = 'Excelente' // > 40h totais
-    else if (totalMinutes > 600) productivity = 'Alto' // > 10h totais
-    else if (totalMinutes > 120) productivity = 'Moderado' // > 2h totais
+    // Lógica de Nível baseada na META DIÁRIA
+    // Baixa: menos de 25% da meta
+    // Média: entre 25% e 75% da meta
+    // Alta: acima de 75% da meta
+    const progressPercent = (todayMinutes / dailyGoal) * 100
+
+    let productivity = 'Baixa'
+    if (progressPercent >= 75) productivity = 'Alta'
+    else if (progressPercent >= 25) productivity = 'Média'
 
     return {
       totalHours: `${hours}h ${minutes}m`,
       productivity,
+      todayMinutes,
+      progressPercent: Math.min(progressPercent, 100),
     }
-  }, [tasks])
+  }, [tasks, focusTimeByDate, dailyGoal])
 
   const columnCount = chartData.length
+
+  const handleSaveGoal = (newGoalMinutes) => {
+    setDailyGoal(newGoalMinutes)
+    setShowGoalModal(false)
+  }
 
   return (
     <section className={`prod ui-card ${className}`.trim()}>
       <header className="prod__header">
-        <div className="txt-cardTitle">Produtividade</div>
+        <div className="prod__titleRow">
+          <div className="txt-cardTitle">Produtividade</div>
+          <button
+            className="prod__settingsBtn"
+            onClick={() => setShowGoalModal(true)}
+            title="Configurar meta diária"
+          >
+            <Settings size={16} />
+          </button>
+        </div>
         <button
           className="prod__filter"
           type="button"
@@ -167,8 +206,8 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
                 <div className="prod__barContainer">
                   <span
                     className="prod__bar prod__bar--value"
-                    style={{ height: `${Math.max(bar.value, 4)}%` }} // Mínimo de 4% para aparecer visualmente
-                    title={`${Math.round(bar.value)}% da meta`}
+                    style={{ height: `${Math.max(bar.value, 4)}%` }}
+                    title={`${Math.round(bar.minutes)} min (${Math.round(bar.value)}% da meta)`}
                   />
                 </div>
               </div>
@@ -193,9 +232,79 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
         </div>
         <div className="prod__right">
           <p className="prod__label">Nível de Produtividade</p>
-          <p className="prod__value">{stats.productivity}</p>
+          <p className={`prod__value prod__level--${stats.productivity.toLowerCase()}`}>
+            {stats.productivity}
+          </p>
         </div>
       </footer>
+
+      {/* Modal de Configuração da Meta */}
+      {showGoalModal && (
+        <GoalConfigModal
+          currentGoal={dailyGoal}
+          onClose={() => setShowGoalModal(false)}
+          onSave={handleSaveGoal}
+        />
+      )}
     </section>
+  )
+}
+
+function GoalConfigModal({ currentGoal, onClose, onSave }) {
+  const [hours, setHours] = useState(Math.floor(currentGoal / 60))
+  const [minutes, setMinutes] = useState(currentGoal % 60)
+
+  const handleSave = () => {
+    const totalMinutes = (hours * 60) + minutes
+    if (totalMinutes > 0) {
+      onSave(totalMinutes)
+    }
+  }
+
+  return (
+    <div className="goalModal">
+      <div className="goalModal__backdrop" onClick={onClose} />
+      <div className="goalModal__panel">
+        <header className="goalModal__header">
+          <h3>Meta Diária de Foco</h3>
+          <button className="goalModal__close" onClick={onClose}>×</button>
+        </header>
+        <div className="goalModal__content">
+          <p className="goalModal__description">
+            Defina quantas horas você deseja focar por dia. Os níveis de produtividade serão calculados com base nessa meta.
+          </p>
+          <div className="goalModal__inputs">
+            <div className="goalModal__inputGroup">
+              <label>Horas</label>
+              <input
+                type="number"
+                min="0"
+                max="12"
+                value={hours}
+                onChange={(e) => setHours(Math.max(0, Math.min(12, Number(e.target.value))))}
+              />
+            </div>
+            <span className="goalModal__separator">:</span>
+            <div className="goalModal__inputGroup">
+              <label>Minutos</label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={minutes}
+                onChange={(e) => setMinutes(Math.max(0, Math.min(59, Number(e.target.value))))}
+              />
+            </div>
+          </div>
+          <p className="goalModal__preview">
+            Meta: <strong>{hours}h {minutes}m</strong> por dia
+          </p>
+        </div>
+        <footer className="goalModal__footer">
+          <button className="goalModal__btn" onClick={onClose}>Cancelar</button>
+          <button className="goalModal__btn goalModal__btn--primary" onClick={handleSave}>Salvar</button>
+        </footer>
+      </div>
+    </div>
   )
 }
