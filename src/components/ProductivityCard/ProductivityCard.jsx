@@ -76,26 +76,29 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       // Exibe todas as 24 horas do dia
       const hours = []
       const todayStr = getLocalYYYYMMDD(now)
-      const todayMinutes = getFocusTimeForDate(todayStr)
       const currentHour = now.getHours()
 
+      // Busca dados reais do log (objeto com property .hours)
+      const todayEntry = focusLog[todayStr]
+      const hourlyData = (typeof todayEntry === 'object' && todayEntry?.hours) ? todayEntry.hours : {}
+
       for (let h = 0; h < 24; h++) {
-        // Para visualização horária, distribuímos proporcionalmente
         const isCurrentHour = h === currentHour
 
-        // Simulação de distribuição se houver dados do dia (apenas visual)
-        // Se for a hora atual, assume o progresso
-        // Futuramente: ter log por hora
-        let value = 0
-        if (isCurrentHour) {
-          value = Math.min((todayMinutes / dailyGoal) * 100, 100)
-        }
+        // Lê os minutos reais daquela hora, se existir
+        const minutesInHour = hourlyData[h] || 0
+
+        // Calcula valor da barra (em relação a uma meta horária ideal, ex: 60m ou fração da meta diária?)
+        // Visualmente, 100% da barra = 60 minutos de foco na hora (foco total)
+        // OU proporcional à meta diária dividida por horas úteis. 
+        // Vamos usar 60m como "teto" visual da barra horária para ficar bonito.
+        const percentage = Math.min((minutesInHour / 60) * 100, 100)
 
         hours.push({
           label: `${h}h`,
-          value,
+          value: percentage,
           active: isCurrentHour,
-          minutes: isCurrentHour ? todayMinutes : 0,
+          minutes: minutesInHour,
         })
       }
       return hours
