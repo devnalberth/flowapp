@@ -50,45 +50,61 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
   }, [habits])
 
   const kpis = useMemo(() => {
-    const today = new Date()
+    // Definindo "Hoje" (meia-noite local)
+    const now = new Date()
+    const today = new Date(now)
     today.setHours(0, 0, 0, 0)
 
-    // Proteção extra: tasks pode ser undefined no primeiro render
+    // Definindo "Início da Semana" (Domingo à 00:00)
+    const dayOfWeek = now.getDay()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - dayOfWeek)
+    weekStart.setHours(0, 0, 0, 0)
+
     const safeTasks = Array.isArray(tasks) ? tasks : []
 
-    // Tarefas para HOJE (que não estão concluídas)
-    const tasksToday = safeTasks.filter(task => {
-      if (!task.due_date || task.completed) return false
+    // 1. TAREFAS DE HOJE (TOTAL AGENDADO PARA HOJE)
+    // Filtra tarefas com data = hoje (inclui feitas e não feitas)
+    const tasksTodayAll = safeTasks.filter(task => {
+      if (task.status === 'archived' || !task.due_date) return false
 
-      const dueDate = new Date(task.due_date)
+      let dueDate = new Date(task.due_date)
       dueDate.setHours(0, 0, 0, 0)
 
-      // Ajuste de fuso horário se necessário (igual ao Tasks.jsx)
+      // Correção de fuso horário
       const timezoneOffset = dueDate.getTimezoneOffset() * 60000
       if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
-        // Pequeno ajuste para garantir que a data do banco bata com o dia local
-        const adjusted = new Date(dueDate.getTime() + timezoneOffset)
-        adjusted.setHours(0, 0, 0, 0)
-        return adjusted.getTime() === today.getTime()
+        dueDate = new Date(dueDate.getTime() + timezoneOffset)
+        dueDate.setHours(0, 0, 0, 0)
       }
 
       return dueDate.getTime() === today.getTime()
+    })
+
+    // KPI 1: Total Hoje
+    const totalToday = tasksTodayAll.length
+
+    // KPI 2: Pendentes Hoje (Subset de tasksTodayAll)
+    const pendingToday = tasksTodayAll.filter(t => !t.completed && t.status !== 'done').length
+
+    // KPI 3: Finalizadas na Semana (Qualquer tarefa feita >= Domingo)
+    const doneWeek = safeTasks.filter(task => {
+      // Deve estar completa
+      if (!task.completed && task.status !== 'done') return false
+      // Deve ter data de conclusão recente
+      const dateRef = task.updated_at ? new Date(task.updated_at) : new Date(task.created_at)
+      return dateRef >= weekStart
     }).length
 
-    // Contagem baseada na propriedade 'completed' que o Tasks.jsx agora gerencia
-    const pending = safeTasks.filter(task => !task.completed).length
-    const done = safeTasks.filter(task => task.completed).length
-
-    // Calcular maior streak dos hábitos usando os dados seguros
+    // Streak dos hábitos
     const streakDays = safeHabits.reduce((max, habit) => {
       return Math.max(max, habit.current_streak || 0)
     }, 0)
 
     return {
-      total: safeTasks.length,
-      pending,
-      done,
-      tasksToday,
+      totalToday,
+      pendingToday,
+      doneWeek,
       streakDays,
     }
   }, [tasks, safeHabits])
@@ -126,10 +142,10 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
           <div className="txt-lead">
             {loading ? (
               'Sincronizando seus dados...'
-            ) : kpis.tasksToday > 0 ? (
-              `Você tem ${kpis.tasksToday} tarefa${kpis.tasksToday > 1 ? 's' : ''} para hoje e está com um streak de ${kpis.streakDays} dias!`
+            ) : kpis.pendingToday > 0 ? (
+              `Você tem ${kpis.pendingToday} tarefa${kpis.pendingToday > 1 ? 's' : ''} pendente${kpis.pendingToday > 1 ? 's' : ''} para hoje!`
             ) : (
-              `Nenhuma tarefa pendente para hoje. Seu maior streak é de ${kpis.streakDays} dias!`
+              `Tudo em dia! Aproveite para adiantar algo ou descansar.`
             )}
           </div>
         </header>
@@ -142,9 +158,24 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
         ) : (
           <>
             <section className="dash__kpis">
-              <StatCard title="Tarefas Totais" value={kpis.total} variant="total" />
-              <StatCard title="Tarefas Pendentes" value={kpis.pending} variant="pending" />
-              <StatCard title="Tarefas Finalizadas" value={kpis.done} variant="done" />
+              <StatCard
+                title="Tarefas de Hoje"
+                value={kpis.totalToday}
+                variant="total"
+                onClick={() => onNavigate('Tarefas', { initialFilter: 'today' })}
+              />
+              <StatCard
+                title="Tarefas Pendentes"
+                value={kpis.pendingToday}
+                variant="pending"
+                onClick={() => onNavigate('Tarefas', { initialFilter: 'today' })}
+              />
+              <StatCard
+                title="Tarefas Finalizadas"
+                value={kpis.doneWeek}
+                variant="done"
+                onClick={() => onNavigate('Tarefas', { initialFilter: 'done' })}
+              />
               <NextMeetingCard events={events || []} onEditEvent={handleEditEvent} />
             </section>
 

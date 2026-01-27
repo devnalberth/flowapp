@@ -61,9 +61,17 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
 
   // --- Estados de Filtro ---
-  // Se initialFilter for passado, seta ele. Senão padrão 'today'.
-  const [timelineFilter, setTimelineFilter] = useState(initialFilter || 'today')
-  const [statusFilters, setStatusFilters] = useState([])
+  // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
+  const [timelineFilter, setTimelineFilter] = useState(() => {
+    const filterDef = FILTERS.find(f => f.id === initialFilter)
+    return filterDef?.group === 'timeline' ? initialFilter : 'today'
+  })
+
+  const [statusFilters, setStatusFilters] = useState(() => {
+    const filterDef = FILTERS.find(f => f.id === initialFilter)
+    return filterDef?.group === 'status' ? [initialFilter] : []
+  })
+
   const [sortBy, setSortBy] = useState('time') // 'time' ou 'priority'
 
   // --- Estados de Dados ---
@@ -99,9 +107,17 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     setTasks(contextTasks || [])
   }, [contextTasks])
 
+  // Reage a mudanças na prop initialFilter (navegação via Dashboard)
   useEffect(() => {
     if (initialFilter) {
-      setTimelineFilter(initialFilter)
+      const filterDef = FILTERS.find(f => f.id === initialFilter)
+      if (filterDef?.group === 'timeline') {
+        setTimelineFilter(initialFilter)
+        setStatusFilters([])
+      } else if (filterDef?.group === 'status') {
+        setTimelineFilter('any') // "status" filters usually override timeline or work alongside 'any'
+        setStatusFilters([initialFilter])
+      }
     }
   }, [initialFilter])
 
