@@ -12,7 +12,8 @@ export default function CalendarCard({
   tasks = [],
   habits = [],
   finances = [],
-  events = []
+  events = [],
+  onEditEvent, // New prop
 }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(null)
@@ -264,13 +265,14 @@ export default function CalendarCard({
         <DaySummaryModal
           data={selectedDayData}
           onClose={() => setSelectedDay(null)}
+          onEditEvent={onEditEvent}
         />
       )}
     </section>
   )
 }
 
-function DaySummaryModal({ data, onClose }) {
+function DaySummaryModal({ data, onClose, onEditEvent }) {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
@@ -369,9 +371,16 @@ function DaySummaryModal({ data, onClose }) {
               </h3>
               <ul className="dayModal__list">
                 {data.events.map(event => (
-                  <li key={event.id} className="dayModal__event">
+                  <li
+                    key={event.id}
+                    className="dayModal__event"
+                    onClick={() => { onClose(); onEditEvent?.(event) }}
+                    style={{ cursor: 'pointer', transition: 'background 0.2s', borderRadius: 8 }}
+                    title="Clique para editar"
+                  >
                     <span className="dayModal__eventTime">{event.time || '—'}</span>
                     <span>{event.title}</span>
+                    <span style={{ marginLeft: 'auto', opacity: 0.5, fontSize: 11 }}>Editar</span>
                   </li>
                 ))}
               </ul>

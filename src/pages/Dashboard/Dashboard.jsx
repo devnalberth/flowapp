@@ -17,10 +17,16 @@ import './Dashboard.css'
 
 export default function Dashboard({ onNavigate, onLogout, user }) {
   // Garantimos valores padrão vazios caso o contexto falhe momentaneamente
-  const { tasks = [], projects = [], goals = [], habits = [], finances = [], events = [], loading, addTask, addEvent } = useApp()
+  const {
+    tasks = [], projects = [], goals = [], habits = [], finances = [], events = [], loading,
+    addTask, addEvent, updateEvent, deleteEvent
+  } = useApp()
 
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [isEventModalOpen, setEventModalOpen] = useState(false)
+
+  // Estado para edição de evento
+  const [editingEvent, setEditingEvent] = useState(null)
 
   // 1. CAMADA DE SEGURANÇA (FIREWALL DE DADOS)
   // Normaliza os hábitos para garantir que arrays existam, evitando erros visuais
@@ -87,6 +93,29 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
     }
   }, [tasks, safeHabits])
 
+  const handleEditEvent = (event) => {
+    setEditingEvent(event)
+    setEventModalOpen(true)
+  }
+
+  const handleEventSubmit = async (data) => {
+    if (editingEvent) {
+      await updateEvent(editingEvent.id, data)
+    } else {
+      await addEvent(data)
+    }
+    setEventModalOpen(false)
+    setEditingEvent(null)
+  }
+
+  const handleDeleteEvent = async () => {
+    if (editingEvent && confirm('Tem certeza que deseja excluir este evento?')) {
+      await deleteEvent(editingEvent.id)
+      setEventModalOpen(false)
+      setEditingEvent(null)
+    }
+  }
+
   return (
     <div className="dash">
       <TopNav user={user} active="Dashboard" onNavigate={onNavigate} onLogout={onLogout} />
@@ -116,7 +145,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
               <StatCard title="Tarefas Totais" value={kpis.total} variant="total" />
               <StatCard title="Tarefas Pendentes" value={kpis.pending} variant="pending" />
               <StatCard title="Tarefas Finalizadas" value={kpis.done} variant="done" />
-              <NextMeetingCard events={events || []} />
+              <NextMeetingCard events={events || []} onEditEvent={handleEditEvent} />
             </section>
 
             <main className="dash__grid">
@@ -125,7 +154,14 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
               <ChatbotCard className="bento bento--chat" />
               {/* Passamos safeHabits aqui para evitar o erro .includes dentro do card */}
               <GoalsHabitsCard className="bento bento--goals" goals={goals || []} habits={safeHabits} />
-              <CalendarCard className="bento bento--calendar" tasks={tasks || []} habits={safeHabits} finances={finances || []} events={events || []} />
+              <CalendarCard
+                className="bento bento--calendar"
+                tasks={tasks || []}
+                habits={safeHabits}
+                finances={finances || []}
+                events={events || []}
+                onEditEvent={handleEditEvent}
+              />
             </main>
           </>
         )}
@@ -135,7 +171,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
         label="Criar novo"
         options={[
           { label: 'Nova Tarefa', icon: CheckCircle2, onClick: () => setTaskModalOpen(true), color: '#3b82f6' },
-          { label: 'Novo Evento', icon: Calendar, onClick: () => setEventModalOpen(true), color: '#f59e0b' }
+          { label: 'Novo Evento', icon: Calendar, onClick: () => { setEditingEvent(null); setEventModalOpen(true); }, color: '#f59e0b' }
         ]}
       />
 
@@ -154,11 +190,10 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
       {isEventModalOpen && (
         <CreateEventModal
           open={true}
-          onClose={() => setEventModalOpen(false)}
-          onSubmit={async (data) => {
-            await addEvent(data)
-            setEventModalOpen(false)
-          }}
+          onClose={() => { setEventModalOpen(false); setEditingEvent(null); }}
+          onSubmit={handleEventSubmit}
+          onDelete={handleDeleteEvent}
+          initialData={editingEvent}
         />
       )}
     </div>

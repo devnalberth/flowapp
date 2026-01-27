@@ -40,6 +40,9 @@ const loginWithTimeout = (promise, ms = 10000) => {
 function App() {
   const { userId } = useApp()
   const [page, setPage] = useState('Dashboard')
+  // Novo estado para passar parâmetros entre páginas (ex: filtros)
+  const [pageParams, setPageParams] = useState({})
+
   const [currentUser, setCurrentUser] = useState(INITIAL_USER)
   const [authInfoMessage, setAuthInfoMessage] = useState('')
   const [currentPath, setCurrentPath] = useState(getPathname())
@@ -79,9 +82,10 @@ function App() {
     return () => window.removeEventListener('popstate', handlePop)
   }, [])
 
-  const handleNavigate = (next) => {
+  const handleNavigate = (next, params = {}) => {
     if (SUPPORTED_PAGES.includes(next)) {
       setPage(next)
+      setPageParams(params)
     }
   }
 
@@ -90,7 +94,7 @@ function App() {
 
     const preferSession = remember === false
     const targetPref = preferSession ? 'session' : 'local'
-    
+
     // Usamos o cliente correto baseada na preferência "Lembrar de mim"
     const client = getSupabaseClient(!preferSession)
 
@@ -149,33 +153,33 @@ function App() {
 
   return (
     <ErrorBoundary>
-      {page === 'Projetos' && <Projects {...pageProps} />}
-      {page === 'Tarefas' && <Tasks {...pageProps} />}
-      {page === 'Metas' && <Goals {...pageProps} />}
-      {page === 'Estudos' && <Studies {...pageProps} />}
-      {page === 'Hábitos' && <Habits {...pageProps} />}
-      {page === 'Financeiro' && <Finance {...pageProps} />}
-      {page === 'AI Assistant' && <AIAssistant {...pageProps} />}
-      {page === 'Dashboard' && <Dashboard {...pageProps} />}
+      {page === 'Projetos' && <Projects {...pageProps} {...pageParams} />}
+      {page === 'Tarefas' && <Tasks {...pageProps} {...pageParams} />}
+      {page === 'Metas' && <Goals {...pageProps} {...pageParams} />}
+      {page === 'Estudos' && <Studies {...pageProps} {...pageParams} />}
+      {page === 'Hábitos' && <Habits {...pageProps} {...pageParams} />}
+      {page === 'Financeiro' && <Finance {...pageProps} {...pageParams} />}
+      {page === 'AI Assistant' && <AIAssistant {...pageProps} {...pageParams} />}
+      {page === 'Dashboard' && <Dashboard {...pageProps} {...pageParams} />}
     </ErrorBoundary>
   )
 }
 
 export default function AppWrapper() {
   const [currentUserId, setCurrentUserId] = useState(null)
-  
+
   // ESTRATÉGIA DE CARREGAMENTO INSTANTÂNEO:
   // Verificamos o localStorage antes de qualquer renderização.
   // Se NÃO houver token salvo, definimos isReady=true imediatamente.
   // Isso faz a tela de login aparecer instantaneamente (0ms de tela preta).
   const [isReady, setIsReady] = useState(() => {
     if (typeof window === 'undefined') return false
-    
+
     // Procura por tokens do Supabase ou nossa chave de preferência
     const hasData = Object.keys(localStorage).some(k => k.startsWith('sb-') || k === AUTH_STORAGE_KEY)
-    
+
     // Se não tem dados, está pronto para mostrar o Login. Se tem, espera verificar a sessão.
-    return !hasData 
+    return !hasData
   })
 
   // Timeout de segurança: Se tiver token mas a internet estiver ruim, libera após 5s
@@ -200,11 +204,11 @@ export default function AppWrapper() {
           // Tenta garantir o usuário no banco (createIfMissing)
           // Se falhar (offline), assume que está logado localmente para não bloquear
           try {
-             await userService.ensureUser(session.user, { createIfMissing: true })
+            await userService.ensureUser(session.user, { createIfMissing: true })
           } catch (e) {
-             console.warn('Modo offline: não foi possível sincronizar usuário', e)
+            console.warn('Modo offline: não foi possível sincronizar usuário', e)
           }
-          
+
           if (mounted) {
             setCurrentUserId(session.user.id)
             setIsReady(true) // Login confirmado -> Libera tela
@@ -227,7 +231,7 @@ export default function AppWrapper() {
           break
         }
       }
-      
+
       // Se terminou de checar tudo e não achou, libera a tela (vai cair no Login)
       if (mounted && !found) {
         setIsReady(true)
@@ -240,13 +244,13 @@ export default function AppWrapper() {
     const listeners = clients.map((client) =>
       client.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return
-        
+
         if (session?.user) {
-           setCurrentUserId(session.user.id)
-           setIsReady(true) // Garante que a tela libera ao logar
+          setCurrentUserId(session.user.id)
+          setIsReady(true) // Garante que a tela libera ao logar
         } else if (event === 'SIGNED_OUT') {
-           setCurrentUserId(null)
-           setIsReady(true) // Garante que a tela libera ao deslogar
+          setCurrentUserId(null)
+          setIsReady(true) // Garante que a tela libera ao deslogar
         }
       })
     )
@@ -256,17 +260,17 @@ export default function AppWrapper() {
       listeners.forEach((l) => l.data.subscription.unsubscribe())
     }
   }, [])
-  
+
   if (!isReady) {
     // Loader minimalista com fundo branco (evita sensação de "tela preta quebrada")
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh', 
-        backgroundColor: '#ffffff', 
-        color: '#333' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#ffffff',
+        color: '#333'
       }}>
         <div style={{
           width: '24px',
@@ -275,7 +279,7 @@ export default function AppWrapper() {
           borderTop: '3px solid #3b82f6',
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
-        }}/>
+        }} />
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     )

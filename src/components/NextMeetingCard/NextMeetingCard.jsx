@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Calendar, Clock, MapPin, Video, Dumbbell, Users, ChevronRight } from 'lucide-react'
+import { Calendar, Clock, MapPin, Video, Dumbbell, Users, ChevronRight, Edit2 } from 'lucide-react'
 import './NextMeetingCard.css'
 
 // Ícones por tipo de evento
@@ -18,7 +18,7 @@ const EVENT_COLORS = {
   default: '#ff6a00',
 }
 
-export default function NextMeetingCard({ events = [] }) {
+export default function NextMeetingCard({ events = [], onEditEvent }) {
   const [, setTick] = useState(0)
 
   // Atualiza a cada minuto para verificar se o próximo evento mudou
@@ -33,7 +33,11 @@ export default function NextMeetingCard({ events = [] }) {
   // Encontra o próximo evento baseado no horário atual
   const nextEvent = useMemo(() => {
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
+    // Fix: Local Date String
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const todayStr = localDate.toISOString().split('T')[0]
+
     const currentTime = now.getHours() * 60 + now.getMinutes() // Minutos desde meia-noite
 
     // Filtra eventos de hoje e futuros
@@ -41,6 +45,7 @@ export default function NextMeetingCard({ events = [] }) {
       .filter(event => {
         if (!event.date) return false
 
+        // Fix: Parse YYYY-MM-DD as local, or just compare string since todayStr is local YYYY-MM-DD
         const eventDate = event.date.split('T')[0]
 
         // Evento de hoje
@@ -60,8 +65,8 @@ export default function NextMeetingCard({ events = [] }) {
       })
       .sort((a, b) => {
         // Ordena por data primeiro
-        const dateA = new Date(a.date)
-        const dateB = new Date(b.date)
+        const dateA = new Date(a.date + 'T00:00:00') // Force local
+        const dateB = new Date(b.date + 'T00:00:00')
         if (dateA.getTime() !== dateB.getTime()) {
           return dateA.getTime() - dateB.getTime()
         }
@@ -130,7 +135,11 @@ export default function NextMeetingCard({ events = [] }) {
     if (!nextEvent || !nextEvent.time) return null
 
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
+    // Fix: Local Date String checks
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const todayStr = localDate.toISOString().split('T')[0]
+
     const eventDateStr = nextEvent.date?.split('T')[0]
 
     if (eventDateStr !== todayStr) return null
@@ -158,13 +167,22 @@ export default function NextMeetingCard({ events = [] }) {
     <section className="meeting ui-card">
       <header className="meeting__header">
         <span className="meeting__titleLabel">Próximo Compromisso</span>
-        <button className="meeting__arrow" aria-label="Ver detalhes">
-          <ChevronRight size={18} />
+        <button
+          className="meeting__arrow"
+          aria-label="Ver detalhes"
+          onClick={() => nextEvent && onEditEvent?.(nextEvent)}
+          style={{ cursor: nextEvent ? 'pointer' : 'default', opacity: nextEvent ? 1 : 0.5 }}
+        >
+          {nextEvent ? <Edit2 size={16} /> : <ChevronRight size={18} />}
         </button>
       </header>
 
       {nextEvent ? (
-        <div className="meeting__card" style={{ '--event-color': eventColor }}>
+        <div
+          className="meeting__card"
+          style={{ cursor: 'pointer', ...{ '--event-color': eventColor } }}
+          onClick={() => onEditEvent?.(nextEvent)}
+        >
           <div className="meeting__icon">
             <EventIcon size={20} />
           </div>

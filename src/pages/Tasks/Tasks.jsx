@@ -56,12 +56,13 @@ const getWeekEnd = () => {
 
 // Status e Prioridades agora são definidos dentro do CreateTaskModal
 
-export default function Tasks({ onNavigate, onLogout, user }) {
+export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
   const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
 
   // --- Estados de Filtro ---
-  const [timelineFilter, setTimelineFilter] = useState('today')
+  // Se initialFilter for passado, seta ele. Senão padrão 'today'.
+  const [timelineFilter, setTimelineFilter] = useState(initialFilter || 'today')
   const [statusFilters, setStatusFilters] = useState([])
   const [sortBy, setSortBy] = useState('time') // 'time' ou 'priority'
 
@@ -97,6 +98,12 @@ export default function Tasks({ onNavigate, onLogout, user }) {
   useEffect(() => {
     setTasks(contextTasks || [])
   }, [contextTasks])
+
+  useEffect(() => {
+    if (initialFilter) {
+      setTimelineFilter(initialFilter)
+    }
+  }, [initialFilter])
 
   const focusedTaskData = useMemo(() =>
     focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
@@ -146,7 +153,12 @@ export default function Tasks({ onNavigate, onLogout, user }) {
     console.log(`Salvando foco: +${minutesToAdd.toFixed(2)} min na tarefa ${currentTask.title}`)
 
     // NOVO: Registra no log diário de foco (localStorage)
-    const todayStr = new Date().toISOString().split('T')[0]
+    // Usa data local para evitar problemas de fuso horário
+    const now = new Date()
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const todayStr = localDate.toISOString().split('T')[0]
+
     focusLogService.addTime(todayStr, minutesToAdd)
 
     // Atualiza otimista e no banco
@@ -670,6 +682,7 @@ export default function Tasks({ onNavigate, onLogout, user }) {
               await addEvent(data)
               setEventModalOpen(false)
             }}
+            onDelete={null} // Nenhuma exclusão ao criar novo
           />
         )
       }

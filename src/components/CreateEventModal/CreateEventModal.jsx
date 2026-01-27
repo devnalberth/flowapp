@@ -16,6 +16,7 @@ export default function CreateEventModal({
   open,
   onClose,
   onSubmit,
+  onDelete, // New prop
   initialData = null,
 }) {
   const dialogRef = useRef(null)
@@ -243,6 +244,16 @@ export default function CreateEventModal({
 
           {/* Footer */}
           <footer className="cem__footer">
+            {initialData && onDelete && (
+              <button
+                type="button"
+                className="cem__btn cem__btn--danger"
+                onClick={onDelete}
+                style={{ marginRight: 'auto', color: '#ef4444', background: '#fee2e2', border: 'none' }}
+              >
+                Excluir
+              </button>
+            )}
             <button type="button" className="cem__btn cem__btn--ghost" onClick={onClose}>
               Cancelar
             </button>
