@@ -2,7 +2,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
   height: 143px;
 }
 
@@ -43,7 +43,7 @@
   border-radius: 12px;
   background: linear-gradient(135deg, #0d0d12 0%, #1a1a24 100%);
   color: #fff;
-  padding: 18px 24px;
+  padding: 28px 18px;
   position: relative;
   overflow: hidden;
   flex: 1;
