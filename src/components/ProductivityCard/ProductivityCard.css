@@ -65,14 +65,35 @@
 .prod__plotWrapper {
   display: flex;
   flex-direction: column;
-  gap: 08px;
+  gap: 8px;
+  overflow-x: auto;
+  cursor: grab;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px;
+  /* Space for scroll */
 }
 
+.prod__plotWrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.prod__plotWrapper.active {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}
+
+.prod__chart--slide .prod__plotWrapper {
+  /* Ensure it takes remaining space */
+  width: 100%;
+}
 
 .prod__plot {
   height: 180px;
   display: grid;
-  gap: 16px;
+  gap: 10px;
+  /* Reduced gap slightly */
   align-items: end;
   position: relative;
   background:
@@ -82,6 +103,8 @@
       transparent 1px,
       transparent 30px);
   padding-bottom: 8px;
+  /* Allow width to exceed container in slide mode */
+  min-width: 100%;
 }
 
 .prod__group {
@@ -131,7 +154,7 @@
 
 .prod__labels {
   display: grid;
-  gap: 16px;
+  gap: 10px;
   font-size: 12px;
   color: #6b7280;
   text-align: center;
@@ -234,6 +257,7 @@
     opacity: 0;
     transform: scale(0.95) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);

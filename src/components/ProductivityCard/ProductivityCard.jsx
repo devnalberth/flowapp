@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Settings } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import './ProductivityCard.css'
@@ -22,12 +22,19 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     localStorage.setItem('productivityDailyGoal', String(dailyGoal))
   }, [dailyGoal])
 
-  // Obtém log de foco do localStorage (fonte de verdade para tempo diário)
+  // Helper para obter data local YYYY-MM-DD
+  const getLocalYYYYMMDD = (date) => {
+    const offset = date.getTimezoneOffset()
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000))
+    return localDate.toISOString().split('T')[0]
+  }
+
+  // Obtém log de foco do localStorage
   const focusLog = useMemo(() => {
     return focusLogService.getAll()
-  }, [tasks]) // Recalcula quando tasks mudam (força refresh)
+  }, [tasks])
 
-  // Fallback: calcula tempo por dia a partir das tarefas (para compatibilidade com dados antigos)
+  // Fallback: calcula tempo por dia a partir das tarefas
   const focusTimeByDateFromTasks = useMemo(() => {
     const byDate = {}
 
@@ -35,10 +42,9 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       const timeSpent = Number(t.time_spent) || 0
       if (timeSpent <= 0) return
 
-      // Usa updated_at como referência do dia em que o tempo foi registrado
-      const dateStr = t.updated_at
-        ? new Date(t.updated_at).toISOString().split('T')[0]
-        : new Date(t.created_at).toISOString().split('T')[0]
+      // Usa updated_at como referência, corrigindo timezone
+      const dateObj = t.updated_at ? new Date(t.updated_at) : new Date(t.created_at)
+      const dateStr = getLocalYYYYMMDD(dateObj)
 
       if (!byDate[dateStr]) byDate[dateStr] = 0
       byDate[dateStr] += timeSpent
@@ -47,11 +53,9 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     return byDate
   }, [tasks])
 
-  // Combina log de foco (localStorage) com fallback de tasks
+  // Combina log de foco com fallback
   const getFocusTimeForDate = (dateStr) => {
-    // Prioriza o focusLog (mais preciso)
     if (focusLog[dateStr]) return focusLog[dateStr]
-    // Fallback para dados antigos baseados em updated_at
     return focusTimeByDateFromTasks[dateStr] || 0
   }
 
@@ -59,24 +63,27 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     const now = new Date()
 
     if (activeFilter === 'Dia') {
-      // Últimas 7 horas do dia atual
+      // Exibe todas as 24 horas do dia
       const hours = []
-      const todayStr = now.toISOString().split('T')[0]
+      const todayStr = getLocalYYYYMMDD(now)
       const todayMinutes = getFocusTimeForDate(todayStr)
+      const currentHour = now.getHours()
 
-      for (let i = 6; i >= 0; i--) {
-        const targetDate = new Date(now)
-        targetDate.setHours(now.getHours() - i)
-
+      for (let h = 0; h < 24; h++) {
         // Para visualização horária, distribuímos proporcionalmente
-        // (Como não temos log por hora, mostramos uma barra de progresso geral)
-        const isCurrentHour = i === 0
+        const isCurrentHour = h === currentHour
+
+        // Simulação de distribuição se houver dados do dia (apenas visual)
+        // Se for a hora atual, assume o progresso
+        // Futuramente: ter log por hora
+        let value = 0
+        if (isCurrentHour) {
+          value = Math.min((todayMinutes / dailyGoal) * 100, 100)
+        }
 
         hours.push({
-          label: `${targetDate.getHours()}h`,
-          // Se for a hora atual, mostra o progresso do dia todo
-          // Senão, mostra uma barra mínima indicando que passou
-          value: isCurrentHour ? Math.min((todayMinutes / dailyGoal) * 100, 100) : 0,
+          label: `${h}h`,
+          value,
           active: isCurrentHour,
           minutes: isCurrentHour ? todayMinutes : 0,
         })
@@ -92,16 +99,16 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now)
         date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
+        const dateStr = getLocalYYYYMMDD(date)
 
         const minutesInDay = getFocusTimeForDate(dateStr)
 
         weekData.push({
           label: days[date.getDay()],
           value: Math.min((minutesInDay / dailyGoal) * 100, 100),
-          active: i === 0,
+          active: i === 0, // Hoje
           minutes: minutesInDay,
-          dateStr, // Para debug
+          dateStr,
         })
       }
       return weekData
@@ -112,15 +119,13 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     for (let i = 3; i >= 0; i--) {
       let minutesInWeek = 0
 
-      // Soma os minutos de cada dia da semana
       for (let d = 0; d < 7; d++) {
         const date = new Date(now)
         date.setDate(date.getDate() - (i * 7) - (6 - d))
-        const dateStr = date.toISOString().split('T')[0]
+        const dateStr = getLocalYYYYMMDD(date)
         minutesInWeek += getFocusTimeForDate(dateStr)
       }
 
-      // Meta semanal = meta diária * 7
       const weeklyGoal = dailyGoal * 7
 
       monthData.push({
@@ -134,27 +139,21 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
   }, [focusLog, focusTimeByDateFromTasks, activeFilter, dailyGoal])
 
   const stats = useMemo(() => {
-    // Calcula minutos do dia atual para determinar o nível
-    const todayStr = new Date().toISOString().split('T')[0]
+    const now = new Date()
+    const todayStr = getLocalYYYYMMDD(now)
     const todayMinutes = getFocusTimeForDate(todayStr)
 
-    // Soma total da semana atual (últimos 7 dias)
     let weekMinutes = 0
-    const now = new Date()
     for (let i = 0; i < 7; i++) {
       const date = new Date(now)
       date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
+      const dateStr = getLocalYYYYMMDD(date)
       weekMinutes += getFocusTimeForDate(dateStr)
     }
 
     const hours = Math.floor(weekMinutes / 60)
     const minutes = Math.round(weekMinutes % 60)
 
-    // Lógica de Nível baseada na META DIÁRIA
-    // Baixa: menos de 25% da meta
-    // Média: entre 25% e 75% da meta
-    // Alta: acima de 75% da meta
     const progressPercent = (todayMinutes / dailyGoal) * 100
 
     let productivity = 'Baixa'
@@ -175,6 +174,47 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     setDailyGoal(newGoalMinutes)
     setShowGoalModal(false)
   }
+
+  // Scroll Slide Logic
+  const scrollRef = useRef(null)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const scrollLeft = useRef(0)
+
+  const handleMouseDown = (e) => {
+    isDragging.current = true
+    scrollRef.current.classList.add('active')
+    startX.current = e.pageX - scrollRef.current.offsetLeft
+    scrollLeft.current = scrollRef.current.scrollLeft
+  }
+
+  const handleMouseLeave = () => {
+    isDragging.current = false
+    scrollRef.current?.classList.remove('active')
+  }
+
+  const handleMouseUp = () => {
+    isDragging.current = false
+    scrollRef.current?.classList.remove('active')
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDragging.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollRef.current.offsetLeft
+    const walk = (x - startX.current) * 2 // Velocidade do scroll
+    scrollRef.current.scrollLeft = scrollLeft.current - walk
+  }
+
+  // Scroll inicial para o horário atual
+  useEffect(() => {
+    if (activeFilter === 'Dia' && scrollRef.current) {
+      // Centraliza ou foca na hora atual (aproximado)
+      // Cada coluna tem min 40px + gap 10px ~ 50px
+      const hour = new Date().getHours()
+      scrollRef.current.scrollLeft = hour * 50 - 100
+    }
+  }, [activeFilter])
 
   return (
     <section className={`prod ui-card ${className}`.trim()}>
@@ -204,18 +244,29 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
         </button>
       </header>
 
-      <div className="prod__chart">
+      <div className={`prod__chart ${activeFilter === 'Dia' ? 'prod__chart--slide' : ''}`}>
         <div className="prod__axisY">
           {['100%', '75%', '50%', '25%', '0%'].map((label) => (
             <span key={label}>{label}</span>
           ))}
         </div>
 
-        <div className="prod__plotWrapper">
+        <div
+          className="prod__plotWrapper"
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+        >
           <div
             className="prod__plot"
             aria-hidden="true"
-            style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+            style={{
+              gridTemplateColumns: activeFilter === 'Dia'
+                ? `repeat(24, 40px)`
+                : `repeat(${columnCount}, minmax(0, 1fr))`
+            }}
           >
             {chartData.map((bar, i) => (
               <div key={i} className="prod__group" data-active={bar.active || undefined}>
@@ -232,7 +283,11 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
           <div
             className="prod__labels"
-            style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+            style={{
+              gridTemplateColumns: activeFilter === 'Dia'
+                ? `repeat(24, 40px)`
+                : `repeat(${columnCount}, minmax(0, 1fr))`
+            }}
           >
             {chartData.map((bar, i) => (
               <span key={i}>{bar.label}</span>

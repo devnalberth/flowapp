@@ -250,7 +250,7 @@ export default function CreateTaskModal({
                   type="button"
                   className="ctm__dropdownBtn"
                   onClick={() => { setShowStatus(!showStatus); setShowPriority(false); setShowArea(false); setShowProject(false) }}
-                  style={{ '--accent': selectedStatus.color }}
+                  style={/** @type {React.CSSProperties} */({ '--accent': selectedStatus.color })}
                 >
                   <span className="ctm__dropdownIcon">{(() => { const Icon = selectedStatus.icon; return <Icon size={16} /> })()}</span>
                   <span>{selectedStatus.label}</span>
@@ -288,7 +288,7 @@ export default function CreateTaskModal({
                   type="button"
                   className="ctm__dropdownBtn"
                   onClick={() => { setShowPriority(!showPriority); setShowStatus(false); setShowArea(false); setShowProject(false) }}
-                  style={{ '--accent': selectedPriority.color }}
+                  style={/** @type {React.CSSProperties} */({ '--accent': selectedPriority.color })}
                 >
                   <span className="ctm__dropdownIcon">{(() => { const Icon = selectedPriority.icon; return <Icon size={16} /> })()}</span>
                   <span>{selectedPriority.label}</span>
@@ -325,7 +325,7 @@ export default function CreateTaskModal({
                   type="button"
                   className="ctm__dropdownBtn"
                   onClick={() => { setShowArea(!showArea); setShowStatus(false); setShowPriority(false); setShowProject(false) }}
-                  style={{ '--accent': selectedArea.color }}
+                  style={/** @type {React.CSSProperties} */({ '--accent': selectedArea.color })}
                 >
                   {(() => { const Icon = selectedArea.icon; return <Icon size={16} /> })()}
                   <span>{selectedArea.label}</span>
@@ -341,7 +341,7 @@ export default function CreateTaskModal({
                           type="button"
                           className={`ctm__dropdownItem ${form.area === opt.id ? 'active' : ''}`}
                           onClick={() => { updateField('area', opt.id); setShowArea(false) }}
-                          style={{ '--item-color': opt.color }}
+                          style={/** @type {React.CSSProperties} */({ '--item-color': opt.color })}
                         >
                           <Icon size={16} style={{ color: opt.color }} />
                           <span>{opt.label}</span>

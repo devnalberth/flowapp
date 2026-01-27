@@ -199,7 +199,7 @@ export default function CreateEventModal({
                   type="button"
                   className="cem__dropdownBtn"
                   onClick={() => setShowType(!showType)}
-                  style={{ '--accent': selectedType.color }}
+                  style={/** @type {React.CSSProperties} */({ '--accent': selectedType.color })}
                 >
                   <span className="cem__dropdownIcon">{selectedType.icon}</span>
                   <span>{selectedType.label}</span>

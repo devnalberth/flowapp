@@ -65,7 +65,8 @@ export default function CalendarCard({
     const withEvents = new Set()
     events.forEach(e => {
       if (e.date) {
-        const date = new Date(e.date)
+        // Fix: Parse YYYY-MM-DD as local date by appending T00:00:00
+        const date = new Date(e.date + 'T00:00:00')
         if (date.getMonth() === viewMonth && date.getFullYear() === viewYear) {
           withEvents.add(date.getDate())
         }
@@ -160,7 +161,8 @@ export default function CalendarCard({
     // Eventos do dia
     const dayEvents = events.filter(e => {
       if (!e.date) return false
-      const eventDate = new Date(e.date)
+      // Fix: Parse YYYY-MM-DD as local date
+      const eventDate = new Date(e.date + 'T00:00:00')
       return eventDate.getDate() === selectedDay &&
         eventDate.getMonth() === viewMonth &&
         eventDate.getFullYear() === viewYear

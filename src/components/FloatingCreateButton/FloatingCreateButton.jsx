@@ -65,7 +65,7 @@ export default function FloatingCreateButton(props) {
                   opt.onClick()
                   setIsOpen(false)
                 }}
-                style={{ '--delay': `${idx * 0.05}s`, '--opt-color': opt.color || '#3b82f6' }}
+                style={/** @type {React.CSSProperties} */({ '--delay': `${idx * 0.05}s`, '--opt-color': opt.color || '#3b82f6' })}
                 aria-label={opt.label}
               >
                 <span className="floatingCreateOption__label">{opt.label}</span>
