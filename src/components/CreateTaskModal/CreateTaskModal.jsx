@@ -93,11 +93,25 @@ export default function CreateTaskModal({
         let dueTime = ''
         if (initialData.due_date || initialData.dueDate) {
           const dateVal = initialData.due_date || initialData.dueDate
-          if (dateVal.includes('T')) {
-            [dueDate, dueTime] = dateVal.split('T')
-            dueTime = dueTime.slice(0, 5)
+          const dateObj = new Date(dateVal)
+
+          if (!isNaN(dateObj.getTime())) {
+            // Extrai componentes LOCAIS para preencher os inputs
+            const year = dateObj.getFullYear()
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+            const day = String(dateObj.getDate()).padStart(2, '0')
+            dueDate = `${year}-${month}-${day}`
+
+            // Se tiver horário específico (não for meia-noite cravada ou se a string original tiver T)
+            // Verificamos se há componente de hora relevante
+            if (dateVal.includes('T')) {
+              const hours = String(dateObj.getHours()).padStart(2, '0')
+              const minutes = String(dateObj.getMinutes()).padStart(2, '0')
+              dueTime = `${hours}:${minutes}`
+            }
           } else {
-            dueDate = dateVal
+            // Fallback para string simples se date inválida
+            dueDate = dateVal.split('T')[0]
           }
         }
 
