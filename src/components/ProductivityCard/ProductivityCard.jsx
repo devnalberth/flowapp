@@ -55,7 +55,17 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
   // Combina log de foco com fallback
   const getFocusTimeForDate = (dateStr) => {
-    if (focusLog[dateStr]) return focusLog[dateStr]
+    const entry = focusLog[dateStr]
+    if (entry) {
+      // Se for objeto (novo formato), retorna .total
+      if (typeof entry === 'object' && entry.total !== undefined) {
+        return entry.total
+      }
+      // Se for número (formato antigo), retorna direto
+      if (typeof entry === 'number') {
+        return entry
+      }
+    }
     return focusTimeByDateFromTasks[dateStr] || 0
   }
 
