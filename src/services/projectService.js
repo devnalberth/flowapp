@@ -8,14 +8,14 @@ export const projectService = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   },
 
   async createProject(userId, project) {
     const supabase = getSupabaseClient(true);
-    
+
     const projectData = {
       title: project.title,
       description: project.description || null,
@@ -23,16 +23,17 @@ export const projectService = {
       color: project.color || 'ff9500',
       progress: parseInt(project.progress) || 0,
       user_id: userId,
+      goal_id: project.goalId || null,
     };
-    
+
     console.log('Creating project with data:', projectData);
-    
+
     const { data, error } = await supabase
       .from('projects')
       .insert(projectData)
       .select()
       .single();
-    
+
     if (error) {
       console.error('projectService.createProject supabase response:', { data, error });
       throw error;
@@ -43,17 +44,18 @@ export const projectService = {
 
   async updateProject(projectId, userId, updates) {
     const supabase = getSupabaseClient(true);
-    
+
     const updateData = {
       ...(updates.title !== undefined && { title: updates.title }),
       ...(updates.description !== undefined && { description: updates.description }),
       ...(updates.status !== undefined && { status: updates.status }),
       ...(updates.color !== undefined && { color: updates.color }),
       ...(updates.progress !== undefined && { progress: parseInt(updates.progress) }),
+      ...(updates.goalId !== undefined && { goal_id: updates.goalId || null }),
     };
-    
+
     console.log('Updating project:', projectId, updateData);
-    
+
     const { data, error } = await supabase
       .from('projects')
       .update(updateData)
@@ -61,12 +63,12 @@ export const projectService = {
       .eq('user_id', userId)
       .select()
       .single();
-    
+
     if (error) {
       console.error('Supabase update error:', error);
       throw error;
     }
-    
+
     return data;
   },
 
@@ -77,7 +79,7 @@ export const projectService = {
       .delete()
       .eq('id', projectId)
       .eq('user_id', userId);
-    
+
     if (error) throw error;
   },
 };

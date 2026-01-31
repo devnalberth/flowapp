@@ -14,7 +14,7 @@ export const goalService = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return (data || []).map(normalizeGoal);
   },
@@ -65,18 +65,21 @@ export const goalService = {
       .update({
         title: updates.title,
         area: updates.area,
+        type: updates.type,
         target: updates.target,
         current: updates.current,
         progress: updates.progress,
-        start_date: updates.startDate,
-        end_date: updates.endDate,
+        start_date: updates.startDate || null,
+        end_date: updates.endDate || null,
+        trimesters: updates.trimesters,
+        trimester_values: updates.trimesterValues,
         updated_at: new Date().toISOString(),
       })
       .eq('id', goalId)
       .eq('user_id', userId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return normalizeGoal(data);
   },
@@ -88,7 +91,7 @@ export const goalService = {
       .delete()
       .eq('id', goalId)
       .eq('user_id', userId);
-    
+
     if (error) throw error;
   },
 };
