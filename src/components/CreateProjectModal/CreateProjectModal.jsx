@@ -29,8 +29,8 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
   const nameRef = useRef(null)
 
   const remainingChars = useMemo(
-    () => `${form.description.length}/${DESCRIPTION_LIMIT}`,
-    [form.description.length],
+    () => `${(form.description || '').length}/${DESCRIPTION_LIMIT}`,
+    [form.description],
   )
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
       setForm({
         ...DEFAULT_FORM,
         ...initialData,
+        description: initialData.description || '',
         goalId: initialData.goalId || initialData.goal_id || DEFAULT_FORM.goalId,
       })
     } else {
