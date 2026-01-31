@@ -149,27 +149,6 @@ export function AppProvider({ children, userId }) {
     await taskService.deleteTask(id, userId)
   }
 
-  // Project Actions
-  const addProject = async (project) => {
-    if (!userId) return
-    const newProject = await projectService.createProject(userId, project)
-    setProjects(prev => [newProject, ...prev])
-    return newProject
-  }
-
-  const updateProject = async (id, updates) => {
-    if (!userId) return
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
-    const updatedProject = await projectService.updateProject(id, userId, updates)
-    if (updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
-  }
-
-  const deleteProject = async (id) => {
-    if (!userId) return
-    setProjects(prev => prev.filter(p => p.id !== id))
-    await projectService.deleteProject(id, userId)
-  }
-
   // Goal Actions
   const addGoal = async (goal) => {
     if (!userId) return
@@ -189,6 +168,66 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setGoals(prev => prev.filter(g => g.id !== id))
     await goalService.deleteGoal(id, userId)
+  }
+
+  // Project Actions (Moved here to access updateGoal)
+  const addProject = async (project) => {
+    if (!userId) return
+    const newProject = await projectService.createProject(userId, project)
+    setProjects(prev => [newProject, ...prev])
+    return newProject
+  }
+
+  const updateProject = async (id, updates) => {
+    if (!userId) return
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+    const updatedProject = await projectService.updateProject(id, userId, updates)
+
+    // Sincronização automática com Metas
+    if (updatedProject && (updates.status || updates.goalId || updates.goal_id)) {
+      const goalId = updatedProject.goalId || updatedProject.goal_id
+      if (goalId) {
+        const goal = goals.find(g => g.id === goalId)
+        if (goal) {
+          const goalProjects = projects.filter(p => (p.goalId === goalId || p.goal_id === goalId))
+          const updatedGoalProjects = goalProjects.map(p => p.id === id ? updatedProject : p)
+
+          const allCompleted = updatedGoalProjects.every(p => p.status === 'completed')
+          const allTodo = updatedGoalProjects.every(p => p.status === 'todo')
+          const isActive = ['in_progress', 'review'].includes(updatedProject.status)
+          const isCompleted = updatedProject.status === 'completed'
+
+          let newProgress = null
+
+          if (allCompleted) {
+            if ((goal.progress || 0) < 1) newProgress = 1
+          } else if (allTodo) {
+            if ((goal.progress || 0) > 0) newProgress = 0
+          } else {
+            // Estado Misto
+            if ((goal.progress || 0) === 1) {
+              // Reabrir meta
+              newProgress = 0.9
+            } else if ((goal.progress || 0) === 0 && (isActive || isCompleted)) {
+              // Iniciar meta
+              newProgress = 0.1
+            }
+          }
+
+          if (newProgress !== null) {
+            await updateGoal(goal.id, { progress: newProgress })
+          }
+        }
+      }
+    }
+
+    if (updatedProject) setProjects(prev => prev.map(p => p.id === id ? updatedProject : p))
+  }
+
+  const deleteProject = async (id) => {
+    if (!userId) return
+    setProjects(prev => prev.filter(p => p.id !== id))
+    await projectService.deleteProject(id, userId)
   }
 
   // Habit Actions
