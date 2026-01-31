@@ -247,7 +247,7 @@ function AreaDetail({ area, onBack, onEdit }) {
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Pegando deleteGoal do contexto
-  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal } = useApp()
+  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
@@ -256,13 +256,13 @@ export default function Goals({ onNavigate, onLogout, user }) {
   const LIFE_AREAS = useMemo(() => {
     return DEFAULT_LIFE_AREAS.map(area => {
       const areaGoals = goals
-        .filter(goal => 
-          goal.area?.toLowerCase() === area.id || 
+        .filter(goal =>
+          goal.area?.toLowerCase() === area.id ||
           goal.area?.toLowerCase() === area.label.toLowerCase()
         )
         .map(goal => {
           let trimester = '1º Trimestre'
-          
+
           if (goal.trimesters) {
             trimester = goal.trimesters
           } else if (goal.startDate) {
@@ -273,7 +273,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
           }
 
           const goalProjects = (projects || []).filter(p => p.goalId === goal.id || p.goal_id === goal.id)
-          
+
           return {
             ...goal,
             trimester,
@@ -288,11 +288,11 @@ export default function Goals({ onNavigate, onLogout, user }) {
             ],
           }
         })
-      
+
       const totalProgress = areaGoals.length > 0
         ? areaGoals.reduce((sum, goal) => sum + (goal.progress || 0), 0) / areaGoals.length
         : 0
-      
+
       return {
         ...area,
         status: areaGoals.length > 0 ? 'Ativo' : 'Sem metas',
@@ -322,14 +322,35 @@ export default function Goals({ onNavigate, onLogout, user }) {
 
   const handleGoalSubmit = async (payload) => {
     try {
+      const { projectId, ...goalData } = payload
+      let finalGoalId = editGoal ? editGoal.id : null
+
       if (editGoal) {
-        await updateGoal(editGoal.id, payload)
+        // Se estiver editando, removemos vínculos anteriores se o projeto mudou
+        if (editGoal.projects && editGoal.projects.length > 0) {
+          const oldProjectIds = editGoal.projects.map(p => p.id)
+          // Se escolheu um projeto diferente (ou nenhum), remove dos antigos
+          if (!projectId || !oldProjectIds.includes(projectId)) {
+            for (const p of editGoal.projects) {
+              await updateProject(p.id, { goalId: null })
+            }
+          }
+        }
+        await updateGoal(editGoal.id, goalData)
       } else {
-        await addGoal(payload)
+        const newGoal = await addGoal(goalData)
+        if (newGoal) finalGoalId = newGoal.id
       }
+
+      // Se selecionou um projeto, vincula ele à meta
+      if (finalGoalId && projectId) {
+        await updateProject(projectId, { goalId: finalGoalId })
+      }
+
       setIsGoalModalOpen(false)
       setEditGoal(null)
     } catch (error) {
+      console.error(error)
       alert('Não conseguimos salvar a meta.')
     }
   }
@@ -439,6 +460,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
           onSubmit={handleGoalSubmit}
           onDelete={editGoal ? handleDeleteGoal : undefined} // Passa a função de deletar apenas se for edição
           areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
+          projectOptions={projects}
           initialData={editGoal}
         />
       )}

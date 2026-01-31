@@ -39,7 +39,7 @@ const calculateTrimester = (startDate, endDate) => {
   if (!startDate) return null
   const start = new Date(startDate)
   const startMonth = start.getMonth() + 1
-  
+
   if (endDate) {
     const end = new Date(endDate)
     const endMonth = end.getMonth() + 1
@@ -47,16 +47,16 @@ const calculateTrimester = (startDate, endDate) => {
     const endQuarter = Math.ceil(endMonth / 3)
     const quarters = []
     for (let q = startQuarter; q <= endQuarter; q++) {
-      if(TRIMESTERS[q-1]) quarters.push(TRIMESTERS[q - 1])
+      if (TRIMESTERS[q - 1]) quarters.push(TRIMESTERS[q - 1])
     }
     return quarters
   }
-  
+
   const quarter = Math.ceil(startMonth / 3)
   return [TRIMESTERS[quarter - 1]]
 }
 
-export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], initialData = null }) {
+export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], projectOptions = [], initialData = null }) {
   const [form, setForm] = useState(() => ({
     title: '',
     area: areaOptions[0] ?? '',
@@ -66,11 +66,12 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     startDate: '',
     endDate: '',
     target: '',
+    projectId: '',
   }))
   const titleRef = useRef(null)
 
   const charCount = useMemo(() => `${(form.target || '').length}/${DESCRIPTION_LIMIT}`, [form.target])
-  
+
   const calculatedTrimesters = useMemo(() => {
     return calculateTrimester(form.startDate, form.endDate)
   }, [form.startDate, form.endDate])
@@ -82,16 +83,17 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     if (initialData) {
       // CORREÇÃO CRÍTICA: Converter string do trimestre para número seguro
       const safeTrimester = parseTrimesterValue(initialData.trimester)
-      
+
       setForm({
         title: initialData.title || initialData.name || '',
         area: initialData.area || areaOptions[0] || '',
         type: initialData.type || 'trimestral',
-        trimester: safeTrimester, 
+        trimester: safeTrimester,
         semester: initialData.semester || 1,
         startDate: initialData.startDate || initialData.start_date || `${currentYear}-01-01`,
         endDate: initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
         target: initialData.target || '',
+        projectId: initialData.projects?.[0]?.id || '',
       })
     } else {
       setForm({
@@ -103,12 +105,13 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
         startDate: `${currentYear}-01-01`,
         endDate: `${currentYear}-03-31`,
         target: '',
+        projectId: '',
       })
     }
-    
+
     // Pequeno timeout para focar e garantir que o estado atualizou
     setTimeout(() => titleRef.current?.focus(), 50)
-    
+
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [open, initialData])
@@ -116,10 +119,10 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
   // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
   useEffect(() => {
     if (!form.startDate) return
-    
+
     const currentYear = new Date().getFullYear()
     let newEndDate = ''
-    
+
     // CORREÇÃO: Verificamos se o trimestre existe antes de acessar .months
     if (form.type === 'trimestral' && form.trimester) {
       const trimesterData = TRIMESTERS[form.trimester - 1]
@@ -138,7 +141,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     } else if (form.type === 'anual') {
       newEndDate = `${currentYear}-12-31`
     }
-    
+
     if (newEndDate && newEndDate !== form.endDate) {
       setForm(prev => ({ ...prev, endDate: newEndDate }))
     }
@@ -150,7 +153,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     const value = event.target.value
     setForm((prev) => {
       const newForm = { ...prev, [field]: value }
-      
+
       if (field === 'type') {
         const currentYear = new Date().getFullYear()
         if (value === 'trimestral') {
@@ -168,7 +171,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
       // Casting para número ao mudar selects
       if (field === 'trimester') newForm.trimester = parseInt(value)
       if (field === 'semester') newForm.semester = parseInt(value)
-      
+
       return newForm
     })
   }
@@ -176,7 +179,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
   const handleSubmit = (event) => {
     event.preventDefault()
     const trimesters = calculatedTrimesters || []
-    
+
     const payload = {
       ...form,
       trimesters: trimesters.length > 0 ? trimesters[0].label : '1º Trimestre', // Simplificação para salvar o principal
@@ -250,6 +253,16 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
             </label>
           )}
 
+          <label className="createGoalModal__field">
+            <span>Vincular a Projeto (Opcional)</span>
+            <select value={form.projectId} onChange={updateField('projectId')}>
+              <option value="">Sem vínculo</option>
+              {projectOptions.map((proj) => (
+                <option key={proj.id} value={proj.id}>{proj.title}</option>
+              ))}
+            </select>
+          </label>
+
           <div className="createGoalModal__grid">
             <label className="createGoalModal__field">
               <span>Início</span>
@@ -274,16 +287,16 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
             </div>
           </label>
 
-          <footer className="createGoalModal__footer" style={{justifyContent: initialData ? 'space-between' : 'flex-end'}}>
+          <footer className="createGoalModal__footer" style={{ justifyContent: initialData ? 'space-between' : 'flex-end' }}>
             {initialData && onDelete && (
-               <button type="button" onClick={onDelete} className="btn btn--danger" style={{marginRight: 'auto', color: '#ef4444', background: '#fee2e2', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                 <Trash2 size={16} /> Excluir
-               </button>
+              <button type="button" onClick={onDelete} className="btn btn--danger" style={{ marginRight: 'auto', color: '#ef4444', background: '#fee2e2', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Trash2 size={16} /> Excluir
+              </button>
             )}
-            
-            <div style={{display: 'flex', gap: '12px'}}>
-                <button type="button" onClick={onClose} className="btn btn--ghost">Cancelar</button>
-                <button type="submit" className="btn btn--primary">{initialData ? 'Salvar' : 'Criar'}</button>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="button" onClick={onClose} className="btn btn--ghost">Cancelar</button>
+              <button type="submit" className="btn btn--primary">{initialData ? 'Salvar' : 'Criar'}</button>
             </div>
           </footer>
         </form>
