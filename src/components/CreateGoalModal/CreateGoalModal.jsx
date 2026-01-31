@@ -117,33 +117,50 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
   }, [open, initialData])
 
   // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
+  // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
   useEffect(() => {
-    if (!form.startDate) return
+    // Se for personalizado, ou se os dados necessários não existirem, não faz nada
+    if (form.type === 'custom') return
 
     const currentYear = new Date().getFullYear()
+    let newStartDate = ''
     let newEndDate = ''
 
-    // CORREÇÃO: Verificamos se o trimestre existe antes de acessar .months
     if (form.type === 'trimestral' && form.trimester) {
       const trimesterData = TRIMESTERS[form.trimester - 1]
       if (trimesterData) {
         const months = trimesterData.months
-        newEndDate = `${currentYear}-${String(months[2]).padStart(2, '0')}-31`
+        // Start: 1º dia do 1º mês
+        newStartDate = `${currentYear}-${String(months[0]).padStart(2, '0')}-01`
+
+        // End: Último dia do último mês
+        const lastMonth = months[2]
+        const lastDay = [4, 6, 9, 11].includes(lastMonth) ? 30 : 31
+        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
       }
     } else if (form.type === 'semestral' && form.semester) {
       const semesterData = SEMESTERS[form.semester - 1]
       if (semesterData) {
         const months = semesterData.months
+        newStartDate = `${currentYear}-${String(months[0]).padStart(2, '0')}-01`
+
         const lastMonth = months[months.length - 1]
         const lastDay = lastMonth === 6 ? 30 : 31
         newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
       }
     } else if (form.type === 'anual') {
+      newStartDate = `${currentYear}-01-01`
       newEndDate = `${currentYear}-12-31`
     }
 
-    if (newEndDate && newEndDate !== form.endDate) {
-      setForm(prev => ({ ...prev, endDate: newEndDate }))
+    if (newStartDate && newEndDate) {
+      setForm(prev => {
+        // Evita updates infinitos
+        if (prev.startDate !== newStartDate || prev.endDate !== newEndDate) {
+          return { ...prev, startDate: newStartDate, endDate: newEndDate }
+        }
+        return prev
+      })
     }
   }, [form.type, form.trimester, form.semester])
 
