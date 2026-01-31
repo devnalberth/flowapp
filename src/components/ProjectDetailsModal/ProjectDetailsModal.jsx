@@ -12,15 +12,23 @@ export default function ProjectDetailsModal({ project, open, onClose, tasks = []
 
   // Filtra apenas metas deste projeto
   const projectGoals = useMemo(() => {
+    // 1. Verifica se o projeto aponta para uma meta (Relação N:1)
+    const linkedGoalId = project.goalId || project.goal_id
+    if (linkedGoalId) {
+      const parentGoal = goals.find(g => g.id === linkedGoalId)
+      if (parentGoal) return [parentGoal]
+    }
+
+    // 2. Verifica se alguma meta aponta para este projeto (Legado ou Relação inversa)
     return goals.filter(g => g.project_id === project.id || g.projectId === project.id)
-  }, [goals, project.id])
+  }, [goals, project])
 
   const progress = project.progress || 0
 
   return (
     <div className="projectDetailsOverlay" onClick={onClose}>
       <div className="projectDetailsModal" onClick={e => e.stopPropagation()}>
-        
+
         {/* HEADER */}
         <header className="projectDetailsHeader">
           <div className="projectDetailsTitle">

@@ -213,57 +213,61 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
             />
           </label>
 
-          <label className="createGoalModal__field">
-            <span>Área</span>
-            <select value={form.area} onChange={updateField('area')}>
-              {areaOptions.map((area) => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="createGoalModal__field">
-            <span>Tipo de meta</span>
-            <select value={form.type} onChange={updateField('type')}>
-              {GOAL_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-          </label>
-
-          {form.type === 'trimestral' && (
+          <div className="createGoalModal__row">
             <label className="createGoalModal__field">
-              <span>Trimestre</span>
-              <select value={form.trimester} onChange={updateField('trimester')}>
-                {TRIMESTERS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+              <span>Área</span>
+              <select value={form.area} onChange={updateField('area')}>
+                {areaOptions.map((area) => (
+                  <option key={area} value={area}>{area}</option>
                 ))}
               </select>
             </label>
-          )}
 
-          {form.type === 'semestral' && (
             <label className="createGoalModal__field">
-              <span>Semestre</span>
-              <select value={form.semester} onChange={updateField('semester')}>
-                {SEMESTERS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+              <span>Tipo de meta</span>
+              <select value={form.type} onChange={updateField('type')}>
+                {GOAL_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
             </label>
-          )}
+          </div>
 
-          <label className="createGoalModal__field">
-            <span>Vincular a Projeto (Opcional)</span>
-            <select value={form.projectId} onChange={updateField('projectId')}>
-              <option value="">Sem vínculo</option>
-              {projectOptions.map((proj) => (
-                <option key={proj.id} value={proj.id}>{proj.title}</option>
-              ))}
-            </select>
-          </label>
+          <div className="createGoalModal__row">
+            {form.type === 'trimestral' && (
+              <label className="createGoalModal__field">
+                <span>Trimestre</span>
+                <select value={form.trimester} onChange={updateField('trimester')}>
+                  {TRIMESTERS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
 
-          <div className="createGoalModal__grid">
+            {form.type === 'semestral' && (
+              <label className="createGoalModal__field">
+                <span>Semestre</span>
+                <select value={form.semester} onChange={updateField('semester')}>
+                  {SEMESTERS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <label className="createGoalModal__field">
+              <span>Vincular a Projeto (Opcional)</span>
+              <select value={form.projectId} onChange={updateField('projectId')}>
+                <option value="">Sem vínculo</option>
+                {projectOptions.map((proj) => (
+                  <option key={proj.id} value={proj.id}>{proj.title}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="createGoalModal__row">
             <label className="createGoalModal__field">
               <span>Início</span>
               <input type="date" value={form.startDate} onChange={updateField('startDate')} disabled={form.type !== 'custom'} />
