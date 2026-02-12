@@ -104,9 +104,9 @@ export function AppProvider({ children, userId }) {
     const normalizedUpdates = {
       ...updates,
       // Converte dueDate para due_date se existir
-      due_date: updates.dueDate || updates.due_date,
-      start_date: updates.startDate || updates.start_date,
-      project_id: updates.projectId || updates.project_id,
+      due_date: updates.dueDate ?? updates.due_date,
+      start_date: updates.startDate ?? updates.start_date,
+      project_id: updates.projectId ?? updates.project_id,
     }
 
     // 1. OTIMISMO TOTAL: Atualiza a tela imediatamente e confia nisso
@@ -114,7 +114,7 @@ export function AppProvider({ children, userId }) {
 
     try {
       // 2. Envia para o servidor
-      const updatedTask = await taskService.updateTask(id, userId, updates)
+      const updatedTask = await taskService.updateTask(id, userId, normalizedUpdates)
 
       // 3. TRAVA DE SEGURANÇA:
       // Só atualizamos o estado com a resposta do servidor se ela não contradizer

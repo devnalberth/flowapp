@@ -5,7 +5,7 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock } from 'lucide-react'
+import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 
 import './Tasks.css'
@@ -34,6 +34,53 @@ const FILTERS = [
   { id: 'late', label: 'Atrasadas', group: 'timeline', icon: 'calendar-late', tone: 'warning' },
   { id: 'unscheduled', label: 'Sem Agendamento', group: 'timeline', icon: 'calendar-off', tone: 'stone' },
 ]
+
+const STATUS_META = {
+  todo: { label: 'A Fazer', icon: ListTodo },
+  in_progress: { label: 'Em Andamento', icon: RefreshCw },
+  done: { label: 'Concluída', icon: CheckCircle2 },
+  archived: { label: 'Arquivada', icon: Archive },
+}
+
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/
+const DATE_ONLY_WITH_MIDNIGHT_REGEX = /T00:00:00(?:\.000)?(?:Z|[+-]\d{2}:\d{2})?$/
+
+const toLocalDateKey = (value) => {
+  if (!value) return null
+
+  if (typeof value === 'string') {
+    if (DATE_ONLY_REGEX.test(value)) return value
+    if (DATE_ONLY_WITH_MIDNIGHT_REGEX.test(value)) return value.slice(0, 10)
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return null
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const formatDateKeyPtBr = (dateKey) => {
+  if (!dateKey) return ''
+  const [year, month, day] = dateKey.split('-')
+  return `${day}/${month}/${year}`
+}
+
+const normalizeTaskStatus = (task) => {
+  if (task?.completed) return 'done'
+
+  const rawStatus = String(task?.status || '').trim().toLowerCase()
+  if (!rawStatus) return 'todo'
+
+  if (['todo', 'a fazer', 'capturar', 'pending'].includes(rawStatus)) return 'todo'
+  if (['in_progress', 'em andamento', 'doing'].includes(rawStatus)) return 'in_progress'
+  if (['done', 'concluída', 'concluida', 'completed'].includes(rawStatus)) return 'done'
+  if (['archived', 'arquivada', 'arquivado'].includes(rawStatus)) return 'archived'
+
+  return 'todo'
+}
 
 // Calcula o início da semana atual (Domingo)
 const getWeekStart = () => {
@@ -79,7 +126,6 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   const [editTask, setEditTask] = useState(null)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [isEventModalOpen, setEventModalOpen] = useState(false)
-  const [expandedTaskId, setExpandedTaskId] = useState(null)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [celebratingTask, setCelebratingTask] = useState(null)
 
@@ -301,21 +347,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const weekEnd = getWeekEnd()
 
     const matched = tasks.filter((task) => {
-      let dueDate = null
-      if (task.due_date) {
-        dueDate = new Date(task.due_date)
-        dueDate.setHours(0, 0, 0, 0)
-        const timezoneOffset = dueDate.getTimezoneOffset() * 60000
-        if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
-          dueDate = new Date(dueDate.getTime() + timezoneOffset)
-        }
-      }
+      const dueDateKey = toLocalDateKey(task.due_date)
 
       // Verifica se está atrasada
-      const isLate = dueDate && dueDate < today && !task.completed
+      const isDoneTask = normalizeTaskStatus(task) === 'done'
+      const isLate = !!dueDateKey && dueDateKey < toLocalDateKey(today) && !isDoneTask
 
       // Verifica se está arquivada (status = 'archived')
-      const isArchived = task.status === 'archived'
+      const isArchived = normalizeTaskStatus(task) === 'archived'
 
       // Se filtro de Arquivadas está ativo, mostra APENAS arquivadas
       if (statusFilters.includes('archived')) {
@@ -326,7 +365,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       if (isArchived) return false
 
       // Exclui tarefas finalizadas de semanas anteriores (já deveriam estar arquivadas)
-      if (task.completed) {
+      if (isDoneTask) {
         const completedDate = task.updated_at ? new Date(task.updated_at) : null
         if (completedDate && completedDate < weekStart) {
           return false // Esconde tarefas finalizadas de semanas anteriores
@@ -334,20 +373,20 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       }
 
       let matchesTimeline = false
-      if (timelineFilter === 'today') matchesTimeline = dueDate && dueDate.getTime() === today.getTime()
-      else if (timelineFilter === 'tomorrow') matchesTimeline = dueDate && dueDate.getTime() === tomorrow.getTime()
+      if (timelineFilter === 'today') matchesTimeline = dueDateKey === toLocalDateKey(today)
+      else if (timelineFilter === 'tomorrow') matchesTimeline = dueDateKey === toLocalDateKey(tomorrow)
       else if (timelineFilter === 'late') matchesTimeline = isLate
-      else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDate
+      else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDateKey
       else if (timelineFilter === 'any') matchesTimeline = true
 
       let matchesStatus = true
       if (statusFilters.length > 0) {
         matchesStatus = statusFilters.some(filterId => {
-          if (filterId === 'done') return !!task.completed
+          if (filterId === 'done') return isDoneTask
           // FLOW: Apenas Alta e Urgente, E que NÃO estão atrasadas
           if (filterId === 'flow') {
             const isHighPriority = task.priority === 'Alta' || task.priority === 'Urgente'
-            return isHighPriority && !isLate && !task.completed
+            return isHighPriority && !isLate && !isDoneTask
           }
           if (filterId === 'quick') return (task.tags || []).includes('quick') || task.estimatedMinutes <= 15
           return false
@@ -355,10 +394,10 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       }
 
       // Se o filtro "Finalizada" estiver ativo, mostra APENAS as finalizadas da semana atual
-      if (statusFilters.includes('done')) return !!task.completed
+      if (statusFilters.includes('done')) return isDoneTask
 
       // Se não houver filtro de status (Minhas Tarefas padrão), ESCONDE as finalizadas
-      if (statusFilters.length === 0) return matchesTimeline && !task.completed
+      if (statusFilters.length === 0) return matchesTimeline && !isDoneTask
 
       // Caso contrário, retorna o match de status calculado
       return matchesStatus
@@ -423,13 +462,15 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     if (!task) return
 
     const newCompleted = !task.completed
+    const currentStatus = normalizeTaskStatus(task)
+    const statusToRestore = currentStatus === 'done' ? 'todo' : currentStatus
     if (newCompleted) setCelebratingTask(taskId)
 
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newCompleted } : t))
 
     await updateTask(taskId, {
       completed: newCompleted,
-      status: newCompleted ? 'done' : (task.prevStatus || 'Capturar'),
+      status: newCompleted ? 'done' : statusToRestore,
       updated_at: new Date().toISOString()
     })
   }
@@ -439,14 +480,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       if (editTask) {
         await updateTask(editTask.id, data)
       } else {
-        await addTask({ ...data, status: data.status || 'Capturar' })
+        await addTask({ ...data, status: data.status || 'todo' })
       }
       setTaskModalOpen(false)
       setEditTask(null)
 
-      const createdDate = data.dueDate ? new Date(data.dueDate) : null
-      const today = new Date()
-      if (createdDate && createdDate.getDate() === today.getDate()) {
+      const createdDateKey = toLocalDateKey(data.dueDate)
+      const todayKey = toLocalDateKey(new Date())
+      if (createdDateKey && createdDateKey === todayKey) {
         if (timelineFilter !== 'today') {
           setTimelineFilter('today'); setStatusFilters([]);
         }
@@ -454,14 +495,6 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     } catch (e) {
       alert('Erro ao salvar tarefa')
     }
-  }
-
-  const handleSubtaskToggle = (taskId, subtaskId) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t
-      const subtasks = t.subtasks?.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) || []
-      return { ...t, subtasks }
-    }))
   }
 
   const activeDetailTask = useMemo(() =>
@@ -586,9 +619,13 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
 
         <ul className="tasksList">
           {filteredTasks.map(task => {
-            const isDone = task.completed
-            const isLate = !isDone && task.due_date && new Date(task.due_date).getTime() < new Date().setHours(0, 0, 0, 0)
-            const isExpanded = expandedTaskId === task.id
+            const statusKey = normalizeTaskStatus(task)
+            const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
+            const StatusIcon = statusMeta.icon
+            const isDone = statusKey === 'done'
+            const dueDateKey = toLocalDateKey(task.due_date)
+            const todayKey = toLocalDateKey(new Date())
+            const isLate = !isDone && !!dueDateKey && dueDateKey < todayKey
             const isFocused = focusedTaskId === task.id
 
             return (
@@ -616,6 +653,11 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                     </div>
 
                     <div className="taskCard__badges">
+                      <span className={`taskStatusChip taskStatusChip--${statusKey}`}>
+                        <StatusIcon size={12} />
+                        {statusMeta.label}
+                      </span>
+
                       {!isDone && (
                         <button
                           className={`taskCard__focusBtn ${isFocused ? 'active' : ''}`}
@@ -627,39 +669,15 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                       )}
 
                       <span className={`taskChip priority-${task.priority?.toLowerCase()}`}>{task.priority}</span>
-                      {task.due_date && <span className="taskCard__dueText">{new Date(task.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>}
+                      {dueDateKey && <span className="taskCard__dueText">{formatDateKeyPtBr(dueDateKey)}</span>}
                     </div>
                   </div>
 
                   <div className="taskCard__actions">
-                    <button className="taskCard__actionBtn" onClick={() => setExpandedTaskId(curr => curr === task.id ? null : task.id)}>
-                      {isExpanded ? 'Recolher' : 'Clarificar'}
-                    </button>
                     <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => { setDetailTaskId(task.id); setEditTask(null); }}>
                       Detalhes
                     </button>
                   </div>
-
-                  {isExpanded && task.subtasks && (
-                    <div className="taskCard__details">
-                      <ul className="subtasksList">
-                        {task.subtasks.map((subtask) => (
-                          <li key={subtask.id}>
-                            <button
-                              type="button"
-                              className={subtask.done ? 'subtask subtask--done' : 'subtask'}
-                              onClick={() => handleSubtaskToggle(task.id, subtask.id)}
-                            >
-                              <span className="subtask__check" />
-                              <div className="subtask__content">
-                                <p>{subtask.label || subtask.title}</p>
-                              </div>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               </li>
             )
@@ -742,6 +760,15 @@ function FilterIcon({ name }) {
 
 function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
   if (!task) return null
+  const statusKey = normalizeTaskStatus(task)
+  const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
+  const StatusIcon = statusMeta.icon
+  const subtasks = Array.isArray(task.subtasks)
+    ? task.subtasks
+    : Array.isArray(task.clarifyItems)
+      ? task.clarifyItems
+      : []
+
   return (
     <div className="taskModal" onClick={onClose}>
       <div className="taskModal__backdrop" />
@@ -752,11 +779,30 @@ function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
         </header>
         <div className="taskModal__meta">
           <span>Prioridade: {task.priority}</span>
-          <span>Status: {task.status}</span>
+          <span className={`taskStatusChip taskStatusChip--${statusKey}`}>
+            <StatusIcon size={12} />
+            {statusMeta.label}
+          </span>
         </div>
         <div className="taskModal__description">
           <p>{task.description || 'Sem descrição'}</p>
         </div>
+
+        {subtasks.length > 0 && (
+          <div className="taskModal__subtasks">
+            <h4>Subtarefas</h4>
+            <ul>
+              {subtasks.map((subtask, index) => (
+                <li key={subtask.id || index}>
+                  <span className={subtask.done ? 'taskModal__subtaskText taskModal__subtaskText--done' : 'taskModal__subtaskText'}>
+                    {subtask.label || subtask.title || 'Subtarefa'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <footer className="taskModal__footer">
           <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
           <button className="taskModal__editBtn" onClick={() => onEdit(task)}>Editar</button>

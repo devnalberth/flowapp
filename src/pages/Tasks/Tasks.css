@@ -773,6 +773,42 @@
   gap: 6px;
 }
 
+.taskStatusChip {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.taskStatusChip--todo {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+
+.taskStatusChip--in_progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.taskStatusChip--done {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.taskStatusChip--archived {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
 /* Cores de Prioridade */
 .taskChip.priority-baixa {
   background: #e5e7eb;
@@ -1043,6 +1079,37 @@
   flex-wrap: wrap;
   gap: 12px;
   font-size: 14px;
+}
+
+.taskModal__subtasks {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.taskModal__subtasks h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.taskModal__subtasks ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskModal__subtaskText {
+  font-size: 13px;
+  color: #111827;
+}
+
+.taskModal__subtaskText--done {
+  text-decoration: line-through;
+  color: #6b7280;
 }
 
 .taskModal__footer {

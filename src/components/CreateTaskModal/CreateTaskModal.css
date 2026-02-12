@@ -80,8 +80,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
-  max-height: calc(90vh - 140px);
+  overflow: visible;
 }
 
 /* Field Styles */
@@ -340,6 +339,10 @@
   gap: 8px;
 }
 
+.ctm__subtasks--withList {
+  min-height: 88px;
+}
+
 .ctm__subtaskInput {
   display: flex;
   gap: 8px;
@@ -385,6 +388,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: 156px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .ctm__subtaskList li {

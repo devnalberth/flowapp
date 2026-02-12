@@ -1,16 +1,45 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
-const normalizeTask = (task) => ({
-  ...task,
+const normalizeSubtasks = (input) => {
+  if (!Array.isArray(input)) return []
+  return input
+    .map((item, index) => {
+      if (typeof item === 'string') {
+        return { id: `subtask-${index}`, title: item }
+      }
+
+      if (!item || typeof item !== 'object') return null
+
+      return {
+        id: item.id || `subtask-${index}`,
+        title: item.title || item.label || '',
+        done: !!item.done,
+      }
+    })
+    .filter(Boolean)
+}
+
+const normalizeTask = (task) => {
+  const rawSubtasks = Array.isArray(task.subtasks)
+    ? task.subtasks
+    : Array.isArray(task.clarify_items)
+      ? task.clarify_items
+      : []
+  const normalizedSubtasks = normalizeSubtasks(rawSubtasks)
+
+  return {
+    ...task,
   // CORREÇÃO 1: Garante que tags seja sempre um array, evitando o erro .includes() no frontend
-  tags: task.tags || [],
-  startDate: task.start_date,
-  dueDate: task.due_date,
-  projectId: task.project_id,
-  clarifyItems: task.clarify_items || [],
-  // CORREÇÃO: Garante que time_spent seja sempre um número para o ProductivityCard
-  time_spent: Number(task.time_spent) || 0,
-});
+    tags: task.tags || [],
+    startDate: task.start_date,
+    dueDate: task.due_date,
+    projectId: task.project_id,
+    clarifyItems: normalizedSubtasks,
+    subtasks: normalizedSubtasks,
+    // CORREÇÃO: Garante que time_spent seja sempre um número para o ProductivityCard
+    time_spent: Number(task.time_spent) || 0,
+  }
+};
 
 export const taskService = {
   async getTasks(userId) {
@@ -32,12 +61,12 @@ export const taskService = {
       .insert({
         title: task.title,
         description: task.description,
-        status: task.status || 'pending',
+        status: task.status || 'todo',
         priority: task.priority || 'medium',
         start_date: task.startDate || null,
         due_date: task.dueDate || null,
         project_id: task.projectId || null,
-        clarify_items: task.clarifyItems || [],
+        clarify_items: task.subtasks || task.clarifyItems || [],
         // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
         tags: task.tags || [],
         user_id: userId,
@@ -62,10 +91,10 @@ export const taskService = {
       description: updates.description,
       status: updates.status,
       priority: updates.priority,
-      start_date: updates.startDate,
-      due_date: updates.dueDate,
-      project_id: updates.projectId,
-      clarify_items: updates.clarifyItems,
+      start_date: updates.startDate ?? updates.start_date,
+      due_date: updates.dueDate ?? updates.due_date,
+      project_id: updates.projectId ?? updates.project_id,
+      clarify_items: updates.subtasks || updates.clarifyItems,
       // CORREÇÃO: Campos críticos que estavam faltando
       completed: updates.completed,
       time_spent: updates.time_spent,

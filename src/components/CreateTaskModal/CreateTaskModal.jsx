@@ -6,6 +6,9 @@ import {
 import './CreateTaskModal.css'
 
 const DESCRIPTION_LIMIT = 500
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/
+const LOCAL_FIXED_NO_TIME_REGEX = /T12:00:00(?:\.000)?(?:Z|[+-]\d{2}:\d{2})?$/
+const LEGACY_MIDNIGHT_REGEX = /T00:00:00(?:\.000)?(?:Z|[+-]\d{2}:\d{2})?$/
 
 // Novos status padronizados
 const STATUS_OPTIONS = [
@@ -31,6 +34,48 @@ const AREA_OPTIONS = [
   { id: 'financeiro', label: 'Financeiro', color: '#f59e0b', icon: Wallet },
   { id: 'relacionamento', label: 'Relacionamento', color: '#ec4899', icon: Heart },
 ]
+
+const normalizeStatus = (status) => {
+  const rawStatus = String(status || '').trim().toLowerCase()
+  if (!rawStatus) return 'todo'
+
+  if (['todo', 'a fazer', 'capturar', 'pending'].includes(rawStatus)) return 'todo'
+  if (['in_progress', 'em andamento', 'doing'].includes(rawStatus)) return 'in_progress'
+  if (['done', 'concluída', 'concluida', 'completed'].includes(rawStatus)) return 'done'
+  if (['archived', 'arquivada', 'arquivado'].includes(rawStatus)) return 'archived'
+
+  return 'todo'
+}
+
+const parseDateForForm = (dateValue) => {
+  if (!dateValue) return { dueDate: '', dueTime: '' }
+
+  const raw = String(dateValue)
+
+  if (DATE_ONLY_REGEX.test(raw)) {
+    return { dueDate: raw, dueTime: '' }
+  }
+
+  if (LOCAL_FIXED_NO_TIME_REGEX.test(raw) || LEGACY_MIDNIGHT_REGEX.test(raw)) {
+    return { dueDate: raw.slice(0, 10), dueTime: '' }
+  }
+
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) {
+    return { dueDate: raw.split('T')[0] || '', dueTime: '' }
+  }
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  const hours = String(parsed.getHours()).padStart(2, '0')
+  const minutes = String(parsed.getMinutes()).padStart(2, '0')
+
+  return {
+    dueDate: `${year}-${month}-${day}`,
+    dueTime: `${hours}:${minutes}`,
+  }
+}
 
 export default function CreateTaskModal({
   open,
@@ -88,43 +133,23 @@ export default function CreateTaskModal({
   useEffect(() => {
     if (open) {
       if (initialData) {
-        // Extrai data e hora se existir
-        let dueDate = ''
-        let dueTime = ''
-        if (initialData.due_date || initialData.dueDate) {
-          const dateVal = initialData.due_date || initialData.dueDate
-          const dateObj = new Date(dateVal)
-
-          if (!isNaN(dateObj.getTime())) {
-            // Extrai componentes LOCAIS para preencher os inputs
-            const year = dateObj.getFullYear()
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-            const day = String(dateObj.getDate()).padStart(2, '0')
-            dueDate = `${year}-${month}-${day}`
-
-            // Se tiver horário específico (não for meia-noite cravada ou se a string original tiver T)
-            // Verificamos se há componente de hora relevante
-            if (dateVal.includes('T')) {
-              const hours = String(dateObj.getHours()).padStart(2, '0')
-              const minutes = String(dateObj.getMinutes()).padStart(2, '0')
-              dueTime = `${hours}:${minutes}`
-            }
-          } else {
-            // Fallback para string simples se date inválida
-            dueDate = dateVal.split('T')[0]
-          }
-        }
+        const { dueDate, dueTime } = parseDateForForm(initialData.due_date || initialData.dueDate)
+        const incomingSubtasks = Array.isArray(initialData.subtasks)
+          ? initialData.subtasks
+          : Array.isArray(initialData.clarifyItems)
+            ? initialData.clarifyItems
+            : []
 
         setForm({
           ...defaultForm,
           ...initialData,
           dueDate,
           dueTime,
-          status: initialData.status || 'todo',
+          status: normalizeStatus(initialData.status),
           priority: initialData.priority || 'Normal',
           area: initialData.area || initialData.context || 'pessoal',
           projectId: initialData.projectId || initialData.project_id || defaultProjectId,
-          subtasks: initialData.subtasks || [],
+          subtasks: incomingSubtasks,
         })
       } else {
         setForm(defaultForm)
@@ -174,7 +199,7 @@ export default function CreateTaskModal({
     if (form.dueDate) {
       finalDueDate = form.dueTime
         ? new Date(`${form.dueDate}T${form.dueTime}`).toISOString()
-        : new Date(`${form.dueDate}T00:00:00`).toISOString()
+        : `${form.dueDate}T12:00:00.000Z`
     }
 
     // Determina se é Flow automaticamente (Alta ou Urgente = Flow)
@@ -184,6 +209,7 @@ export default function CreateTaskModal({
       ...form,
       dueDate: finalDueDate,
       context: form.area, // Salva área como context para compatibilidade
+      status: normalizeStatus(form.status),
       tags: isFlow ? ['flow'] : [], // Adiciona tag flow para prioridades altas
     }
 
@@ -426,7 +452,7 @@ export default function CreateTaskModal({
           {/* Subtarefas */}
           <div className="ctm__field">
             <label className="ctm__label">Subtarefas</label>
-            <div className="ctm__subtasks">
+            <div className={`ctm__subtasks ${form.subtasks.length > 0 ? 'ctm__subtasks--withList' : ''}`}>
               <div className="ctm__subtaskInput">
                 <input
                   type="text"

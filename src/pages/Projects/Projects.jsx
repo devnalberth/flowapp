@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
@@ -16,8 +16,23 @@ const COLUMN_DEFINITIONS = [
   { id: 'done', title: 'Concluído', helper: 'Resultados prontos para revisar', tone: 'done', status: 'completed' },
 ]
 
-const TASK_STATUS_OPTIONS = ['A fazer', 'Em andamento', 'Em revisão', 'Concluído']
-const TASK_PRIORITY_OPTIONS = ['Alta', 'Média', 'Baixa']
+const deriveProjectStatus = ({ totalTasks, progress }) => {
+  // Regras solicitadas:
+  // 100% => Concluído
+  // 80%..99% => Em Finalização
+  // 1%..79% => Em Andamento
+  // 0% => Todo
+  if (!totalTasks || progress <= 0) return 'todo'
+  if (progress >= 100) return 'completed'
+  if (progress >= 80) return 'review'
+  return 'in_progress'
+}
+
+const isSameStatus = (current, derived) => {
+  // Compatibilidade com valores antigos
+  if (derived === 'todo') return !current || current === 'todo' || current === 'active'
+  return current === derived
+}
 
 export default function Projects({ onNavigate, onLogout, user }) {
   // CORREÇÃO 1: Pegando tasks, goals e deleteProject do contexto
@@ -30,26 +45,49 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const [isDetailsModalOpen, setDetailsModalOpen] = useState(false)
   const [editProject, setEditProject] = useState(null)
 
+  // Drag state
+  const [draggingProjectId, setDraggingProjectId] = useState(null)
+  const [dragOverColumnId, setDragOverColumnId] = useState(null)
+
+  // Evita múltiplos autosync concorrentes
+  const autoSyncInFlightRef = useRef(false)
+
+  const projectOptions = useMemo(() => projects.map((p) => ({ id: p.id, label: p.title })), [projects])
+
+  const projectsComputed = useMemo(() => {
+    return projects.map(project => {
+      const projectTasks = tasks.filter(t => t.projectId === project.id || t.project === project.title)
+      const totalTasks = projectTasks.length
+      const completedTasks = projectTasks.filter(t => t.completed).length
+      const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      const autoStatus = deriveProjectStatus({ totalTasks, progress })
+      return { ...project, progress, autoStatus }
+    })
+  }, [projects, tasks])
+
+  // Auto-atualiza o status persistido do projeto conforme progresso
+  useEffect(() => {
+    if (loading) return
+    if (autoSyncInFlightRef.current) return
+
+    const mismatches = projectsComputed
+      .map(p => ({ id: p.id, current: p.status, derived: p.autoStatus }))
+      .filter(({ current, derived }) => !isSameStatus(current, derived))
+
+    if (mismatches.length === 0) return
+
+    autoSyncInFlightRef.current = true
+    Promise.allSettled(mismatches.map(({ id, derived }) => updateProject(id, { status: derived })))
+      .finally(() => { autoSyncInFlightRef.current = false })
+  }, [projectsComputed, loading, updateProject])
+
   // Organizar projetos por colunas
   const boardColumns = useMemo(() => {
     return COLUMN_DEFINITIONS.map((column) => ({
       ...column,
-      items: projects.map(project => {
-        // Cálculo dinâmico de progresso
-        const projectTasks = tasks.filter(t => t.projectId === project.id || t.project === project.title)
-        const totalTasks = projectTasks.length
-        const completedTasks = projectTasks.filter(t => t.completed).length
-        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-
-        return { ...project, progress }
-      }).filter((project) => {
-        const status = project.status || 'todo'
-        return status === column.status || (column.status === 'todo' && status === 'active')
-      })
+      items: projectsComputed.filter((project) => project.autoStatus === column.status)
     }))
-  }, [projects, tasks])
-
-  const projectOptions = useMemo(() => projects.map((p) => ({ id: p.id, label: p.title })), [projects])
+  }, [projectsComputed])
 
   const handleNavigate = (label) => onNavigate && onNavigate(label)
 
@@ -70,13 +108,35 @@ export default function Projects({ onNavigate, onLogout, user }) {
     try {
       await addTask({
         ...payload,
-        status: payload.status || 'A fazer',
+        status: payload.status || 'todo',
         // Se temos um projeto selecionado na modal, usamos o ID dele
         projectId: payload.projectId || (taskProject ? projects.find(p => p.title === taskProject)?.id : null)
       })
       setTaskModalOpen(false)
       setTaskProject('')
     } catch (e) { alert('Erro ao criar tarefa') }
+  }
+
+  const handleDragStart = (event, projectId) => {
+    setDraggingProjectId(projectId)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', projectId)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingProjectId(null)
+    setDragOverColumnId(null)
+  }
+
+  const handleDropOnColumn = async (event, column) => {
+    event.preventDefault()
+    const projectId = event.dataTransfer.getData('text/plain')
+    if (!projectId) return
+
+    // Persistimos o drop. O autosync (progresso) pode reajustar depois.
+    await updateProject(projectId, { status: column.status })
+    setDragOverColumnId(null)
+    setDraggingProjectId(null)
   }
 
   const handleDeleteProject = async () => {
@@ -113,7 +173,14 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
       <section className="projectsBoard">
         {boardColumns.map((column) => (
-          <article key={column.id} className="projectsColumn">
+          <article
+            key={column.id}
+            className={`projectsColumn ${dragOverColumnId === column.id ? 'projectsColumn--dragOver' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOverColumnId(column.id) }}
+            onDragEnter={() => setDragOverColumnId(column.id)}
+            onDragLeave={() => setDragOverColumnId((curr) => (curr === column.id ? null : curr))}
+            onDrop={(e) => handleDropOnColumn(e, column)}
+          >
             <header className="projectsColumn__header">
               <span className={`projectsColumn__icon projectsColumn__icon--${column.tone}`} />
               <div className="projectsColumn__name">{column.title}</div>
@@ -123,7 +190,14 @@ export default function Projects({ onNavigate, onLogout, user }) {
               <div className="projectsColumn__empty">Nenhum projeto</div>
             ) : (
               column.items.map((project) => (
-                <div key={project.id} className="projectsCard" onClick={() => handleCardClick(project)}>
+                <div
+                  key={project.id}
+                  className={`projectsCard ${draggingProjectId === project.id ? 'projectsCard--dragging' : ''}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, project.id)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => { if (!draggingProjectId) handleCardClick(project) }}
+                >
                   <div className="projectsCard__text">
                     <div className="projectsCard__title">{project.title}</div>
                     <p className="projectsCard__description">{project.description}</p>
@@ -135,7 +209,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
                     </div>
                   </div>
                   <div className="projectsCard__footer">
-                    <button className="projectsCard__add" onClick={(e) => {
+                    <button className="projectsCard__add" draggable={false} onClick={(e) => {
                       e.stopPropagation()
                       setTaskProject(project.title)
                       setTaskModalOpen(true)
@@ -154,8 +228,11 @@ export default function Projects({ onNavigate, onLogout, user }) {
       )}
 
       {isTaskModalOpen && (
-        <CreateTaskModal open={true} onClose={() => setTaskModalOpen(false)} onSubmit={handleSubmitTask}
-          projectsOptions={projectOptions} statusOptions={TASK_STATUS_OPTIONS} priorityOptions={TASK_PRIORITY_OPTIONS}
+        <CreateTaskModal
+          open={true}
+          onClose={() => setTaskModalOpen(false)}
+          onSubmit={handleSubmitTask}
+          projectsOptions={projectOptions}
           initialProject={taskProject}
         />
       )}
