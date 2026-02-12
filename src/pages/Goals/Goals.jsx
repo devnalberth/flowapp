@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
@@ -52,14 +52,6 @@ function MetaDetail({ meta, onBack, onEdit }) {
 
   return (
     <section className="metaDetail">
-      <div className="metaDetail__backRow">
-        <button type="button" className="metaDetail__back" onClick={onBack}>
-          ← Voltar para metas
-        </button>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="btn btn-secondary" onClick={() => onEdit?.(meta)}>Editar meta</button>
-        </div>
-      </div>
       <header className="metaDetail__summary">
         <div>
           <p className="metaDetail__eyebrow">Meta</p>
@@ -161,6 +153,14 @@ function AreaDetail({ area, onBack, onEdit }) {
     setView('detail')
   }
 
+  const handleBack = () => {
+    if (view === 'detail') {
+      setView('board')
+      return
+    }
+    onBack?.()
+  }
+
   const quarterColumns = TRIMESTERS.map((quarterLabel, index) => ({
     id: `quarter-${index + 1}`,
     label: quarterLabel,
@@ -169,89 +169,98 @@ function AreaDetail({ area, onBack, onEdit }) {
 
   return (
     <section className="areaDetail">
-      <header className="areaDetail__head">
-        <div className="areaDetail__headTop">
-          <button type="button" className="areaDetail__back" onClick={onBack}>
-            ← Voltar para áreas
-          </button>
-          <span className="areaDetail__badge">{area.status}</span>
-        </div>
-        <div className="areaDetail__identity">
-          <span className="areaDetail__icon" aria-hidden="true">
-            {area.icon}
-          </span>
-          <div>
-            <p>Área</p>
-            <h1>{area.label}</h1>
-          </div>
-        </div>
-        <p className="areaDetail__description">{area.description}</p>
-      </header>
-
-      {view === 'detail' && activeMeta ? (
-        <MetaDetail meta={activeMeta} onBack={() => setView('board')} onEdit={onEdit} />
-      ) : (
-        <section className="areaMetaBoard">
-          <header>
-            <div>
-              <p className="areaMetaBoard__eyebrow">Metas</p>
-              <h2>Escolha uma meta para visualizar</h2>
-              <span>{area.metas.length} metas conectadas a esta área</span>
+      <div className="areaDetail__shell">
+        <header className="areaDetail__head">
+          <div className="areaDetail__headTop">
+            <button type="button" className="areaDetail__back" onClick={handleBack}>
+              {view === 'detail' ? '← Voltar para metas' : '← Voltar para áreas'}
+            </button>
+            <div className="areaDetail__headActions">
+              <span className="areaDetail__badge">{area.status}</span>
+              {view === 'detail' && activeMeta ? (
+                <button className="btn btn-secondary" onClick={() => onEdit?.(activeMeta)}>Editar meta</button>
+              ) : null}
             </div>
-          </header>
-          <div className="kanbanGrid">
-            {quarterColumns.map((column) => (
-              <article key={column.id} className="kanbanColumn">
-                <header>
-                  <p>{column.label}</p>
-                  <span>{column.metas.length ? `${column.metas.length} metas` : '0 metas'}</span>
-                </header>
-                <div className="kanbanColumn__body">
-                  {column.metas.length === 0 && <p className="kanbanColumn__empty">Ainda sem metas neste trimestre</p>}
-                  {column.metas.map((meta) => {
-                    const progressPercent = Math.round((meta.progress || 0) * 100)
-                    const isActive = meta.id === activeMetaId
-                    return (
-                      <article
-                        key={meta.id}
-                        className={`metaCard metaCard--kanban ${isActive ? 'metaCard--active' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={isActive}
-                        onClick={() => openMetaDetail(meta.id)}
-                      >
-                        <div className="metaCard__head">
-                          <span>{meta.trimester}</span>
-                          <strong>{meta.status}</strong>
-                        </div>
-                        <h3>{meta.title}</h3>
-                        <div className="metaCard__progress">
-                          <span style={{ width: `${progressPercent}%` }} />
-                        </div>
-                        <footer>
-                          <span>{progressPercent}%</span>
-                          <span>{meta.areaLabel}</span>
-                        </footer>
-                      </article>
-                    )
-                  })}
-                </div>
-              </article>
-            ))}
           </div>
-        </section>
-      )}
+          <div className="areaDetail__identity">
+            <span className="areaDetail__icon" aria-hidden="true">
+              {area.icon}
+            </span>
+            <div>
+              <p>Área</p>
+              <h1>{area.label}</h1>
+            </div>
+          </div>
+          <p className="areaDetail__description">{area.description}</p>
+        </header>
+
+        {view === 'detail' && activeMeta ? (
+          <MetaDetail meta={activeMeta} onBack={() => setView('board')} onEdit={onEdit} />
+        ) : (
+          <section className="areaMetaBoard">
+            <header>
+              <div>
+                <p className="areaMetaBoard__eyebrow">Metas</p>
+                <h2>Escolha uma meta para visualizar</h2>
+                <span>{area.metas.length} metas conectadas a esta área</span>
+              </div>
+            </header>
+            <div className="kanbanGrid">
+              {quarterColumns.map((column) => (
+                <article key={column.id} className="kanbanColumn">
+                  <header>
+                    <p>{column.label}</p>
+                    <span>{column.metas.length ? `${column.metas.length} metas` : '0 metas'}</span>
+                  </header>
+                  <div className="kanbanColumn__body">
+                    {column.metas.length === 0 && <p className="kanbanColumn__empty">Ainda sem metas neste trimestre</p>}
+                    {column.metas.map((meta) => {
+                      const progressPercent = Math.round((meta.progress || 0) * 100)
+                      const isActive = meta.id === activeMetaId
+                      return (
+                        <article
+                          key={meta.id}
+                          className={`metaCard metaCard--kanban ${isActive ? 'metaCard--active' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isActive}
+                          onClick={() => openMetaDetail(meta.id)}
+                        >
+                          <div className="metaCard__head">
+                            <span>{meta.trimester}</span>
+                            <strong>{meta.status}</strong>
+                          </div>
+                          <h3>{meta.title}</h3>
+                          <div className="metaCard__progress">
+                            <span style={{ width: `${progressPercent}%` }} />
+                          </div>
+                          <footer>
+                            <span>{progressPercent}%</span>
+                            <span>{meta.areaLabel}</span>
+                          </footer>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </section>
   )
 }
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Pegando deleteGoal do contexto
-  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject } = useApp()
+  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
   const [editGoal, setEditGoal] = useState(null)
+  const [emptyAreaPulseId, setEmptyAreaPulseId] = useState(null)
+  const emptyPulseTimerRef = useRef(null)
 
   const LIFE_AREAS = useMemo(() => {
     return DEFAULT_LIFE_AREAS.map(area => {
@@ -306,7 +315,48 @@ export default function Goals({ onNavigate, onLogout, user }) {
 
   const selectedArea = LIFE_AREAS.find((area) => area.id === selectedAreaId) ?? null
 
-  const handleCardSelect = (areaId) => setSelectedAreaId(areaId)
+  useEffect(() => {
+    return () => {
+      if (emptyPulseTimerRef.current) {
+        window.clearTimeout(emptyPulseTimerRef.current)
+        emptyPulseTimerRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    if (!selectedAreaId) return
+
+    const currentArea = LIFE_AREAS.find((area) => area.id === selectedAreaId)
+    if (!currentArea || !Array.isArray(currentArea.metas) || currentArea.metas.length === 0) {
+      setSelectedAreaId(null)
+    }
+  }, [loading, selectedAreaId, LIFE_AREAS])
+
+  const pulseEmptyArea = (areaId) => {
+    setEmptyAreaPulseId(areaId)
+    if (emptyPulseTimerRef.current) {
+      window.clearTimeout(emptyPulseTimerRef.current)
+    }
+    emptyPulseTimerRef.current = window.setTimeout(() => {
+      setEmptyAreaPulseId(null)
+      emptyPulseTimerRef.current = null
+    }, 320)
+  }
+
+  const handleCardSelect = (area) => {
+    if (!area) return
+    if (loading) return
+
+    const metasCount = Array.isArray(area.metas) ? area.metas.length : 0
+    if (metasCount === 0) {
+      pulseEmptyArea(area.id)
+      return
+    }
+
+    setSelectedAreaId(area.id)
+  }
 
   const handleDreamSubmit = async (form, imageFile) => {
     try {
@@ -392,11 +442,14 @@ export default function Goals({ onNavigate, onLogout, user }) {
             <div className="goalsAreas">
               {LIFE_AREAS.map((area) => {
                 const progressPercent = Math.round(area.progress * 100)
+                const hasMetas = Array.isArray(area.metas) && area.metas.length > 0
+                const isEmptyArea = !loading && !hasMetas
+                const isPulse = emptyAreaPulseId === area.id
                 return (
                   <article
                     key={area.id}
-                    className={`goalsCard goalsCard--${area.id}`}
-                    onClick={() => handleCardSelect(area.id)}
+                    className={`goalsCard goalsCard--${area.id} ${isEmptyArea ? 'goalsCard--empty' : ''} ${isPulse ? 'goalsCard--pulse' : ''}`}
+                    onClick={() => handleCardSelect(area)}
                   >
                     <header className="goalsCard__header">
                       <div className="goalsCard__title">

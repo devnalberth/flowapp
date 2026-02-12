@@ -36,6 +36,33 @@
   transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
+.goalsCard--empty {
+  border-color: #ededf2;
+  box-shadow: 0 14px 34px rgba(13, 13, 18, 0.06);
+}
+
+.goalsCard--pulse {
+  animation: goalsCardPulse 320ms ease-out;
+}
+
+@keyframes goalsCardPulse {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 18px 40px rgba(13, 13, 18, 0.08);
+    border-color: #ececec;
+  }
+  45% {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 52px rgba(255, 72, 0, 0.16);
+    border-color: rgba(255, 72, 0, 0.4);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 18px 40px rgba(13, 13, 18, 0.08);
+    border-color: #ececec;
+  }
+}
+
 .goalsCard:hover,
 .goalsCard:focus-visible {
   transform: translateY(-4px);
@@ -169,6 +196,10 @@
 }
 
 .goalsCard--financas .goalsCard__icon {
+  background: linear-gradient(135deg, rgba(255, 214, 111, 0.26), rgba(255, 255, 255, 0.9));
+}
+
+.goalsCard--financeiro .goalsCard__icon {
   background: linear-gradient(135deg, rgba(255, 214, 111, 0.26), rgba(255, 255, 255, 0.9));
 }
 
@@ -319,12 +350,10 @@
 .areaDetail {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 0;
 }
 
-.areaDetail__head,
-.areaMetaBoard,
-.metaDetail {
+.areaDetail__shell {
   background: #fff;
   border-radius: 32px;
   border: 1px solid #ececec;
@@ -332,7 +361,35 @@
   padding: 32px 36px;
   display: flex;
   flex-direction: column;
+  gap: 28px;
+}
+
+.areaDetail__head {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
+}
+
+.areaDetail__headActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.areaMetaBoard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.metaDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.areaDetail .metaDetail__backRow {
+  display: none;
 }
 
 .areaDetail__headTop {
@@ -735,7 +792,7 @@
 
 .metaDetail__projectsLayout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 1fr;
   gap: 28px;
 }
 
@@ -953,9 +1010,7 @@
     padding: 24px 32px;
   }
 
-  .areaDetail__head,
-  .areaMetaBoard,
-  .metaDetail {
+  .areaDetail__shell {
     padding: 24px;
   }
 
