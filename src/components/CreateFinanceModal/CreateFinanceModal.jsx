@@ -67,10 +67,12 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
       amount: amount.toFixed(2),
       type: formData.type,
       category: formData.category,
-      date: new Date(formData.date).toISOString(),
+      // Store at noon UTC so any ±12h timezone offset never shifts the calendar day
+      date: formData.date + 'T12:00:00.000Z',
       isInstallment: formData.isInstallment,
       installmentCount: installmentCount,
-      installmentTotal: formData.isInstallment ? (amount * installmentCount).toFixed(2) : null,
+      // installmentTotal = total purchase price (what the user entered), NOT price × N
+      installmentTotal: formData.isInstallment ? amount.toFixed(2) : null,
     })
 
     setFormData({
@@ -269,12 +271,10 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
                   {formData.amount && (
                     <div className="finance-modal__installment-info">
                       <p>
-                        {/* CORREÇÃO 2: Usa '0' como string no fallback do parseFloat para satisfazer TypeScript */}
                         {formData.installmentCount || 0}x de <strong>R$ {((parseFloat(formData.amount.replace(',', '.') || '0')) / (formData.installmentCount || 1)).toFixed(2).replace('.', ',')}</strong>
                       </p>
                       <p className="finance-modal__installment-total">
-                        {/* CORREÇÃO 3: Fallback '0' e divisor seguro */}
-                        Total: R$ {((parseFloat(formData.amount.replace(',', '.') || '0')) * (formData.installmentCount || 1)).toFixed(2).replace('.', ',')}
+                        Total: R$ {(parseFloat(formData.amount.replace(',', '.') || '0')).toFixed(2).replace('.', ',')}
                       </p>
                     </div>
                   )}

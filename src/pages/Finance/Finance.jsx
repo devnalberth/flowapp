@@ -52,7 +52,8 @@ const formatCurrency = (value) =>
 
 const formatDate = (value) => {
   if (!value) return '--'
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(value))
+  // Use timeZone: 'UTC' so dates stored at midnight or noon UTC never shift to the previous day in local time
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }).format(new Date(value))
 }
 
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})

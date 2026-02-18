@@ -8,6 +8,23 @@ import { studyService } from '../services/studyService'
 import { dreamMapService } from '../services/dreamMapService'
 import { eventService } from '../services/eventService'
 
+/**
+ * Advances (or rewinds) a date string by `months` months.
+ * Accepts "YYYY-MM-DD" or a full ISO string.
+ * Returns an ISO string at noon UTC to prevent local-timezone day shifts.
+ * The day is clamped to the last valid day of the target month (e.g. Jan 31 + 1 → Feb 28).
+ */
+function addMonthsToDate(dateInput, months) {
+  const base = (typeof dateInput === 'string' ? dateInput : dateInput.toISOString()).substring(0, 10)
+  const [y, m, d] = base.split('-').map(Number)
+  const totalMonths = (y * 12 + m - 1) + months
+  const newYear = Math.floor(totalMonths / 12)
+  const newMonth = (totalMonths % 12) + 1
+  const lastDay = new Date(newYear, newMonth, 0).getDate()
+  const newDay = Math.min(d, lastDay)
+  return `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}T12:00:00.000Z`
+}
+
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -319,6 +336,35 @@ export function AppProvider({ children, userId }) {
   // Finance Actions
   const addFinance = async (finance) => {
     if (!userId) return
+
+    // Installment purchase: create one transaction per parcela
+    if (finance.isInstallment && finance.installmentCount > 1) {
+      const groupId = crypto.randomUUID()
+      const totalAmount = parseFloat(finance.amount)
+      const N = parseInt(finance.installmentCount, 10)
+      const perInstallment = totalAmount / N
+      const baseDate = finance.date.substring(0, 10) // YYYY-MM-DD
+      const baseDesc = finance.description.replace(/\s*\(\d+\/\d+\)$/, '')
+
+      const transactions = Array.from({ length: N }, (_, i) => ({
+        description: `${baseDesc} (${i + 1}/${N})`,
+        amount: perInstallment.toFixed(2),
+        type: finance.type,
+        category: finance.category,
+        date: addMonthsToDate(baseDate, i),   // 1ª parcela = data escolhida, 2ª = +1 mês, etc.
+        isInstallment: true,
+        installmentCount: N,
+        installmentTotal: totalAmount.toFixed(2),
+        installmentGroupId: groupId,
+        installmentIndex: i + 1,
+      }))
+
+      const newTransactions = await financeService.createTransactions(userId, transactions)
+      setFinances(prev => [...newTransactions, ...prev])
+      return newTransactions
+    }
+
+    // Non-installment: single transaction
     const newFinance = await financeService.createTransaction(userId, finance)
     setFinances(prev => [newFinance, ...prev])
     return newFinance
@@ -326,6 +372,54 @@ export function AppProvider({ children, userId }) {
 
   const updateFinance = async (id, updates) => {
     if (!userId) return
+    const existing = finances.find(f => f.id === id)
+
+    // Installment group: update all sibling parcelas together
+    if (existing?.installment_group_id) {
+      const N = existing.installment_count
+      const confirmed = window.confirm(
+        `Esta é uma compra parcelada (${N}x). Deseja atualizar todas as parcelas?`
+      )
+      if (!confirmed) return
+
+      const groupId = existing.installment_group_id
+      const siblings = finances
+        .filter(f => f.installment_group_id === groupId)
+        .sort((a, b) => (a.installment_index ?? 0) - (b.installment_index ?? 0))
+
+      // Derive the first-parcela base date from whichever parcela the user edited
+      const editedDate = (updates.date ?? existing.date).substring(0, 10)
+      const editedIndex = existing.installment_index ?? 1
+      const firstParcelDate = addMonthsToDate(editedDate, -(editedIndex - 1)).substring(0, 10)
+
+      // Strip any existing "(X/N)" suffix from the description being set
+      const baseDesc = (updates.description ?? existing.description).replace(/\s*\(\d+\/\d+\)$/, '')
+      const perInstallment = parseFloat(updates.amount ?? existing.amount).toFixed(2)
+
+      const siblingUpdates = siblings.map(sib => ({
+        id: sib.id,
+        updates: {
+          ...updates,
+          description: `${baseDesc} (${sib.installment_index}/${N})`,
+          amount: perInstallment,
+          date: addMonthsToDate(firstParcelDate, (sib.installment_index ?? 1) - 1),
+        },
+      }))
+
+      // Optimistic update in state
+      setFinances(prev => prev.map(f => {
+        const match = siblingUpdates.find(u => u.id === f.id)
+        return match ? { ...f, ...match.updates } : f
+      }))
+
+      // Persist each sibling
+      for (const { id: sibId, updates: sibUpdates } of siblingUpdates) {
+        await financeService.updateTransaction(sibId, userId, sibUpdates)
+      }
+      return
+    }
+
+    // Single (non-installment) transaction update
     setFinances(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f))
     const updatedFinance = await financeService.updateTransaction(id, userId, updates)
     if (updatedFinance) setFinances(prev => prev.map(f => f.id === id ? updatedFinance : f))
@@ -333,6 +427,22 @@ export function AppProvider({ children, userId }) {
 
   const deleteFinance = async (id) => {
     if (!userId) return
+    const existing = finances.find(f => f.id === id)
+
+    // Installment group: delete all sibling parcelas together
+    if (existing?.installment_group_id) {
+      const N = existing.installment_count
+      const confirmed = window.confirm(
+        `Esta é uma compra parcelada (${N}x). Deseja excluir todas as parcelas?`
+      )
+      if (!confirmed) return
+
+      const groupId = existing.installment_group_id
+      setFinances(prev => prev.filter(f => f.installment_group_id !== groupId))
+      await financeService.deleteTransactionsByGroupId(groupId, userId)
+      return
+    }
+
     setFinances(prev => prev.filter(f => f.id !== id))
     await financeService.deleteTransaction(id, userId)
   }
