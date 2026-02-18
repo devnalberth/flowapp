@@ -17,12 +17,19 @@ const CATEGORIES = {
   ],
   DESPESA: [
     { id: 'alimentacao', label: 'Alimentação' },
-    { id: 'transporte', label: 'Transporte' },
-    { id: 'moradia', label: 'Moradia' },
-    { id: 'saude', label: 'Saúde' },
+    { id: 'assinatura', label: 'Assinatura' },
+    { id: 'casa', label: 'Casa' },
+    { id: 'compras', label: 'Compras' },
     { id: 'educacao', label: 'Educação' },
     { id: 'lazer', label: 'Lazer' },
+    { id: 'operacao_bancaria', label: 'Operação bancária' },
     { id: 'outros', label: 'Outros' },
+    { id: 'pix', label: 'Pix' },
+    { id: 'saude', label: 'Saúde' },
+    { id: 'servicos', label: 'Serviços' },
+    { id: 'supermercado', label: 'Supermercado' },
+    { id: 'transporte', label: 'Transporte' },
+    { id: 'viagem', label: 'Viagem' },
   ],
 }
 

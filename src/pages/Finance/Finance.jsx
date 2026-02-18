@@ -38,11 +38,25 @@ const MONTHS = [
 const YEARS = ['2024', '2025', '2026']
 
 const CATEGORY_OPTIONS = [
-  { id: 'operacoes', label: 'Operações' },
-  { id: 'marketing', label: 'Marketing' },
-  { id: 'pessoal', label: 'Pessoal' },
-  { id: 'education', label: 'Educação' },
+  // Despesa
+  { id: 'alimentacao', label: 'Alimentação' },
+  { id: 'assinatura', label: 'Assinatura' },
+  { id: 'casa', label: 'Casa' },
+  { id: 'compras', label: 'Compras' },
+  { id: 'educacao', label: 'Educação' },
   { id: 'lazer', label: 'Lazer' },
+  { id: 'operacao_bancaria', label: 'Operação bancária' },
+  { id: 'outros', label: 'Outros' },
+  { id: 'pix', label: 'Pix' },
+  { id: 'saude', label: 'Saúde' },
+  { id: 'servicos', label: 'Serviços' },
+  { id: 'supermercado', label: 'Supermercado' },
+  { id: 'transporte', label: 'Transporte' },
+  { id: 'viagem', label: 'Viagem' },
+  // Receita
+  { id: 'salario', label: 'Salário' },
+  { id: 'freelance', label: 'Freelance' },
+  { id: 'investimentos', label: 'Investimentos' },
 ]
 
 const PIE_COLORS = ['#ff4800', '#ff8d00', '#ffc241', '#7c88ff', '#5cd1b3']
