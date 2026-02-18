@@ -494,16 +494,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 4px;
   background: #f9f9fb;
   border: 2px solid transparent;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  padding: 8px;
-  min-height: 70px;
+  padding: 8px 6px;
+  min-height: 80px;
 }
 
 .monthDayCell:hover {
@@ -533,22 +533,15 @@
   color: #0d0d12;
 }
 
-.monthDayCell__bar {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  height: 4px;
-  border-radius: 2px;
-  background: #e5e7eb;
-  transition: width 0.3s ease;
+.monthDayCell__ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
-.monthDayCell__count {
-  font-size: 10px;
-  color: #6b6b78;
-  font-weight: 500;
-  margin-top: auto;
+.monthDayCell__ring svg {
+  display: block;
 }
 
 /* Legenda */

@@ -621,15 +621,37 @@ export default function Habits({ user, onNavigate, onLogout }) {
                             onClick={() => handleDayClick(day.dateObj)}
                           >
                             <span className="monthDayCell__number">{day.day}</span>
-                            <div
-                              className="monthDayCell__bar"
-                              style={{
-                                width: `${progressPercent}%`,
-                                backgroundColor: getProgressColor(day.completion)
-                              }}
-                            />
-                            {day.total > 0 && (
-                              <span className="monthDayCell__count">{day.completedCount}/{day.total}</span>
+                            {day.total > 0 ? (
+                              <div className="monthDayCell__ring">
+                                {(() => {
+                                  const r = 18
+                                  const circ = 2 * Math.PI * r
+                                  const color = getProgressColor(day.completion)
+                                  return (
+                                    <svg viewBox="0 0 44 44" width="44" height="44">
+                                      <circle cx="22" cy="22" r={r} fill="none" stroke="#e5e7eb" strokeWidth="3.5" />
+                                      <circle
+                                        cx="22" cy="22" r={r}
+                                        fill="none"
+                                        stroke={color}
+                                        strokeWidth="3.5"
+                                        strokeLinecap="round"
+                                        strokeDasharray={`${progressPercent / 100 * circ} ${circ}`}
+                                        transform="rotate(-90 22 22)"
+                                      />
+                                      <text x="22" y="26" textAnchor="middle" fontSize="10" fontWeight="700" fill={color}>
+                                        {progressPercent}%
+                                      </text>
+                                    </svg>
+                                  )
+                                })()}
+                              </div>
+                            ) : (
+                              <div className="monthDayCell__ring monthDayCell__ring--empty">
+                                <svg viewBox="0 0 44 44" width="44" height="44">
+                                  <circle cx="22" cy="22" r="18" fill="none" stroke="#e5e7eb" strokeWidth="3.5" />
+                                </svg>
+                              </div>
                             )}
                           </button>
                         )
