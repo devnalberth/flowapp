@@ -61,6 +61,27 @@ const CATEGORY_OPTIONS = [
 
 const PIE_COLORS = ['#ff4800', '#ff8d00', '#ffc241', '#7c88ff', '#5cd1b3']
 
+// Cores específicas por categoria — mantém consistência visual em toda a página
+const CATEGORY_META = {
+  alimentacao:       { color: '#dc2626', label: 'Alimentação' },
+  assinatura:        { color: '#7c3aed', label: 'Assinatura' },
+  casa:              { color: '#0891b2', label: 'Casa' },
+  compras:           { color: '#6d28d9', label: 'Compras' },
+  educacao:          { color: '#4338ca', label: 'Educação' },
+  lazer:             { color: '#ea580c', label: 'Lazer' },
+  operacao_bancaria: { color: '#9333ea', label: 'Operação bancária' },
+  outros:            { color: '#6b7280', label: 'Outros' },
+  pix:               { color: '#8b5cf6', label: 'Pix' },
+  saude:             { color: '#16a34a', label: 'Saúde' },
+  servicos:          { color: '#15803d', label: 'Serviços' },
+  supermercado:      { color: '#ef4444', label: 'Supermercado' },
+  transporte:        { color: '#1d4ed8', label: 'Transporte' },
+  viagem:            { color: '#06b6d4', label: 'Viagem' },
+  salario:           { color: '#10b981', label: 'Salário' },
+  freelance:         { color: '#3b82f6', label: 'Freelance' },
+  investimentos:     { color: '#a855f7', label: 'Investimentos' },
+}
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0)
 
@@ -329,7 +350,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
                     paddingAngle={4}
                   >
                     {categoryBreakdown.map((entry, index) => (
-                      <Cell key={entry.id} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      <Cell key={entry.id} fill={CATEGORY_META[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value, name) => [formatCurrency(value), name]} />
@@ -339,7 +360,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
             <ul className="financeChart__legend">
               {categoryBreakdown.map((entry, index) => (
                 <li key={entry.id}>
-                  <span style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                  <span style={{ background: CATEGORY_META[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length] }} />
                   <div>
                     <strong>{entry.label}</strong>
                     <small>{formatCurrency(entry.value)}</small>
@@ -392,7 +413,15 @@ export default function Finance({ user, onNavigate, onLogout }) {
                       </div>
                     </div>
                   </td>
-                  <td>{categoryLabelMap[transaction.category] || transaction.category}</td>
+                  <td>
+                    <div className="categoryCell">
+                      <span
+                        className="categoryCell__dot"
+                        style={{ background: CATEGORY_META[transaction.category]?.color || '#6b7280' }}
+                      />
+                      {categoryLabelMap[transaction.category] || transaction.category}
+                    </div>
+                  </td>
                   <td>{formatDate(transaction.date)}</td>
                   <td className={isExpense ? 'negative' : 'positive'}>
                     {isExpense ? '-' : '+'}

@@ -1,6 +1,27 @@
 import { useState } from 'react'
-import { X, TrendingUp, TrendingDown, ArrowRightLeft, Calendar, CreditCard, Tag, Repeat } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, ArrowRightLeft, Calendar, CreditCard, Tag, Repeat, ChevronDown, Check } from 'lucide-react'
 import './CreateFinanceModal.css'
+
+// Cores e labels por categoria
+const CATEGORY_META = {
+  alimentacao:       { color: '#dc2626' },
+  assinatura:        { color: '#7c3aed' },
+  casa:              { color: '#0891b2' },
+  compras:           { color: '#6d28d9' },
+  educacao:          { color: '#4338ca' },
+  lazer:             { color: '#ea580c' },
+  operacao_bancaria: { color: '#9333ea' },
+  outros:            { color: '#6b7280' },
+  pix:               { color: '#8b5cf6' },
+  saude:             { color: '#16a34a' },
+  servicos:          { color: '#15803d' },
+  supermercado:      { color: '#ef4444' },
+  transporte:        { color: '#1d4ed8' },
+  viagem:            { color: '#06b6d4' },
+  salario:           { color: '#10b981' },
+  freelance:         { color: '#3b82f6' },
+  investimentos:     { color: '#a855f7' },
+}
 
 const TRANSACTION_TYPES = [
   { id: 'RECEITA', label: 'Receita', icon: TrendingUp, color: '#10b981' },
@@ -118,6 +139,8 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
     handleChange('amount', value)
   }
 
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+
   const categories = formData.type === 'TRANSFERENCIA' ? [] : CATEGORIES[formData.type]
 
   return (
@@ -209,19 +232,49 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
 
             {categories && categories.length > 0 && (
               <div className="finance-modal__field">
-                <label htmlFor="finance-category">
+                <label>
                   <Tag size={14} />
                   Categoria
                 </label>
-                <select
-                  id="finance-category"
-                  value={formData.category}
-                  onChange={(e) => handleChange('category', e.target.value)}
-                >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.label}</option>
-                  ))}
-                </select>
+                <div className="fm-cat-selector">
+                  <button
+                    type="button"
+                    className="fm-cat-trigger"
+                    onClick={() => setShowCategoryDropdown(p => !p)}
+                  >
+                    <span
+                      className="fm-cat-dot"
+                      style={{ background: CATEGORY_META[formData.category]?.color || '#6b7280' }}
+                    />
+                    <span className="fm-cat-trigger__label">
+                      {categories.find(c => c.id === formData.category)?.label || 'Selecionar'}
+                    </span>
+                    <ChevronDown size={14} className={`fm-cat-chevron ${showCategoryDropdown ? 'fm-cat-chevron--open' : ''}`} />
+                  </button>
+                  {showCategoryDropdown && (
+                    <>
+                      <div className="fm-cat-overlay" onClick={() => setShowCategoryDropdown(false)} />
+                      <ul className="fm-cat-list">
+                        {categories.map(cat => (
+                          <li key={cat.id}>
+                            <button
+                              type="button"
+                              className={`fm-cat-item ${formData.category === cat.id ? 'fm-cat-item--active' : ''}`}
+                              onClick={() => { handleChange('category', cat.id); setShowCategoryDropdown(false) }}
+                            >
+                              <span
+                                className="fm-cat-dot"
+                                style={{ background: CATEGORY_META[cat.id]?.color || '#6b7280' }}
+                              />
+                              <span>{cat.label}</span>
+                              {formData.category === cat.id && <Check size={14} className="fm-cat-check" />}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>

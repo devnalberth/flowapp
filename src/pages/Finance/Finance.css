@@ -386,6 +386,22 @@
   align-items: center;
 }
 
+.categoryCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.categoryCell__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
 .pill {
   border-radius: 999px;
   padding: 4px 12px;
