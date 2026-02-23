@@ -1,5 +1,68 @@
 import { supabase } from '../lib/supabaseClient.js'
 
+const getOrderValue = (item) => {
+  if (typeof item?.order_index === 'number') return item.order_index
+  if (typeof item?.position === 'number') return item.position
+  return Number.MAX_SAFE_INTEGER
+}
+
+const compareByVisualOrder = (a, b) => {
+  const orderA = getOrderValue(a)
+  const orderB = getOrderValue(b)
+  if (orderA !== orderB) return orderA - orderB
+
+  const dateA = a?.created_at ? new Date(a.created_at).getTime() : Number.MAX_SAFE_INTEGER
+  const dateB = b?.created_at ? new Date(b.created_at).getTime() : Number.MAX_SAFE_INTEGER
+  if (dateA !== dateB) return dateA - dateB
+
+  return String(a?.title || '').localeCompare(String(b?.title || ''), 'pt-BR')
+}
+
+const normalizeLesson = (lesson) => ({
+  ...lesson,
+  isCompleted: Boolean(lesson?.is_completed ?? lesson?.isCompleted),
+  videoUrl: lesson?.video_url ?? lesson?.videoUrl ?? null,
+  accessUrl: lesson?.video_url ?? lesson?.videoUrl ?? lesson?.access_url ?? lesson?.accessUrl ?? null,
+})
+
+const normalizeModule = (module) => ({
+  ...module,
+  parentModuleId: module?.parent_module_id ?? module?.parentModuleId ?? null,
+  lessons: Array.isArray(module?.lessons)
+    ? module.lessons.map(normalizeLesson).sort(compareByVisualOrder)
+    : [],
+  submodules: [],
+})
+
+const buildModuleTree = (modules) => {
+  const normalizedModules = (Array.isArray(modules) ? modules : []).map(normalizeModule)
+  const modulesById = new Map(normalizedModules.map((module) => [module.id, module]))
+  const roots = []
+
+  normalizedModules.forEach((module) => {
+    if (module.parentModuleId && modulesById.has(module.parentModuleId)) {
+      modulesById.get(module.parentModuleId).submodules.push(module)
+      return
+    }
+    roots.push(module)
+  })
+
+  const sortTree = (moduleList) => {
+    moduleList.sort(compareByVisualOrder)
+    moduleList.forEach((module) => {
+      module.submodules.sort(compareByVisualOrder)
+      module.lessons.sort(compareByVisualOrder)
+      if (module.submodules.length > 0) {
+        sortTree(module.submodules)
+      }
+    })
+  }
+
+  sortTree(roots)
+
+  return roots
+}
+
 export const studyService = {
   // Upload de imagem de capa para o Supabase Storage
   async uploadCoverImage(file, userId) {
@@ -58,6 +121,7 @@ export const studyService = {
     // Normaliza snake_case do banco para camelCase do frontend
     return (data || []).map(study => ({
       ...study,
+      modules: buildModuleTree(study.modules || []),
       coverUrl: study.cover_url || null,
       createdAt: study.created_at,
       updatedAt: study.updated_at,
@@ -130,6 +194,7 @@ export const studyService = {
         {
           study_item_id: studyItemId,
           title: moduleData.title,
+          parent_module_id: moduleData.parentModuleId || null,
         },
       ])
       .select()
