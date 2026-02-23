@@ -118,6 +118,20 @@ export const taskService = {
     return normalizeTask(data);
   },
 
+  async archiveTasks(userId, ids) {
+    const supabase = getSupabaseClient(true);
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ status: 'archived', completed: false, updated_at: now })
+      .in('id', ids)
+      .eq('user_id', userId)
+      .select();
+
+    if (error) throw error;
+    return (data || []).map(normalizeTask);
+  },
+
   async deleteTask(taskId, userId) {
     const supabase = getSupabaseClient(true);
     const { error } = await supabase

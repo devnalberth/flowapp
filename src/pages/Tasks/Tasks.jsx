@@ -7,6 +7,8 @@ import CreateEventModal from '../../components/CreateEventModal/CreateEventModal
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
+import { taskService } from '../../services/taskService'
+import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
 
 import './Tasks.css'
 
@@ -105,7 +107,7 @@ const getWeekEnd = () => {
 
 export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
+  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent, userId } = useApp()
 
   // --- Estados de Filtro ---
   // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
@@ -424,20 +426,33 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     })
   }, [tasks, timelineFilter, statusFilters, sortBy])
 
-  // Função para arquivar todas as tarefas finalizadas
-  const archiveCompletedTasks = async () => {
-    const completedTasks = tasks.filter(t => t.completed && t.status !== 'archived')
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+  const [pendingArchiveIds, setPendingArchiveIds] = useState([])
 
-    if (completedTasks.length === 0) {
-      alert('Não há tarefas finalizadas para arquivar.')
-      return
+  const archiveCompletedTasks = () => {
+    const completedTasks = tasks.filter(t => normalizeTaskStatus(t) === 'done')
+    if (completedTasks.length === 0) return
+    setPendingArchiveIds(completedTasks.map(t => t.id))
+    setShowArchiveConfirm(true)
+  }
+
+  const handleConfirmArchive = async () => {
+    setShowArchiveConfirm(false)
+    if (!pendingArchiveIds.length || !userId) return
+    // Optimistic: update all at once in local state
+    setTasks(prev =>
+      prev.map(t =>
+        pendingArchiveIds.includes(t.id)
+          ? { ...t, status: 'archived', completed: false }
+          : t
+      )
+    )
+    try {
+      await taskService.archiveTasks(userId, pendingArchiveIds)
+    } catch (e) {
+      console.error('Erro ao arquivar tarefas:', e)
     }
-
-    if (!confirm(`Arquivar ${completedTasks.length} tarefa(s) finalizada(s)?`)) return
-
-    for (const task of completedTasks) {
-      await updateTask(task.id, { status: 'archived' })
-    }
+    setPendingArchiveIds([])
   }
 
   const handleFilterClick = (filter) => {
@@ -738,6 +753,17 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
           setDetailTaskId(null);
         }}
       />
+
+      {showArchiveConfirm && (
+        <ConfirmModal
+          title="Arquivar tarefas finalizadas?"
+          message={`${pendingArchiveIds.length} tarefa${pendingArchiveIds.length > 1 ? 's' : ''} finalizada${pendingArchiveIds.length > 1 ? 's' : ''} serão movidas para Arquivadas e não contarão nas estatísticas do Dashboard.`}
+          confirmLabel="Arquivar Todas"
+          cancelLabel="Cancelar"
+          onConfirm={handleConfirmArchive}
+          onCancel={() => setShowArchiveConfirm(false)}
+        />
+      )}
     </div>
   )
 }

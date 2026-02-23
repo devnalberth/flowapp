@@ -89,6 +89,8 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
 
     // KPI 3: Finalizadas na Semana (Qualquer tarefa feita >= Domingo)
     const doneWeek = safeTasks.filter(task => {
+      // Arquivadas não contam como finalizadas
+      if (task.status === 'archived') return false
       // Deve estar completa
       if (!task.completed && task.status !== 'done') return false
       // Deve ter data de conclusão recente
