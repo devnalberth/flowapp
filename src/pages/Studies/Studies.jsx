@@ -4,7 +4,7 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
 import LessonModal from '../../components/LessonModal/LessonModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Pencil, Trash2, X, Check, ArrowLeft, ChevronDown, PlayCircle } from 'lucide-react'
+import { Pencil, Trash2, X, Check, ArrowLeft, ChevronDown, PlayCircle, Plus } from 'lucide-react'
 
 import './Studies.css'
 
@@ -58,10 +58,13 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [isModalOpen, setModalOpen] = useState(false)
+  const [isAddModuleModalOpen, setAddModuleModalOpen] = useState(false)
+  const [isAddSubmoduleModalOpen, setAddSubmoduleModalOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState({})
   const [expandedSubmodules, setExpandedSubmodules] = useState({})
   const [newModuleTitle, setNewModuleTitle] = useState('')
-  const [newSubmoduleInputs, setNewSubmoduleInputs] = useState({})
+  const [newSubmoduleTitle, setNewSubmoduleTitle] = useState('')
+  const [submoduleParentId, setSubmoduleParentId] = useState(null)
   const [newLessonInputs, setNewLessonInputs] = useState({})
   // Edit states
   const [editingModuleId, setEditingModuleId] = useState(null)
@@ -109,24 +112,29 @@ export default function Studies({ user, onNavigate, onLogout }) {
     try {
       await addStudyModule(activeStudy.id, { title: newModuleTitle.trim() })
       setNewModuleTitle('')
+      setAddModuleModalOpen(false)
     } catch (error) {
       console.error('Error adding module:', error)
       alert('Erro ao adicionar módulo: ' + error.message)
     }
   }
 
-  const handleSubmoduleInputChange = (moduleId, value) => {
-    setNewSubmoduleInputs((prev) => ({ ...prev, [moduleId]: value }))
+  const openAddSubmoduleModal = (moduleId) => {
+    setSubmoduleParentId(moduleId)
+    setNewSubmoduleTitle('')
+    setAddSubmoduleModalOpen(true)
   }
 
-  const handleAddSubmodule = async (moduleId) => {
-    const title = (newSubmoduleInputs[moduleId] || '').trim()
+  const handleAddSubmodule = async () => {
+    const title = newSubmoduleTitle.trim()
     if (!activeStudy || !title) return
+    if (!submoduleParentId) return
 
     try {
-      await addStudyModule(activeStudy.id, { title, parentModuleId: moduleId })
-      setNewSubmoduleInputs((prev) => ({ ...prev, [moduleId]: '' }))
-      setExpandedModules((prev) => ({ ...prev, [moduleId]: true }))
+      await addStudyModule(activeStudy.id, { title, parentModuleId: submoduleParentId })
+      setNewSubmoduleTitle('')
+      setAddSubmoduleModalOpen(false)
+      setExpandedModules((prev) => ({ ...prev, [submoduleParentId]: true }))
     } catch (error) {
       console.error('Error adding submodule:', error)
       alert('Erro ao adicionar sub-módulo: ' + error.message)
@@ -383,7 +391,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const renderLevel = (module, index) => {
     const isOpen = expandedModules[module.id]
     const progress = calcModuleProgress(module)
-    const submoduleInput = newSubmoduleInputs[module.id] || ''
     const lessonCount = getLessonCounts(module)
 
     return (
@@ -404,7 +411,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
               ) : (
                 <div className="studyLevel__titleRow">
                   <h3>{module.title}</h3>
-                  <span className="studyLevel__check">✓</span>
                 </div>
               )}
             </div>
@@ -449,13 +455,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
           </div>
 
           <div className="studyAddSubmodule">
-            <input
-              type="text"
-              placeholder="Novo sub-módulo"
-              value={submoduleInput}
-              onChange={(event) => handleSubmoduleInputChange(module.id, event.target.value)}
-            />
-            <button type="button" onClick={() => handleAddSubmodule(module.id)}>
+            <button type="button" className="studyAddSubmodule__iconBtn" onClick={() => openAddSubmoduleModal(module.id)}>
+              <Plus size={16} />
               Novo sub-módulo
             </button>
           </div>
@@ -565,13 +566,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
             </header>
 
             <div className="studyAddModule">
-              <input
-                type="text"
-                placeholder="Novo módulo"
-                value={newModuleTitle}
-                onChange={(event) => setNewModuleTitle(event.target.value)}
-              />
-              <button type="button" onClick={handleAddModule}>
+              <button type="button" className="studyAddModule__iconBtn" onClick={() => setAddModuleModalOpen(true)}>
+                <Plus size={16} />
                 Novo módulo
               </button>
             </div>
@@ -598,6 +594,37 @@ export default function Studies({ user, onNavigate, onLogout }) {
           />
         )}
 
+        {isAddModuleModalOpen && (
+          <AddNameModal
+            title="Novo módulo"
+            placeholder="Nome do módulo"
+            value={newModuleTitle}
+            onChange={setNewModuleTitle}
+            onClose={() => {
+              setAddModuleModalOpen(false)
+              setNewModuleTitle('')
+            }}
+            onSubmit={handleAddModule}
+            submitLabel="Criar módulo"
+          />
+        )}
+
+        {isAddSubmoduleModalOpen && (
+          <AddNameModal
+            title="Novo sub-módulo"
+            placeholder="Nome do sub-módulo"
+            value={newSubmoduleTitle}
+            onChange={setNewSubmoduleTitle}
+            onClose={() => {
+              setAddSubmoduleModalOpen(false)
+              setNewSubmoduleTitle('')
+              setSubmoduleParentId(null)
+            }}
+            onSubmit={handleAddSubmodule}
+            submitLabel="Criar sub-módulo"
+          />
+        )}
+
         {!activeStudy && (
           <FloatingCreateButton
             label="Novo estudo"
@@ -607,6 +634,46 @@ export default function Studies({ user, onNavigate, onLogout }) {
           />
         )}
       </div>
+    </div>
+  )
+}
+
+function AddNameModal({ title, placeholder, value, onChange, onClose, onSubmit, submitLabel }) {
+  return (
+    <div className="studyQuickModal" onClick={onClose}>
+      <div className="studyQuickModal__backdrop" />
+      <form
+        className="studyQuickModal__panel"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault()
+          onSubmit()
+        }}
+      >
+        <header className="studyQuickModal__header">
+          <h3>{title}</h3>
+          <button type="button" onClick={onClose} className="studyQuickModal__close">×</button>
+        </header>
+
+        <div className="studyQuickModal__body">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+          />
+        </div>
+
+        <footer className="studyQuickModal__footer">
+          <button type="button" className="studyQuickModal__btn studyQuickModal__btn--secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="studyQuickModal__btn studyQuickModal__btn--primary">
+            {submitLabel}
+          </button>
+        </footer>
+      </form>
     </div>
   )
 }

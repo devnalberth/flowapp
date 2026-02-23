@@ -311,13 +311,13 @@
 
 .studyDetailHeader__left h2 {
   margin: 0;
-  font-size: 40px;
+  font-size: clamp(30px, 3vw, 46px);
   line-height: 1.1;
 }
 
 .studyDetailHeader__type {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #3f3f46;
 }
@@ -353,27 +353,29 @@
 
 .studyAddModule {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
-.studyAddModule input {
-  flex: 1;
-  min-width: 260px;
-  border-radius: 16px;
-  border: 1px solid #e2e6f5;
-  padding: 12px 14px;
-  text-align: left;
-}
-
-.studyAddModule button {
+.studyAddModule__iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: none;
   border-radius: 999px;
-  padding: 12px 20px;
+  padding: 10px 14px;
   background: var(--grad-primary);
   color: #fff;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(255, 90, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.studyAddModule__iconBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(255, 90, 0, 0.24);
 }
 
 .studyLevels {
@@ -431,14 +433,14 @@
 
 .studyLevel__titleRow h3 {
   margin: 0;
-  font-size: 36px;
+  font-size: clamp(22px, 2.2vw, 30px);
   line-height: 1.1;
 }
 
 .studyLevel__check {
   color: #00d1a7;
   font-weight: 700;
-  font-size: 24px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -485,7 +487,7 @@
   padding: 8px 12px;
   border: 2px solid #ff5a00;
   border-radius: 8px;
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -601,7 +603,7 @@
 
 .studySubmodule__titleRow h4 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #1f2937;
 }
@@ -663,7 +665,7 @@
   padding: 7px 10px;
   border: 2px solid #ff5a00;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -786,7 +788,26 @@
 }
 
 .studyAddSubmodule {
-  grid-template-columns: 1fr auto;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.studyAddSubmodule__iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 90, 0, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 90, 0, 0.1);
+  color: #ff5a00;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.studyAddSubmodule__iconBtn:hover {
+  background: rgba(255, 90, 0, 0.15);
 }
 
 .studyAddSubmodule input,
@@ -894,6 +915,118 @@
   color: var(--text);
 }
 
+.studyQuickModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.studyQuickModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.studyQuickModal__panel {
+  position: relative;
+  width: min(480px, 94vw);
+  border-radius: 20px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+  animation: studyQuickModalIn 0.2s ease;
+}
+
+@keyframes studyQuickModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.studyQuickModal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid #f0f1f5;
+}
+
+.studyQuickModal__header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.studyQuickModal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.studyQuickModal__body {
+  padding: 20px;
+}
+
+.studyQuickModal__body input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.studyQuickModal__body input:focus {
+  outline: none;
+  border-color: #ff6a00;
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.1);
+}
+
+.studyQuickModal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #f0f1f5;
+}
+
+.studyQuickModal__btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studyQuickModal__btn--secondary {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.studyQuickModal__btn--primary {
+  background: var(--grad-primary);
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .studiesHero {
     flex-direction: column;
@@ -908,13 +1041,8 @@
     flex-direction: column;
   }
 
-  .studyAddModule {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .studyLevel__titleRow h3 {
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .studyAddLessonForm {
