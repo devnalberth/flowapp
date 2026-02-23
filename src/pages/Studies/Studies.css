@@ -265,7 +265,7 @@
   border: none;
   background: none;
   color: #6b7280;
-  font-size: 15px;
+  font-size: calc(var(--body-size) - 1px);
   font-weight: 500;
   cursor: pointer;
   padding: 8px 0;
@@ -311,14 +311,16 @@
 
 .studyDetailHeader__left h2 {
   margin: 0;
-  font-size: clamp(30px, 3vw, 46px);
-  line-height: 1.1;
+  font-size: var(--lead-size);
+  line-height: var(--lead-line);
+  font-weight: 700;
 }
 
 .studyDetailHeader__type {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--pill-size);
+  line-height: var(--pill-line);
+  font-weight: var(--pill-weight);
   color: #3f3f46;
 }
 
@@ -420,7 +422,7 @@
 }
 
 .studyLevel__eyebrow {
-  font-size: 14px;
+  font-size: var(--pill-size);
   letter-spacing: 0.02em;
   color: #7a7f90;
 }
@@ -433,8 +435,9 @@
 
 .studyLevel__titleRow h3 {
   margin: 0;
-  font-size: clamp(22px, 2.2vw, 30px);
-  line-height: 1.1;
+  font-size: calc(var(--lead-size) - 2px);
+  line-height: calc(var(--lead-line) - 8px);
+  font-weight: 600;
 }
 
 .studyLevel__check {
@@ -505,7 +508,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--pill-size);
   color: #5b6275;
 }
 
@@ -530,7 +533,7 @@
 
 .studyLevel__legacyLessons h4 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--pill-size);
   color: #5b6275;
 }
 
@@ -543,7 +546,7 @@
 .studyLevel__empty,
 .studySubmodule__empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--pill-size);
   color: #6b7280;
 }
 
@@ -603,13 +606,14 @@
 
 .studySubmodule__titleRow h4 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: calc(var(--body-size) - 1px);
+  line-height: calc(var(--body-line) - 4px);
+  font-weight: 600;
   color: #1f2937;
 }
 
 .studySubmodule__badge {
-  font-size: 11px;
+  font-size: var(--pill-size);
   font-weight: 700;
   color: #6b7280;
   padding: 3px 8px;
@@ -618,7 +622,7 @@
 }
 
 .studySubmodule__stats {
-  font-size: 12px;
+  font-size: var(--pill-size);
   color: #6b7280;
 }
 
@@ -734,11 +738,12 @@
 }
 
 .studyLessonRow__title strong {
-  font-size: 14px;
+  font-size: calc(var(--body-size) - 2px);
+  font-weight: 600;
 }
 
 .studyLessonRow__link {
-  font-size: 12px;
+  font-size: var(--pill-size);
   color: #ff5a00;
   font-weight: 600;
 }
@@ -966,7 +971,7 @@
 
 .studyQuickModal__header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--body-size);
   font-weight: 700;
   color: #111827;
 }
@@ -1012,7 +1017,7 @@
   border: none;
   border-radius: 12px;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--pill-size);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1042,7 +1047,7 @@
   }
 
   .studyLevel__titleRow h3 {
-    font-size: 22px;
+    font-size: calc(var(--body-size) + 2px);
   }
 
   .studyAddLessonForm {
