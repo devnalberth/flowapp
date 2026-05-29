@@ -633,7 +633,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         </header>
 
         <ul className="tasksList">
-          {filteredTasks.map(task => {
+          {filteredTasks.map((task, idx) => {
             const statusKey = normalizeTaskStatus(task)
             const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
             const StatusIcon = statusMeta.icon
@@ -644,17 +644,33 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
             const isFocused = focusedTaskId === task.id
 
             return (
-              <li key={task.id} className={`taskCard ${isDone ? 'taskCard--done' : ''} ${isLate ? 'taskCard--late' : ''} ${isFocused ? 'taskCard--focused' : ''} ${celebratingTask === task.id ? 'taskCard--celebrate' : ''}`}>
+              <li
+                key={task.id}
+                data-priority={(task.priority || '').toLowerCase()}
+                style={{ '--i': Math.min(idx, 12) }}
+                className={`taskCard ${isDone ? 'taskCard--done' : ''} ${isLate ? 'taskCard--late' : ''} ${isFocused ? 'taskCard--focused' : ''} ${celebratingTask === task.id ? 'taskCard--celebrate' : ''}`}
+              >
                 {celebratingTask === task.id && (
-                  <div className="taskCard__celebration">
-                    <span className="taskCard__xpPop">+ XP</span>
+                  <div className="taskCard__celebration" aria-hidden="true">
+                    <span className="taskCard__xpPop">+10 XP</span>
                     <span className="taskCard__confetti taskCard__confetti--one" />
                     <span className="taskCard__confetti taskCard__confetti--two" />
+                    <span className="taskCard__confetti taskCard__confetti--three" />
+                    <span className="taskCard__confetti taskCard__confetti--four" />
+                    <span className="taskCard__confetti taskCard__confetti--five" />
                   </div>
                 )}
 
-                <button className={`taskCard__checkbox ${isDone ? 'taskCard__checkbox--checked' : ''}`} onClick={() => toggleTaskCompletion(task.id)}>
-                  <span className="taskCard__checkboxMark" />
+                <button
+                  className={`taskCard__checkbox ${isDone ? 'taskCard__checkbox--checked' : ''}`}
+                  onClick={() => toggleTaskCompletion(task.id)}
+                  aria-pressed={isDone}
+                  aria-label={isDone ? 'Marcar como não concluída' : 'Concluir tarefa'}
+                >
+                  <span className="taskCard__checkboxRipple" aria-hidden="true" />
+                  <svg className="taskCard__checkboxMark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                    <path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
 
                 <div className="taskCard__body">

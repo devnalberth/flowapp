@@ -588,88 +588,132 @@
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 18px 18px;
-  border-radius: 22px;
-  background: #ffffff;
-  border: 1px solid #ececec;
-  box-shadow: 0 10px 24px rgba(13, 13, 18, 0.06);
-  transition: border 200ms ease, box-shadow 200ms ease;
+  padding: 18px 20px 18px 22px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%);
+  border: 1px solid #ececf0;
+  box-shadow: 0 6px 18px rgba(13, 13, 18, 0.05);
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 200ms ease, box-shadow 220ms ease;
   position: relative;
   overflow: hidden;
+  opacity: 0;
+  animation: taskCardIn 420ms ease forwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
 }
+
+/* Barra de acento por prioridade (à esquerda) */
+.taskCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #cfd2dc, #b9bdc9);
+  transition: top 220ms ease, bottom 220ms ease, width 220ms ease, background 220ms ease;
+}
+
+.taskCard[data-priority="urgente"]::before { background: linear-gradient(180deg, #ff5a3c, #ff2d55); }
+.taskCard[data-priority="alta"]::before    { background: linear-gradient(180deg, #ff9500, #ff6a00); }
+.taskCard[data-priority="normal"]::before,
+.taskCard[data-priority="média"]::before,
+.taskCard[data-priority="media"]::before    { background: linear-gradient(180deg, #4f9dff, #2f6bff); }
+.taskCard[data-priority="baixa"]::before    { background: linear-gradient(180deg, #cfd2dc, #b9bdc9); }
 
 .taskCard:hover {
-  border-color: rgba(37, 38, 49, 0.3);
-  box-shadow: 0 18px 40px rgba(12, 13, 24, 0.12);
+  transform: translateY(-3px);
+  border-color: rgba(37, 38, 49, 0.18);
+  box-shadow: 0 18px 38px rgba(12, 13, 24, 0.13);
 }
 
-.taskCard--late {
-  border-color: rgba(239, 68, 68, 0.5);
-}
+.taskCard:hover::before { top: 8px; bottom: 8px; width: 5px; }
+
+.taskCard--late { border-color: rgba(239, 68, 68, 0.35); }
+.taskCard--late::before { background: linear-gradient(180deg, #ff5a3c, #ff2d55) !important; }
 
 .taskCard--done {
-  background: #f7f8fb;
+  background: linear-gradient(180deg, #f6fbf7 0%, #f3f8f4 100%);
+  border-color: #e4efe7;
 }
 
-/* Estado de Foco Ativo no Card */
+.taskCard--done::before { background: linear-gradient(180deg, #34d399, #10b981) !important; }
+
+/* Estado de Foco Ativo no Card (laranja da marca) */
 .taskCard--focused {
-  border-color: #111219;
-  background: #fafafa;
-  box-shadow: 0 0 0 2px rgba(17, 18, 25, 0.1);
+  border-color: rgba(255, 105, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.12), 0 16px 36px rgba(255, 105, 0, 0.14);
+}
+
+.taskCard--focused::before {
+  background: linear-gradient(180deg, #ff9500, #ff4800) !important;
+  top: 8px;
+  bottom: 8px;
+  width: 5px;
 }
 
 .taskCard__checkbox {
-  width: 46px;
-  height: 46px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
-  border: 1px solid #e2e2e2;
-  background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)) #ffffff;
+  border: 2px solid #dcdce4;
+  background: radial-gradient(circle at 30% 25%, #ffffff, #f4f4f7);
+  color: #c2c2cc;
   cursor: pointer;
   position: relative;
   display: grid;
   place-items: center;
-  transition: border 180ms ease, transform 180ms ease, background 180ms ease;
+  transition: border-color 200ms ease, transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, background 200ms ease, color 200ms ease;
 }
+
+.taskCard:hover .taskCard__checkbox { border-color: #c8c9d3; }
 
 .taskCard__checkbox:hover {
-  border-color: rgba(32, 33, 44, 0.35);
+  transform: scale(1.08);
+  border-color: #ff8a3d;
+  color: #ff7a26;
+  box-shadow: 0 6px 16px rgba(255, 105, 0, 0.18);
 }
+
+.taskCard__checkbox:active { transform: scale(0.9); }
 
 .taskCard__checkbox:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 4px;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 105, 0, 0.25);
 }
 
-.taskCard__checkbox--checked {
-  background: #1c1d24;
-  border-color: #1c1d24;
+.taskCard__checkbox--checked,
+.taskCard__checkbox--checked:hover {
+  border-color: transparent;
+  background: linear-gradient(145deg, #ff7a18 0%, #ff4800 55%, #ff9500 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(255, 72, 0, 0.4);
 }
 
-.taskCard__checkboxGlow {
+/* Check desenhado (stroke animado) */
+.taskCard__checkboxMark { overflow: visible; }
+
+.taskCard__checkboxMark path {
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  transition: stroke-dashoffset 320ms cubic-bezier(0.65, 0, 0.35, 1) 60ms;
+}
+
+.taskCard__checkbox:hover .taskCard__checkboxMark path { stroke-dashoffset: 17; }
+.taskCard__checkbox--checked .taskCard__checkboxMark path { stroke-dashoffset: 0; }
+
+/* Onda de conclusão (dispara só durante a celebração) */
+.taskCard__checkboxRipple {
   position: absolute;
-  inset: 6px;
+  inset: 0;
   border-radius: inherit;
+  pointer-events: none;
   opacity: 0;
-  transition: opacity 200ms ease;
 }
 
-.taskCard__checkbox--checked .taskCard__checkboxGlow {
-  opacity: 1;
-}
-
-.taskCard__checkboxMark {
-  width: 16px;
-  height: 8px;
-  border-left: 2.5px solid #26262d;
-  border-bottom: 2.5px solid #26262d;
-  transform: rotate(-45deg) scale(0.4);
-  transform-origin: center;
-  transition: transform 200ms ease, border-color 200ms ease;
-}
-
-.taskCard__checkbox--checked .taskCard__checkboxMark {
-  border-color: #fff;
-  transform: rotate(-45deg) scale(0.85);
+.taskCard--celebrate .taskCard__checkboxRipple {
+  animation: checkRipple 640ms ease-out;
 }
 
 .taskCard__body {
@@ -744,33 +788,52 @@
 }
 
 .taskCard__focusBtn:hover {
-  border-color: rgba(0, 0, 0, 0.25);
-  background: #fafafa;
-  color: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 105, 0, 0.4);
+  background: rgba(255, 105, 0, 0.07);
+  color: #d2410a;
   transform: translateY(-1px);
 }
 
 .taskCard__focusBtn.active {
-  background: #1c1d24;
-  border-color: #1c1d24;
+  background: linear-gradient(180deg, #ff7a18, #ff4800);
+  border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(255, 72, 0, 0.3);
 }
 
 .taskCard__focusBtn.active:hover {
-  background: #2a2b32;
+  background: linear-gradient(180deg, #ff8a3d, #ff5a14);
 }
 
 .taskChip {
   font-size: 12px;
-  letter-spacing: 0.04em;
-  padding: 5px 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 5px 11px;
   border-radius: 999px;
   border: 1px solid #e1e1e6;
   color: #2e2e36;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Ponto colorido (herda a cor do texto da prioridade) */
+.taskChip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.taskCard[data-priority="urgente"] .taskChip::before {
+  animation: priorityPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes priorityPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
 }
 
 .taskStatusChip {
@@ -954,72 +1017,69 @@
   transform: rotate(-45deg) scale(1);
 }
 
-/* Efeitos de Celebração */
+/* Efeitos de Celebração (gamificação) */
 .taskCard__celebration {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 2;
 }
 
 .taskCard__xpPop {
   position: absolute;
-  top: 12px;
-  right: 20px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #1d4ed8;
-  text-shadow: 0 6px 20px rgba(29, 78, 216, 0.3);
-  animation: xpPop 900ms ease forwards;
+  top: 14px;
+  left: 52px;
+  font-family: var(--font-brand, inherit);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #ff9500, #ff4800);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: xpPop 1000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .taskCard__confetti {
   position: absolute;
-  width: 6px;
-  height: 14px;
-  background: #4f46e5;
+  top: 18px;
+  left: 30px;
+  width: 7px;
+  height: 7px;
   border-radius: 2px;
-  animation: confettiFall 1100ms ease-out forwards;
+  opacity: 0;
+  animation: confettiPop 900ms ease-out forwards;
 }
 
-.taskCard__confetti--one {
-  left: 30%;
-  top: 0;
-}
-
-.taskCard__confetti--two {
-  left: 60%;
-  top: -10px;
-  background: #38bdf8;
-  animation-delay: 60ms;
-}
+.taskCard__confetti--one   { background: #ff4800; --dx: -26px; --dy: -30px; --rot: -120deg; }
+.taskCard__confetti--two   { background: #ff9500; --dx: 18px;  --dy: -36px; --rot: 140deg;  animation-delay: 40ms; }
+.taskCard__confetti--three { background: #ffd166; --dx: 36px;  --dy: -16px; --rot: 90deg;   animation-delay: 80ms; border-radius: 50%; }
+.taskCard__confetti--four  { background: #ff2d55; --dx: -34px; --dy: -8px;  --rot: -80deg;  animation-delay: 60ms; border-radius: 50%; }
+.taskCard__confetti--five  { background: #ffb43d; --dx: 4px;   --dy: -42px; --rot: 30deg;   animation-delay: 100ms; }
 
 .taskCard--celebrate {
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 25px 54px rgba(59, 130, 246, 0.25);
+  border-color: rgba(255, 105, 0, 0.5) !important;
+  box-shadow: 0 22px 48px rgba(255, 105, 0, 0.22) !important;
 }
 
-@keyframes confettiFall {
-  to {
-    transform: translateY(90px) rotate(180deg);
-    opacity: 0;
-  }
+@keyframes confettiPop {
+  0%   { opacity: 1; transform: translate(0, 0) scale(0.6) rotate(0); }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(1) rotate(var(--rot, 90deg)); }
 }
 
 @keyframes xpPop {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.9);
-  }
+  0%   { opacity: 0; transform: translateY(6px) scale(0.85); }
+  25%  { opacity: 1; transform: translateY(-8px) scale(1.12); }
+  100% { opacity: 0; transform: translateY(-34px) scale(0.9); }
+}
 
-  30% {
-    opacity: 1;
-    transform: translateY(-6px) scale(1.1);
-  }
+@keyframes checkRipple {
+  0%   { opacity: 0.5; box-shadow: 0 0 0 0 rgba(255, 105, 0, 0.45); }
+  100% { opacity: 0;   box-shadow: 0 0 0 18px rgba(255, 105, 0, 0); }
+}
 
-  100% {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.8);
-  }
+@keyframes taskCardIn {
+  to { opacity: 1; }
 }
 
 /* =========================================
