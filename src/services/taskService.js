@@ -103,6 +103,15 @@ export const taskService = {
       updated_at: new Date().toISOString(),
     };
 
+    // completed_at: gravado SÓ na transição de conclusão (data confiável de
+    // quando a tarefa foi finalizada). Diferente de updated_at, que muda a cada
+    // edição. Usado para a "virada de semana" do filtro Finalizadas.
+    if (updates.completed === true) {
+      payload.completed_at = new Date().toISOString();
+    } else if (updates.completed === false) {
+      payload.completed_at = null;
+    }
+
     // Remove chaves undefined para não apagar dados acidentalmente
     Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 

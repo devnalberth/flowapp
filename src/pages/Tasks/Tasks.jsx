@@ -70,15 +70,14 @@ const formatDateKeyPtBr = (dateKey) => {
   return `${day}/${month}/${year}`
 }
 
-// Janela rolante de "limpeza" das concluídas: tarefas finalizadas há mais de
-// 7 dias somem da UI (apenas visual — nada é apagado do banco).
-const DONE_VISIBLE_DAYS = 7
-
-const getDoneCutoff = () => {
-  const cutoff = new Date()
-  cutoff.setHours(0, 0, 0, 0)
-  cutoff.setDate(cutoff.getDate() - DONE_VISIBLE_DAYS)
-  return cutoff
+// Início da semana atual (domingo 00:00). Base da "virada de semana": tarefas
+// concluídas em semanas anteriores somem do filtro Finalizadas (apenas na UI —
+// nada é apagado do banco e elas continuam contando nos projetos).
+const getWeekStart = () => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - d.getDay()) // getDay(): 0 = domingo
+  return d
 }
 
 // Status e Prioridades agora são definidos dentro do CreateTaskModal
@@ -347,8 +346,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    // Limite rolante: concluídas há mais de 7 dias somem da UI (não do banco)
-    const doneCutoff = getDoneCutoff()
+    // Virada de semana: concluídas de semanas anteriores somem da UI (não do banco)
+    const weekStart = getWeekStart()
 
     const matched = tasks.filter((task) => {
       const dueDateKey = toLocalDateKey(task.due_date)
@@ -368,12 +367,12 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       // Para outros filtros, EXCLUI tarefas arquivadas
       if (isArchived) return false
 
-      // Limpeza visual: esconde concluídas finalizadas há mais de 7 dias.
-      // É só na UI — a tarefa continua no banco (completed:true) e segue
-      // contando no progresso do projeto/meta.
+      // Virada de semana: esconde concluídas de semanas anteriores (ou sem
+      // data de conclusão / legadas). É só na UI — a tarefa continua no banco
+      // (completed:true) e segue contando no progresso do projeto/meta.
       if (isDoneTask) {
-        const completedDate = task.updated_at ? new Date(task.updated_at) : null
-        if (completedDate && completedDate < doneCutoff) {
+        const completedDate = task.completed_at ? new Date(task.completed_at) : null
+        if (!completedDate || completedDate < weekStart) {
           return false
         }
       }
@@ -489,11 +488,15 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const statusToRestore = currentStatus === 'done' ? 'todo' : currentStatus
     if (newCompleted) setCelebratingTask(taskId)
 
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newCompleted } : t))
+    // completed_at otimista: garante que a tarefa apareça/saia de Finalizadas
+    // na hora, sem esperar o retorno do servidor.
+    const completedAt = newCompleted ? new Date().toISOString() : null
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newCompleted, completed_at: completedAt } : t))
 
     await updateTask(taskId, {
       completed: newCompleted,
       status: newCompleted ? 'done' : statusToRestore,
+      completed_at: completedAt,
       updated_at: new Date().toISOString()
     })
   }
