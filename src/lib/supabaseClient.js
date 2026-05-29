@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseMeta = /** @type {any} */ (import.meta)
-// Use optional chaining because `import.meta.env` may be undefined
-const supabaseUrl = import.meta?.env?.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta?.env?.VITE_SUPABASE_ANON_KEY
+// IMPORTANTE: acessar `import.meta.env` literalmente (sem optional chaining no
+// `import.meta`). O Vite só injeta as variáveis de ambiente no módulo quando
+// detecta o literal `import.meta.env`; `import.meta?.env` não é reconhecido e
+// faz as variáveis chegarem undefined no browser.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+// Aceita os dois nomes de chave: VITE_SUPABASE_ANON_KEY (preferido) ou
+// VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY (nome usado no .env atual).
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(

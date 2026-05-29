@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { countsForProjectProgress } from '../../utils/taskStatus'
 import './ProjectOverviewCard.css'
 
 const MAX_VALUE = 100
@@ -22,7 +23,7 @@ export default function ProjectOverviewCard({ className = '', projects = [], tas
   const stats = useMemo(() => {
     // 1. Enriquecer projetos com progresso calculado dinamicamente
     const projectsWithProgress = projects.map(p => {
-      const pTasks = tasks.filter(t => t.projectId === p.id || t.project === p.title)
+      const pTasks = tasks.filter(t => (t.projectId === p.id || t.project === p.title) && countsForProjectProgress(t))
       const total = pTasks.length
       const done = pTasks.filter(t => t.completed).length
       const progress = total > 0 ? (done / total) * 100 : 0

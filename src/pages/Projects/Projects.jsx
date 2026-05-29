@@ -6,6 +6,7 @@ import CreateProjectModal from '../../components/CreateProjectModal/CreateProjec
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import ProjectDetailsModal from '../../components/ProjectDetailsModal/ProjectDetailsModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import { countsForProjectProgress } from '../../utils/taskStatus'
 
 import './Projects.css'
 
@@ -56,7 +57,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
   const projectsComputed = useMemo(() => {
     return projects.map(project => {
-      const projectTasks = tasks.filter(t => t.projectId === project.id || t.project === project.title)
+      const projectTasks = tasks.filter(t => (t.projectId === project.id || t.project === project.title) && countsForProjectProgress(t))
       const totalTasks = projectTasks.length
       const completedTasks = projectTasks.filter(t => t.completed).length
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0

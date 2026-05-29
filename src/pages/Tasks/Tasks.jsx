@@ -7,7 +7,7 @@ import CreateEventModal from '../../components/CreateEventModal/CreateEventModal
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
-import { taskService } from '../../services/taskService'
+import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
 
 import './Tasks.css'
@@ -70,44 +70,22 @@ const formatDateKeyPtBr = (dateKey) => {
   return `${day}/${month}/${year}`
 }
 
-const normalizeTaskStatus = (task) => {
-  if (task?.completed) return 'done'
+// Janela rolante de "limpeza" das concluídas: tarefas finalizadas há mais de
+// 7 dias somem da UI (apenas visual — nada é apagado do banco).
+const DONE_VISIBLE_DAYS = 7
 
-  const rawStatus = String(task?.status || '').trim().toLowerCase()
-  if (!rawStatus) return 'todo'
-
-  if (['todo', 'a fazer', 'capturar', 'pending'].includes(rawStatus)) return 'todo'
-  if (['in_progress', 'em andamento', 'doing'].includes(rawStatus)) return 'in_progress'
-  if (['done', 'concluída', 'concluida', 'completed'].includes(rawStatus)) return 'done'
-  if (['archived', 'arquivada', 'arquivado'].includes(rawStatus)) return 'archived'
-
-  return 'todo'
-}
-
-// Calcula o início da semana atual (Domingo)
-const getWeekStart = () => {
-  const now = new Date()
-  const dayOfWeek = now.getDay() // 0 = Domingo
-  const weekStart = new Date(now)
-  weekStart.setDate(now.getDate() - dayOfWeek)
-  weekStart.setHours(0, 0, 0, 0)
-  return weekStart
-}
-
-// Calcula o fim da semana atual (Sábado)
-const getWeekEnd = () => {
-  const weekStart = getWeekStart()
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekStart.getDate() + 6)
-  weekEnd.setHours(23, 59, 59, 999)
-  return weekEnd
+const getDoneCutoff = () => {
+  const cutoff = new Date()
+  cutoff.setHours(0, 0, 0, 0)
+  cutoff.setDate(cutoff.getDate() - DONE_VISIBLE_DAYS)
+  return cutoff
 }
 
 // Status e Prioridades agora são definidos dentro do CreateTaskModal
 
 export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent, userId } = useApp()
+  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
 
   // --- Estados de Filtro ---
   // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
@@ -330,6 +308,31 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     lastTimeRef.current = resetTime
   }
 
+  // Salva o tempo de foco ainda não persistido (sem mexer em estado).
+  const persistElapsedFocus = () => {
+    if (pomodoroMode !== 'focus') return
+    let currentSeconds = timeLeft
+    if (isRunning && endTimeRef.current) {
+      currentSeconds = Math.ceil((endTimeRef.current - Date.now()) / 1000)
+    }
+    const elapsed = lastTimeRef.current - currentSeconds
+    if (elapsed > 0) saveFocusTime(elapsed)
+  }
+
+  // Sai do modo foco: salva o tempo, para o timer e fecha o card do Flow.
+  const exitFocusMode = () => {
+    persistElapsedFocus()
+    clearInterval(timerIntervalRef.current)
+    endTimeRef.current = null
+    setIsRunning(false)
+    setFocusedTaskId(null)
+  }
+
+  // Garante que o foco decorrido seja salvo ao sair da página (desmonte).
+  const persistRef = useRef(persistElapsedFocus)
+  persistRef.current = persistElapsedFocus
+  useEffect(() => () => { persistRef.current() }, [])
+
   const formatTime = (seconds) => {
     const safeSeconds = Math.max(0, seconds)
     const m = Math.floor(safeSeconds / 60)
@@ -344,9 +347,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    // Semana atual (Domingo a Sábado)
-    const weekStart = getWeekStart()
-    const weekEnd = getWeekEnd()
+    // Limite rolante: concluídas há mais de 7 dias somem da UI (não do banco)
+    const doneCutoff = getDoneCutoff()
 
     const matched = tasks.filter((task) => {
       const dueDateKey = toLocalDateKey(task.due_date)
@@ -366,11 +368,13 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       // Para outros filtros, EXCLUI tarefas arquivadas
       if (isArchived) return false
 
-      // Exclui tarefas finalizadas de semanas anteriores (já deveriam estar arquivadas)
+      // Limpeza visual: esconde concluídas finalizadas há mais de 7 dias.
+      // É só na UI — a tarefa continua no banco (completed:true) e segue
+      // contando no progresso do projeto/meta.
       if (isDoneTask) {
         const completedDate = task.updated_at ? new Date(task.updated_at) : null
-        if (completedDate && completedDate < weekStart) {
-          return false // Esconde tarefas finalizadas de semanas anteriores
+        if (completedDate && completedDate < doneCutoff) {
+          return false
         }
       }
 
@@ -405,57 +409,61 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       return matchesStatus
     })
 
-    // Ordenação
+    // Ordenação determinística em cascata
+    const todayKey = toLocalDateKey(today)
+    const priorityOrder = { 'Urgente': 0, 'Alta': 1, 'Normal': 2, 'Baixa': 3 }
+    const timeOf = (t) => (t.due_date ? new Date(t.due_date).getTime() : Infinity)
+    const rank = (t) => {
+      const done = normalizeTaskStatus(t) === 'done'
+      const key = toLocalDateKey(t.due_date)
+      const late = !done && !!key && key < todayKey
+      return { done, late }
+    }
+
     return matched.sort((a, b) => {
+      const ra = rank(a)
+      const rb = rank(b)
+      // 1. Não-concluídas antes de concluídas
+      if (ra.done !== rb.done) return ra.done ? 1 : -1
+      // 2. Atrasadas primeiro (entre as não-concluídas)
+      if (!ra.done && ra.late !== rb.late) return ra.late ? -1 : 1
+      // 3. Critério principal escolhido
       if (sortBy === 'priority') {
-        // Ordenar por prioridade: Urgente > Alta > Normal > Baixa
-        const priorityOrder = { 'Urgente': 0, 'Alta': 1, 'Normal': 2, 'Baixa': 3 }
-        const priorityA = priorityOrder[a.priority] ?? 4
-        const priorityB = priorityOrder[b.priority] ?? 4
-        if (priorityA !== priorityB) return priorityA - priorityB
-        // Se mesma prioridade, ordena por horário
-        const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
-        const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
-        return timeA - timeB
-      } else {
-        // Ordenar por horário (padrão)
-        const timeA = a.due_date ? new Date(a.due_date).getTime() : Infinity
-        const timeB = b.due_date ? new Date(b.due_date).getTime() : Infinity
-        return timeA - timeB
+        const pa = priorityOrder[a.priority] ?? 4
+        const pb = priorityOrder[b.priority] ?? 4
+        if (pa !== pb) return pa - pb
       }
+      // 4. Desempate sempre por horário
+      return timeOf(a) - timeOf(b)
     })
   }, [tasks, timelineFilter, statusFilters, sortBy])
 
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-  const [pendingArchiveIds, setPendingArchiveIds] = useState([])
+  // Arquivamento manual por tarefa (reversível) — não mexe em `completed`,
+  // então NÃO afeta o progresso de projetos/metas.
+  const [pendingArchiveTask, setPendingArchiveTask] = useState(null)
 
-  const archiveCompletedTasks = () => {
-    const completedTasks = tasks.filter(t => normalizeTaskStatus(t) === 'done')
-    if (completedTasks.length === 0) return
-    setPendingArchiveIds(completedTasks.map(t => t.id))
-    setShowArchiveConfirm(true)
+  const requestArchiveTask = (taskId) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (task) setPendingArchiveTask(task)
   }
 
   const handleConfirmArchive = async () => {
-    setShowArchiveConfirm(false)
-    if (!pendingArchiveIds.length || !userId) return
-    // Optimistic: update all at once in local state
-    setTasks(prev =>
-      prev.map(t =>
-        pendingArchiveIds.includes(t.id)
-          ? { ...t, status: 'archived', completed: false }
-          : t
-      )
-    )
-    try {
-      await taskService.archiveTasks(userId, pendingArchiveIds)
-    } catch (e) {
-      console.error('Erro ao arquivar tarefas:', e)
-    }
-    setPendingArchiveIds([])
+    const task = pendingArchiveTask
+    setPendingArchiveTask(null)
+    if (!task) return
+    if (focusedTaskId === task.id) exitFocusMode()
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'archived' } : t))
+    await updateTask(task.id, { status: 'archived' })
+  }
+
+  const restoreTask = async (taskId) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'todo' } : t))
+    await updateTask(taskId, { status: 'todo' })
   }
 
   const handleFilterClick = (filter) => {
+    // Ao trocar de filtro, encerra o Flow (fecha o card e salva o foco)
+    exitFocusMode()
     if (filter.group === 'timeline') {
       setStatusFilters([])
       setTimelineFilter(filter.id)
@@ -603,17 +611,6 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         <header className="tasksListShell__head">
           <div><p className="tasksListShell__eyebrow">Checklist</p><h2>Minhas Tarefas</h2></div>
           <div className="tasksListShell__actions">
-            {/* Botão de Arquivar aparece quando filtro Finalizada está ativo */}
-            {statusFilters.includes('done') && (
-              <button
-                className="tasksListShell__archiveBtn"
-                onClick={archiveCompletedTasks}
-                title="Arquivar todas as tarefas finalizadas"
-              >
-                <Archive size={14} />
-                Arquivar Todas
-              </button>
-            )}
             <div className="tasksListShell__sort">
               <span className="tasksListShell__sortLabel">Ordenar:</span>
               <button
@@ -692,6 +689,15 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                     <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => { setDetailTaskId(task.id); setEditTask(null); }}>
                       Detalhes
                     </button>
+                    {statusKey === 'archived' ? (
+                      <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => restoreTask(task.id)}>
+                        <RotateCcw size={13} /> Restaurar
+                      </button>
+                    ) : (
+                      <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => requestArchiveTask(task.id)}>
+                        <Archive size={13} /> Arquivar
+                      </button>
+                    )}
                   </div>
                 </div>
               </li>
@@ -747,6 +753,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         task={activeDetailTask}
         onClose={() => setDetailTaskId(null)}
         deleteTask={async (id) => { await deleteTask(id); setDetailTaskId(null); }}
+        onArchive={(id) => { requestArchiveTask(id); setDetailTaskId(null); }}
+        onRestore={(id) => { restoreTask(id); setDetailTaskId(null); }}
         onEdit={(task) => {
           setEditTask(task);
           setTaskModalOpen(true);
@@ -754,14 +762,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         }}
       />
 
-      {showArchiveConfirm && (
+      {pendingArchiveTask && (
         <ConfirmModal
-          title="Arquivar tarefas finalizadas?"
-          message={`${pendingArchiveIds.length} tarefa${pendingArchiveIds.length > 1 ? 's' : ''} finalizada${pendingArchiveIds.length > 1 ? 's' : ''} serão movidas para Arquivadas e não contarão nas estatísticas do Dashboard.`}
-          confirmLabel="Arquivar Todas"
+          title="Arquivar tarefa?"
+          message={`"${pendingArchiveTask.title}" será movida para Arquivadas. Você pode restaurá-la quando quiser e ela não conta no progresso do projeto enquanto estiver arquivada.`}
+          confirmLabel="Arquivar"
           cancelLabel="Cancelar"
           onConfirm={handleConfirmArchive}
-          onCancel={() => setShowArchiveConfirm(false)}
+          onCancel={() => setPendingArchiveTask(null)}
         />
       )}
     </div>
@@ -784,7 +792,7 @@ function FilterIcon({ name }) {
   return <span style={{ display: 'flex', alignItems: 'center' }}>{icons[name] || '•'}</span>
 }
 
-function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
+function TaskDetailModal({ task, onClose, deleteTask, onEdit, onArchive, onRestore }) {
   if (!task) return null
   const statusKey = normalizeTaskStatus(task)
   const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
@@ -831,6 +839,11 @@ function TaskDetailModal({ task, onClose, deleteTask, onEdit }) {
 
         <footer className="taskModal__footer">
           <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
+          {statusKey === 'archived' ? (
+            <button className="taskModal__editBtn" onClick={() => onRestore(task.id)}>Restaurar</button>
+          ) : (
+            <button className="taskModal__editBtn" onClick={() => onArchive(task.id)}>Arquivar</button>
+          )}
           <button className="taskModal__editBtn" onClick={() => onEdit(task)}>Editar</button>
           <button className="taskModal__deleteBtn" onClick={() => { if (confirm('Excluir?')) deleteTask(task.id) }}>Excluir</button>
         </footer>

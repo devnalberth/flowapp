@@ -863,6 +863,9 @@
 }
 
 .taskCard__actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid #e6e6ea;
   border-radius: 999px;
   padding: 8px 12px;
