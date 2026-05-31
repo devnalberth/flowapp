@@ -556,11 +556,18 @@ export function AppProvider({ children, userId }) {
     return newDreamMap
   }
 
-  const updateDreamMap = async (id, updates) => {
+  const updateDreamMap = async (id, updates, imageFile = null) => {
     if (!userId) return
-    setDreamMaps(dreamMaps.map(dm => dm.id === id ? { ...dm, ...updates } : dm))
-    const updated = await dreamMapService.updateDreamMap(id, userId, updates)
+    // Troca de imagem é opcional: só faz upload se vier um novo arquivo
+    let payload = { ...updates }
+    if (imageFile) {
+      const imageUrl = await dreamMapService.uploadImage(imageFile, userId)
+      payload = { ...payload, imageUrl }
+    }
+    setDreamMaps(dreamMaps.map(dm => dm.id === id ? { ...dm, ...payload } : dm))
+    const updated = await dreamMapService.updateDreamMap(id, userId, payload)
     if (updated) setDreamMaps(dreamMaps.map(dm => dm.id === id ? updated : dm))
+    return updated
   }
 
   const deleteDreamMap = async (id) => {

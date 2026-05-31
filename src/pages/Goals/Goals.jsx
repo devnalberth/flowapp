@@ -7,7 +7,7 @@ import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.js
 import DreamMapModal from '../../components/DreamMapModal/DreamMapModal.jsx'
 import { computeProjectStats } from '../../utils/projectMetrics'
 import { getGoalSchedule, TRIMESTER_LABELS } from '../../utils/goalSchedule'
-import { Target, FolderKanban, ListChecks, CheckCircle2, CalendarClock, ArrowUpRight, Pencil } from 'lucide-react'
+import { Target, FolderKanban, ListChecks, CheckCircle2, CalendarClock, ArrowUpRight, Pencil, Eye, X, Trophy, TrendingUp } from 'lucide-react'
 
 import './Goals.css'
 
@@ -46,6 +46,114 @@ const fmtDate = (value) => {
   const d = new Date(`${String(value).slice(0, 10)}T00:00:00`)
   if (Number.isNaN(d.getTime())) return null
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+}
+
+// Agrega métricas de um conjunto de metas (para os dashboards)
+const aggregateGoals = (metas = []) => {
+  const total = metas.length
+  const done = metas.filter((m) => (m.progressPercent || 0) >= 100).length
+  const inProgress = metas.filter((m) => (m.progressPercent || 0) > 0 && (m.progressPercent || 0) < 100).length
+  const notStarted = total - done - inProgress
+  const avgProgress = total ? Math.round(metas.reduce((a, m) => a + (m.progressPercent || 0), 0) / total) : 0
+  const totalTasks = metas.reduce((a, m) => a + (m.totalTasks || 0), 0)
+  const doneTasks = metas.reduce((a, m) => a + (m.doneTasks || 0), 0)
+  const projects = metas.reduce((a, m) => a + ((m.projects || []).length), 0)
+  const byQuarter = [0, 0, 0, 0]
+  metas.forEach((m) => { const q = m.schedule?.currentQuarter; if (q >= 1 && q <= 4) byQuarter[q - 1] += 1 })
+  return { total, done, inProgress, notStarted, avgProgress, totalTasks, doneTasks, projects, byQuarter }
+}
+
+// Visão geral consolidada (topo da página de Metas)
+function MetasOverview({ areas }) {
+  const all = areas.flatMap((a) => a.metas)
+  const stats = aggregateGoals(all)
+  const maxQ = Math.max(1, ...stats.byQuarter)
+
+  return (
+    <section className="metasOverview">
+      <header className="metasOverview__head">
+        <div>
+          <p className="metasOverview__eyebrow">Visão geral</p>
+          <h2>Painel de Metas</h2>
+        </div>
+        <div className="metasOverview__big">
+          <strong>{stats.avgProgress}%</strong>
+          <span>progresso geral</span>
+        </div>
+      </header>
+
+      <div className="metaStats__kpis">
+        <div className="metaKpi"><Target size={17} /><strong>{stats.total}</strong><span>Metas</span></div>
+        <div className="metaKpi metaKpi--done"><Trophy size={17} /><strong>{stats.done}</strong><span>Concluídas</span></div>
+        <div className="metaKpi"><TrendingUp size={17} /><strong>{stats.inProgress}</strong><span>Em progresso</span></div>
+        <div className="metaKpi"><FolderKanban size={17} /><strong>{stats.projects}</strong><span>Projetos</span></div>
+        <div className="metaKpi"><ListChecks size={17} /><strong>{stats.doneTasks}/{stats.totalTasks}</strong><span>Tarefas</span></div>
+      </div>
+
+      <div className="metasOverview__charts">
+        <div className="metasOverview__chart">
+          <h4>Metas por trimestre</h4>
+          <div className="qbars">
+            {stats.byQuarter.map((v, i) => (
+              <div key={i} className="qbar">
+                <div className="qbar__track"><span style={{ height: `${Math.max((v / maxQ) * 100, v ? 8 : 0)}%` }} /></div>
+                <span className="qbar__val">{v}</span>
+                <span className="qbar__label">{i + 1}º Tri</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="metasOverview__chart">
+          <h4>Progresso por área</h4>
+          <ul className="areaBars">
+            {areas.map((a) => (
+              <li key={a.id}>
+                <span className="areaBars__name">{a.icon} {a.label}</span>
+                <div className="areaBars__track"><span style={{ width: `${a.progressPercent || 0}%` }} /></div>
+                <span className="areaBars__pct">{a.progressPercent || 0}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Dashboard compacto de uma área (acima do kanban)
+function AreaDashboard({ metas }) {
+  const stats = aggregateGoals(metas)
+  return (
+    <div className="metaStats">
+      <div className="metaStats__kpis">
+        <div className="metaKpi"><Target size={17} /><strong>{stats.avgProgress}%</strong><span>Progresso</span></div>
+        <div className="metaKpi metaKpi--done"><Trophy size={17} /><strong>{stats.done}</strong><span>Concluídas</span></div>
+        <div className="metaKpi"><TrendingUp size={17} /><strong>{stats.inProgress}</strong><span>Em progresso</span></div>
+        <div className="metaKpi"><FolderKanban size={17} /><strong>{stats.projects}</strong><span>Projetos</span></div>
+        <div className="metaKpi"><ListChecks size={17} /><strong>{stats.doneTasks}/{stats.totalTasks}</strong><span>Tarefas</span></div>
+      </div>
+    </div>
+  )
+}
+
+// Lightbox para ver a imagem completa do mapa dos sonhos
+function Lightbox({ image, title, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [onClose])
+
+  return (
+    <div className="dreamLightbox" onClick={onClose}>
+      <button className="dreamLightbox__close" onClick={onClose} aria-label="Fechar"><X size={22} /></button>
+      <figure className="dreamLightbox__figure" onClick={(e) => e.stopPropagation()}>
+        <img src={image} alt={title || ''} />
+        {title && <figcaption>{title}</figcaption>}
+      </figure>
+    </div>
+  )
 }
 
 function MetaDetail({ meta, onNavigate }) {
@@ -229,6 +337,7 @@ function AreaDetail({ area, onBack, onEdit, onNavigate }) {
                 <span>{area.metas.length} metas conectadas a esta área</span>
               </div>
             </header>
+            <AreaDashboard metas={area.metas} />
             <div className="kanbanGrid">
               {quarterColumns.map((column) => (
                 <article key={column.id} className="kanbanColumn">
@@ -278,9 +387,11 @@ function AreaDetail({ area, onBack, onEdit, onNavigate }) {
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Pegando deleteGoal do contexto
-  const { goals, projects, tasks, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
+  const { goals, projects, tasks, dreamMaps, addGoal, addDreamMap, updateDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
+  const [editingDream, setEditingDream] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
   const [editGoal, setEditGoal] = useState(null)
   const [emptyAreaPulseId, setEmptyAreaPulseId] = useState(null)
@@ -379,19 +490,34 @@ export default function Goals({ onNavigate, onLogout, user }) {
     setSelectedAreaId(area.id)
   }
 
+  const openNewDream = () => { setEditingDream(null); setIsDreamModalOpen(true) }
+  const openEditDream = (dream) => { setEditingDream(dream); setIsDreamModalOpen(true) }
+  const closeDreamModal = () => { setIsDreamModalOpen(false); setEditingDream(null) }
+
   const handleDreamSubmit = async (form, imageFile) => {
     try {
-      await addDreamMap(form, imageFile)
-      setIsDreamModalOpen(false)
+      if (editingDream) {
+        await updateDreamMap(editingDream.id, { title: form.title, goalId: form.goalId || null }, imageFile)
+      } else {
+        await addDreamMap(form, imageFile)
+      }
+      closeDreamModal()
     } catch (error) {
-      console.error('Erro ao adicionar imagem:', error)
-      alert(`Erro ao adicionar imagem: ${error?.message || error}`)
+      console.error('Erro ao salvar imagem:', error)
+      alert(`Erro ao salvar imagem: ${error?.message || error}`)
     }
   }
 
-  const handleDeleteDream = async (dreamId) => {
-    if (!window.confirm('Remover imagem?')) return
-    try { await deleteDreamMap(dreamId) } catch (error) { console.error(error) }
+  const handleDeleteDream = async () => {
+    if (!editingDream) return
+    if (!window.confirm('Remover esta imagem do mapa?')) return
+    try {
+      await deleteDreamMap(editingDream.id)
+      closeDreamModal()
+    } catch (error) {
+      console.error(error)
+      alert('Erro ao remover imagem.')
+    }
   }
 
   const handleGoalSubmit = async (payload) => {
@@ -464,6 +590,8 @@ export default function Goals({ onNavigate, onLogout, user }) {
       ) : (
         <>
           <section className="goalsAreasBoard">
+            {!loading && LIFE_AREAS.some((a) => a.metas.length > 0) && <MetasOverview areas={LIFE_AREAS} />}
+
             <div className="goalsAreas">
               {LIFE_AREAS.map((area) => {
                 const progressPercent = area.progressPercent || 0
@@ -505,7 +633,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
                   <p className="dreamMap__eyebrow">Mapa dos sonhos</p>
                   <h2>Visualize o que quer construir</h2>
                 </div>
-                <button type="button" className="dreamMap__addButton" onClick={() => setIsDreamModalOpen(true)}>
+                <button type="button" className="dreamMap__addButton" onClick={openNewDream}>
                   Adicionar imagem
                 </button>
               </header>
@@ -513,14 +641,24 @@ export default function Goals({ onNavigate, onLogout, user }) {
               {dreamMaps.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Seu mapa está vazio</div>
               ) : (
-                <div className="dreamMap__grid">
-                  {dreamMaps.map((dream) => (
-                    <figure key={dream.id} className="dreamCard">
-                      <img src={dream.imageUrl || dream.image_url} alt={dream.title} />
-                      <figcaption><strong>{dream.title}</strong></figcaption>
-                      <button onClick={() => handleDeleteDream(dream.id)} className="dreamMap__deleteBtn">✕</button>
-                    </figure>
-                  ))}
+                <div className="dreamMasonry">
+                  {dreamMaps.map((dream) => {
+                    const url = dream.imageUrl || dream.image_url
+                    return (
+                      <figure key={dream.id} className="dreamTile">
+                        <img src={url} alt={dream.title} loading="lazy" />
+                        <figcaption className="dreamTile__caption">{dream.title}</figcaption>
+                        <div className="dreamTile__actions">
+                          <button type="button" className="dreamTile__btn" title="Ver imagem completa" onClick={() => setLightbox({ url, title: dream.title })}>
+                            <Eye size={16} />
+                          </button>
+                          <button type="button" className="dreamTile__btn" title="Editar" onClick={() => openEditDream(dream)}>
+                            <Pencil size={15} />
+                          </button>
+                        </div>
+                      </figure>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -544,7 +682,18 @@ export default function Goals({ onNavigate, onLogout, user }) {
       )}
 
       {isDreamModalOpen && (
-        <DreamMapModal open={true} onClose={() => setIsDreamModalOpen(false)} onSubmit={handleDreamSubmit} goals={goals} />
+        <DreamMapModal
+          open={true}
+          onClose={closeDreamModal}
+          onSubmit={handleDreamSubmit}
+          onDelete={editingDream ? handleDeleteDream : undefined}
+          goals={goals}
+          initialData={editingDream}
+        />
+      )}
+
+      {lightbox && (
+        <Lightbox image={lightbox.url} title={lightbox.title} onClose={() => setLightbox(null)} />
       )}
     </div>
   )

@@ -180,10 +180,32 @@
 
 .dreamMapModal__footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
 }
+
+.dreamMapModal__footerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.dreamMapModal__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: none;
+  background: #fee2e2;
+  color: #ef4444;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.dreamMapModal__delete:hover { background: #fecaca; }
 
 .btn {
   border-radius: 14px;
