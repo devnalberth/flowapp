@@ -73,7 +73,8 @@ export default function Projects({ onNavigate, onLogout, user }) {
     try {
       return await addClient(data)
     } catch (e) {
-      alert('Erro ao criar cliente')
+      console.error('Erro ao criar cliente:', e)
+      alert(`Erro ao criar cliente: ${e?.message || e}`)
       return null
     }
   }
