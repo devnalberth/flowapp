@@ -12,6 +12,9 @@ import { computeProjectStats } from '../../utils/projectMetrics'
 
 import './Projects.css'
 
+// Categorias de projeto (campo `area`) usadas no filtro da galeria
+const AREAS = ['Profissional', 'Pessoal', 'Financeiro', 'Estudos']
+
 // Compatibilidade com valores antigos de status
 const isSameStatus = (current, derived) => {
   if (derived === 'todo') return !current || current === 'todo' || current === 'active'
@@ -30,6 +33,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const [editProject, setEditProject] = useState(null)
   const [isTaskModalOpen, setTaskModalOpen] = useState(false)
   const [taskPreset, setTaskPreset] = useState(null) // { projectId, status }
+  const [activeCat, setActiveCat] = useState('all') // filtro de categoria da galeria
 
   const autoSyncInFlightRef = useRef(false)
 
@@ -41,6 +45,29 @@ export default function Projects({ onNavigate, onLogout, user }) {
     () => projects.find((p) => p.id === activeProjectId) || null,
     [projects, activeProjectId],
   )
+
+  // Contagem por categoria + lista de chips do filtro
+  const catCounts = useMemo(() => {
+    const counts = { all: projects.length, Outros: 0 }
+    AREAS.forEach((a) => { counts[a] = 0 })
+    projects.forEach((p) => {
+      if (AREAS.includes(p.area)) counts[p.area] += 1
+      else counts.Outros += 1
+    })
+    return counts
+  }, [projects])
+
+  const categories = useMemo(() => {
+    const base = [{ id: 'all', label: 'Todos' }, ...AREAS.map((a) => ({ id: a, label: a }))]
+    if (catCounts.Outros > 0) base.push({ id: 'Outros', label: 'Outros' })
+    return base
+  }, [catCounts])
+
+  const visibleProjects = useMemo(() => {
+    if (activeCat === 'all') return projects
+    if (activeCat === 'Outros') return projects.filter((p) => !AREAS.includes(p.area))
+    return projects.filter((p) => p.area === activeCat)
+  }, [projects, activeCat])
 
   // Auto-atualiza o status persistido do projeto conforme o progresso das tarefas
   useEffect(() => {
@@ -147,13 +174,29 @@ export default function Projects({ onNavigate, onLogout, user }) {
         ) : (
           <>
             <header className="projGallery__head">
-              <div>
+              <div className="projGallery__headLeft">
                 <p className="projGallery__eyebrow">Workspace</p>
                 <h1 className="projGallery__title">Projetos</h1>
               </div>
-              <button className="projGallery__new" onClick={openNewProject}>
-                <Plus size={16} /> Novo projeto
-              </button>
+              <div className="projGallery__headRight">
+                {projects.length > 0 && (
+                  <nav className="projGallery__cats" aria-label="Filtrar por categoria">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        className={`projCat ${activeCat === cat.id ? 'is-active' : ''}`}
+                        onClick={() => setActiveCat(cat.id)}
+                      >
+                        {cat.label}
+                        <span className="projCat__count">{catCounts[cat.id] ?? 0}</span>
+                      </button>
+                    ))}
+                  </nav>
+                )}
+                <button className="projGallery__new" onClick={openNewProject}>
+                  <Plus size={16} /> Novo projeto
+                </button>
+              </div>
             </header>
 
             {projects.length === 0 ? (
@@ -165,9 +208,13 @@ export default function Projects({ onNavigate, onLogout, user }) {
                   <Plus size={16} /> Criar projeto
                 </button>
               </div>
+            ) : visibleProjects.length === 0 ? (
+              <div className="projGallery__filterEmpty">
+                Nenhum projeto em <strong>{activeCat}</strong>.
+              </div>
             ) : (
               <div className="projGallery">
-                {projects.map((p, idx) => (
+                {visibleProjects.map((p, idx) => (
                   <ProjectCard
                     key={p.id}
                     project={p}
