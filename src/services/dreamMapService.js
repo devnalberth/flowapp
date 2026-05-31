@@ -19,7 +19,7 @@ export const dreamMapService = {
       .from('dream_maps')
       .insert({
         title: dreamMap.title,
-        goal_id: dreamMap.goalId,
+        goal_id: dreamMap.goalId || null,
         image_url: dreamMap.imageUrl,
         user_id: userId,
       })
@@ -39,7 +39,7 @@ export const dreamMapService = {
       .from('dream_maps')
       .update({
         title: updates.title,
-        goal_id: updates.goalId,
+        goal_id: updates.goalId || null,
         image_url: updates.imageUrl,
         updated_at: new Date().toISOString(),
       })

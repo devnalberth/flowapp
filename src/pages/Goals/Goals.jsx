@@ -5,12 +5,15 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
 import DreamMapModal from '../../components/DreamMapModal/DreamMapModal.jsx'
+import { computeProjectStats } from '../../utils/projectMetrics'
+import { getGoalSchedule, TRIMESTER_LABELS } from '../../utils/goalSchedule'
+import { Target, FolderKanban, ListChecks, CheckCircle2, CalendarClock, ArrowUpRight, Pencil } from 'lucide-react'
 
 import './Goals.css'
 
-const TRIMESTERS = ['1º Trimestre', '2º Trimestre', '3º Trimestre', '4º Trimestre']
+const TRIMESTERS = TRIMESTER_LABELS
 
-// Estrutura de áreas de vida padrão
+// Áreas de vida (alinhadas às categorias de Projetos: Profissional, Pessoal, Financeiro, Estudos)
 const DEFAULT_LIFE_AREAS = [
   {
     id: 'profissional',
@@ -25,119 +28,140 @@ const DEFAULT_LIFE_AREAS = [
     description: 'Crie rituais pessoais que sustentem energia criativa e espaço para experiências significativas.',
   },
   {
-    id: 'saude',
-    label: 'Saúde',
-    icon: '⚡',
-    description: 'Construa rotinas de exercício e nutrição que sustentem performance e bem-estar consistente.',
-  },
-  {
     id: 'financeiro',
-    label: 'Finanças',
+    label: 'Financeiro',
     icon: '💰',
     description: 'Organize capital, fluxos e investimentos com transparência e previsibilidade.',
   },
+  {
+    id: 'estudos',
+    label: 'Estudos',
+    icon: '📚',
+    description: 'Estruture trilhas de aprendizado contínuo que sustentem sua evolução técnica e criativa.',
+  },
 ]
 
-function MetaDetail({ meta, onBack, onEdit }) {
+const fmtDate = (value) => {
+  if (!value) return null
+  const d = new Date(`${String(value).slice(0, 10)}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+}
+
+function MetaDetail({ meta, onNavigate }) {
   if (!meta) return null
 
-  const progressPercent = Math.round((meta.progress || 0) * 100)
-  const infoItems = [
-    { label: 'Status', value: meta.status },
-    { label: 'Trimestre', value: meta.trimester },
-    { label: 'Área', value: meta.areaLabel },
-  ]
-
+  const progressPercent = meta.progressPercent || 0
+  const schedule = meta.schedule
   const projectsList = meta.projects || []
+  const statusTone = progressPercent >= 100 ? 'done' : progressPercent > 0 ? 'doing' : 'todo'
+  const ring = `conic-gradient(${progressPercent >= 100 ? '#10b981' : '#ff7a18'} ${progressPercent * 3.6}deg, rgba(0,0,0,0.07) 0deg)`
+  const periodStart = fmtDate(schedule?.range?.start)
+  const periodEnd = fmtDate(schedule?.range?.end)
+  const daysLeft = schedule?.daysLeft
 
   return (
-    <section className="metaDetail">
-      <header className="metaDetail__summary">
-        <div>
-          <p className="metaDetail__eyebrow">Meta</p>
+    <section className="metaDash">
+      <header className="metaDash__hero">
+        <div className="metaDash__heroText">
+          <p className="metaDash__eyebrow">Meta</p>
           <h2>{meta.title}</h2>
-        </div>
-        <div className="metaDetail__progress">
-          <span>{progressPercent}%</span>
-          <div role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100}>
-            <span style={{ width: `${progressPercent}%` }} />
+          <div className="metaDash__tags">
+            <span className={`metaDash__statusTag metaDash__statusTag--${statusTone}`}>{meta.status}</span>
+            <span className="metaDash__tag">{meta.areaLabel}</span>
+            <span className="metaDash__tag">{schedule?.currentLabel || meta.trimester}</span>
           </div>
+        </div>
+        <div className="metaDash__ring" style={{ background: ring }}>
+          <div className="metaDash__ringInner"><strong>{progressPercent}%</strong><span>andamento</span></div>
         </div>
       </header>
 
-      <div className="metaDetail__infoGrid">
-        {infoItems.map((item) => (
-          <div key={item.label} className="metaDetail__infoCard">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </div>
-        ))}
+      <div className="metaDash__quarters">
+        <div className="metaDash__quartersHead">
+          <span>Trajetória {schedule?.year || ''}</span>
+          <span className="metaDash__period">
+            <CalendarClock size={13} /> {periodStart} → {periodEnd}
+            {typeof daysLeft === 'number' && !meta.status.includes('Conclu') && (
+              <em className={daysLeft < 0 ? 'is-late' : ''}>
+                {daysLeft < 0 ? ` · ${Math.abs(daysLeft)}d atrasado` : ` · ${daysLeft}d restantes`}
+              </em>
+            )}
+          </span>
+        </div>
+        <div className="metaDash__quartersTrack">
+          {[1, 2, 3, 4].map((q) => {
+            const inRange = schedule && q >= schedule.startQuarter && q <= schedule.endQuarter
+            const isCurrent = schedule && q === schedule.currentQuarter
+            return (
+              <div key={q} className={`metaQuarter ${inRange ? 'in-range' : ''} ${isCurrent ? 'is-current' : ''}`}>
+                <span className="metaQuarter__label">{q}º Tri</span>
+                {isCurrent && <span className="metaQuarter__now">agora</span>}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <article className="metaDetail__card metaDetail__summaryCard">
-        <header className="metaDetail__summaryCardHead">
-          <h3>Resumo</h3>
-          <span>Objetivo e intenção</span>
-        </header>
-        <div className="metaDetail__summaryGrid">
-          <div className="metaDetail__summaryItem">
-            <span>Por quê</span>
-            <p>{meta.reason}</p>
-          </div>
-          <div className="metaDetail__summaryItem">
-            <span>Intenção</span>
-            <p>{meta.intention}</p>
-          </div>
-        </div>
+      <div className="metaDash__kpis">
+        <div className="metaKpi"><Target size={17} /><strong>{progressPercent}%</strong><span>Progresso</span></div>
+        <div className="metaKpi"><FolderKanban size={17} /><strong>{projectsList.length}</strong><span>Projetos</span></div>
+        <div className="metaKpi"><ListChecks size={17} /><strong>{meta.totalTasks || 0}</strong><span>Tarefas</span></div>
+        <div className="metaKpi metaKpi--done"><CheckCircle2 size={17} /><strong>{meta.doneTasks || 0}</strong><span>Concluídas</span></div>
+      </div>
+
+      <article className="metaDash__panel">
+        <header className="metaDash__panelHead"><h3>Objetivo</h3><span>Por que esta meta importa</span></header>
+        <p className="metaDash__objective">{meta.objective || 'Sem descrição definida.'}</p>
       </article>
 
-      <section className="metaDetail__projects">
-        <header>
-          <div>
-            <p>Projetos</p>
-            <h3>Projetos vinculados</h3>
-          </div>
+      <article className="metaDash__panel">
+        <header className="metaDash__panelHead">
+          <h3>Projetos vinculados</h3>
+          <span>{projectsList.length} {projectsList.length === 1 ? 'projeto' : 'projetos'}</span>
         </header>
-        <div className="metaDetail__projectsLayout">
-          <div className="metaDetail__projectsList">
-            <div className="metaDetail__listHead">
-              <span>Projeto</span>
-              <span>Status</span>
-            </div>
-            <ul>
-              {projectsList.length === 0 ? (
-                <li style={{ padding: '1rem', color: 'var(--text-tertiary)' }}>Nenhum projeto vinculado</li>
-              ) : (
-                projectsList.map((project) => {
-                  const statusClass = (project.status || 'active')
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/\s+/g, '')
-                    .toLowerCase()
 
-                  return (
-                    <li key={project.id} className="metaProject">
-                      <div className="metaProject__info">
-                        <strong>{project.title}</strong>
-                      </div>
-                      <div className="metaProject__statusWrap">
-                        <span className={`metaProject__status metaProject__status--${statusClass}`}>
-                          {project.status || 'Ativo'}
-                        </span>
-                      </div>
-                    </li>
-                  )
-                })
-              )}
-            </ul>
+        {projectsList.length === 0 ? (
+          <div className="metaDash__empty">
+            Nenhum projeto vinculado ainda. Vincule um projeto para alimentar o progresso desta meta.
           </div>
-        </div>
-      </section>
+        ) : (
+          <ul className="metaDash__projects">
+            {projectsList.map((project) => {
+              const s = project._stats || { progress: 0, totalTasks: 0, doneTasks: 0 }
+              const color = `#${(project.color || 'ff9500').replace('#', '')}`
+              return (
+                <li
+                  key={project.id}
+                  className="metaProjItem"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onNavigate?.('Projetos')}
+                  title="Abrir em Projetos"
+                >
+                  <span className="metaProjItem__dot" style={{ background: color }} />
+                  <div className="metaProjItem__body">
+                    <div className="metaProjItem__top">
+                      <strong>{project.title}</strong>
+                      <span className="metaProjItem__count">{s.doneTasks}/{s.totalTasks} tarefas</span>
+                    </div>
+                    <div className="metaProjItem__bar">
+                      <span style={{ width: `${s.progress}%`, background: color }} />
+                    </div>
+                  </div>
+                  <span className="metaProjItem__pct">{s.progress}%</span>
+                  <ArrowUpRight size={16} className="metaProjItem__go" />
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </article>
     </section>
   )
 }
 
-function AreaDetail({ area, onBack, onEdit }) {
+function AreaDetail({ area, onBack, onEdit, onNavigate }) {
   const [activeMetaId, setActiveMetaId] = useState(area.metas[0]?.id ?? null)
   const [view, setView] = useState('board')
 
@@ -195,7 +219,7 @@ function AreaDetail({ area, onBack, onEdit }) {
         </header>
 
         {view === 'detail' && activeMeta ? (
-          <MetaDetail meta={activeMeta} onBack={() => setView('board')} onEdit={onEdit} />
+          <MetaDetail meta={activeMeta} onNavigate={onNavigate} />
         ) : (
           <section className="areaMetaBoard">
             <header>
@@ -215,7 +239,7 @@ function AreaDetail({ area, onBack, onEdit }) {
                   <div className="kanbanColumn__body">
                     {column.metas.length === 0 && <p className="kanbanColumn__empty">Ainda sem metas neste trimestre</p>}
                     {column.metas.map((meta) => {
-                      const progressPercent = Math.round((meta.progress || 0) * 100)
+                      const progressPercent = meta.progressPercent || 0
                       const isActive = meta.id === activeMetaId
                       return (
                         <article
@@ -254,7 +278,7 @@ function AreaDetail({ area, onBack, onEdit }) {
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Pegando deleteGoal do contexto
-  const { goals, projects, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
+  const { goals, projects, tasks, dreamMaps, addGoal, addDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
@@ -270,48 +294,45 @@ export default function Goals({ onNavigate, onLogout, user }) {
           goal.area?.toLowerCase() === area.label.toLowerCase()
         )
         .map(goal => {
-          let trimester = '1º Trimestre'
+          const schedule = getGoalSchedule(goal)
 
-          if (goal.trimesters) {
-            trimester = goal.trimesters
-          } else if (goal.startDate) {
-            const start = new Date(goal.startDate)
-            const startMonth = start.getMonth() + 1
-            const quarterIndex = Math.ceil(startMonth / 3)
-            trimester = TRIMESTERS[quarterIndex - 1] || '4º Trimestre'
-          }
-
+          // Projetos vinculados + progresso DERIVADO (média do andamento dos projetos)
           const goalProjects = (projects || []).filter(p => p.goalId === goal.id || p.goal_id === goal.id)
+          const enrichedProjects = goalProjects.map(p => ({ ...p, _stats: computeProjectStats(p, tasks) }))
+          const totalTasks = enrichedProjects.reduce((a, p) => a + p._stats.totalTasks, 0)
+          const doneTasks = enrichedProjects.reduce((a, p) => a + p._stats.doneTasks, 0)
+          const progressPercent = enrichedProjects.length
+            ? Math.round(enrichedProjects.reduce((a, p) => a + p._stats.progress, 0) / enrichedProjects.length)
+            : Math.round((goal.progress || 0) * 100) // fallback ao valor salvo (0/100)
 
           return {
             ...goal,
-            trimester,
+            schedule,
+            trimester: schedule.currentLabel, // posiciona no trimestre REAL de hoje (auto-avanço)
             areaLabel: area.label,
-            status: (goal.progress || 0) >= 1 ? 'Concluída' : (goal.progress || 0) > 0 ? 'Em progresso' : 'Não iniciada',
-            reason: goal.target || 'Sem descrição',
-            intention: goal.target || 'Sem intenção definida',
-            projects: goalProjects,
-            timeline: [
-              { id: 1, label: 'Início', date: goal.startDate ? new Date(goal.startDate).toLocaleDateString('pt-BR') : 'A definir' },
-              { id: 2, label: 'Fim', date: goal.endDate ? new Date(goal.endDate).toLocaleDateString('pt-BR') : 'A definir' },
-            ],
+            progressPercent,
+            totalTasks,
+            doneTasks,
+            status: progressPercent >= 100 ? 'Concluída' : progressPercent > 0 ? 'Em progresso' : 'Não iniciada',
+            objective: goal.target || '',
+            projects: enrichedProjects,
           }
         })
 
-      const totalProgress = areaGoals.length > 0
-        ? areaGoals.reduce((sum, goal) => sum + (goal.progress || 0), 0) / areaGoals.length
+      const progressPercent = areaGoals.length > 0
+        ? Math.round(areaGoals.reduce((sum, g) => sum + (g.progressPercent || 0), 0) / areaGoals.length)
         : 0
 
       return {
         ...area,
         status: areaGoals.length > 0 ? 'Ativo' : 'Sem metas',
         northStar: areaGoals[0]?.title || 'Nenhuma meta definida',
-        progress: totalProgress / 100,
-        review: 'Review mensal',
+        progressPercent,
+        review: 'Review trimestral',
         metas: areaGoals,
       }
     })
-  }, [goals, projects])
+  }, [goals, projects, tasks])
 
   const selectedArea = LIFE_AREAS.find((area) => area.id === selectedAreaId) ?? null
 
@@ -362,7 +383,10 @@ export default function Goals({ onNavigate, onLogout, user }) {
     try {
       await addDreamMap(form, imageFile)
       setIsDreamModalOpen(false)
-    } catch (error) { alert('Erro ao adicionar imagem.') }
+    } catch (error) {
+      console.error('Erro ao adicionar imagem:', error)
+      alert(`Erro ao adicionar imagem: ${error?.message || error}`)
+    }
   }
 
   const handleDeleteDream = async (dreamId) => {
@@ -430,6 +454,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
       {selectedArea ? (
         <AreaDetail
           area={selectedArea}
+          onNavigate={onNavigate}
           onBack={() => setSelectedAreaId(null)}
           onEdit={(meta) => {
             setEditGoal(meta)
@@ -441,7 +466,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
           <section className="goalsAreasBoard">
             <div className="goalsAreas">
               {LIFE_AREAS.map((area) => {
-                const progressPercent = Math.round(area.progress * 100)
+                const progressPercent = area.progressPercent || 0
                 const hasMetas = Array.isArray(area.metas) && area.metas.length > 0
                 const isEmptyArea = !loading && !hasMetas
                 const isPulse = emptyAreaPulseId === area.id
