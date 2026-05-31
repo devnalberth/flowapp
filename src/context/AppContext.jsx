@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { taskService } from '../services/taskService'
 import { projectService } from '../services/projectService'
+import { clientService } from '../services/clientService'
 import { goalService } from '../services/goalService'
 import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
@@ -39,6 +40,7 @@ export function AppProvider({ children, userId }) {
   // State for all entities
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
+  const [clients, setClients] = useState([])
   const [goals, setGoals] = useState([])
   const [habits, setHabits] = useState([])
   const [finances, setFinances] = useState([])
@@ -54,6 +56,7 @@ export function AppProvider({ children, userId }) {
     } else {
       setTasks([])
       setProjects([])
+      setClients([])
       setGoals([])
       setHabits([])
       setFinances([])
@@ -77,6 +80,7 @@ export function AppProvider({ children, userId }) {
         studyService.getStudies(userId),
         dreamMapService.getDreamMaps(userId),
         eventService.getEvents(userId),
+        clientService.getClients(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -97,6 +101,7 @@ export function AppProvider({ children, userId }) {
       setStudies(safeArray(results[5], 'studies'))
       setDreamMaps(safeArray(results[6], 'dreamMaps'))
       setEvents(safeArray(results[7], 'events'))
+      setClients(safeArray(results[8], 'clients'))
 
     } catch (error) {
       console.error('Erro fatal no carregamento:', error)
@@ -245,6 +250,30 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setProjects(prev => prev.filter(p => p.id !== id))
     await projectService.deleteProject(id, userId)
+  }
+
+  // Client Actions (cliente é opcional e reutilizável entre projetos)
+  const addClient = async (client) => {
+    if (!userId) return
+    const newClient = await clientService.createClient(userId, client)
+    setClients(prev => [newClient, ...prev])
+    return newClient
+  }
+
+  const updateClient = async (id, updates) => {
+    if (!userId) return
+    setClients(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+    const updated = await clientService.updateClient(id, userId, updates)
+    if (updated) setClients(prev => prev.map(c => c.id === id ? updated : c))
+    return updated
+  }
+
+  const deleteClient = async (id) => {
+    if (!userId) return
+    setClients(prev => prev.filter(c => c.id !== id))
+    // Desvincula o cliente dos projetos localmente (no banco o FK é ON DELETE SET NULL)
+    setProjects(prev => prev.map(p => (p.clientId === id || p.client_id === id) ? { ...p, clientId: null, client_id: null } : p))
+    await clientService.deleteClient(id, userId)
   }
 
   // Habit Actions
@@ -563,9 +592,10 @@ export function AppProvider({ children, userId }) {
 
   const value = {
     userId,
-    tasks, projects, goals, habits, finances, studies, dreamMaps, events, loading,
+    tasks, projects, clients, goals, habits, finances, studies, dreamMaps, events, loading,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
+    addClient, updateClient, deleteClient,
     addGoal, updateGoal, deleteGoal,
     addHabit, completeHabit, completeHabitForDate, updateHabit, deleteHabit,
     addFinance, updateFinance, deleteFinance,

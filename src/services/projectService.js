@@ -1,5 +1,17 @@
 import { getSupabaseClient } from '../lib/supabaseClient';
 
+// Expõe campos camelCase usados na UI, mantendo os snake_case do banco.
+const normalizeProject = (project) => {
+  if (!project) return project;
+  return {
+    ...project,
+    startDate: project.start_date,
+    endDate: project.end_date,
+    goalId: project.goal_id,
+    clientId: project.client_id,
+  };
+};
+
 export const projectService = {
   async getProjects(userId) {
     const supabase = getSupabaseClient(true);
@@ -10,7 +22,7 @@ export const projectService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(normalizeProject);
   },
 
   async createProject(userId, project) {
@@ -22,11 +34,12 @@ export const projectService = {
       status: project.status || 'todo',
       color: project.color || 'ff9500',
       progress: parseInt(project.progress) || 0,
+      start_date: project.startDate || project.start_date || null,
+      end_date: project.endDate || project.end_date || null,
       user_id: userId,
       goal_id: project.goalId || null,
+      client_id: project.clientId || null,
     };
-
-    console.log('Creating project with data:', projectData);
 
     const { data, error } = await supabase
       .from('projects')
@@ -38,8 +51,7 @@ export const projectService = {
       console.error('projectService.createProject supabase response:', { data, error });
       throw error;
     }
-    console.debug('projectService.createProject inserted:', data);
-    return data;
+    return normalizeProject(data);
   },
 
   async updateProject(projectId, userId, updates) {
@@ -52,9 +64,11 @@ export const projectService = {
       ...(updates.color !== undefined && { color: updates.color }),
       ...(updates.progress !== undefined && { progress: parseInt(updates.progress) }),
       ...(updates.goalId !== undefined && { goal_id: updates.goalId || null }),
+      ...((updates.startDate !== undefined || updates.start_date !== undefined) && { start_date: updates.startDate ?? updates.start_date ?? null }),
+      ...((updates.endDate !== undefined || updates.end_date !== undefined) && { end_date: updates.endDate ?? updates.end_date ?? null }),
+      ...((updates.clientId !== undefined || updates.client_id !== undefined) && { client_id: updates.clientId ?? updates.client_id ?? null }),
+      updated_at: new Date().toISOString(),
     };
-
-    console.log('Updating project:', projectId, updateData);
 
     const { data, error } = await supabase
       .from('projects')
@@ -69,7 +83,7 @@ export const projectService = {
       throw error;
     }
 
-    return data;
+    return normalizeProject(data);
   },
 
   async deleteProject(projectId, userId) {

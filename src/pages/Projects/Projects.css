@@ -6,6 +6,82 @@
   position: relative;
 }
 
+/* ===== Galeria de projetos ===== */
+.projectsWrapper {
+  background: #f3f3f5;
+  border-radius: 36px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.projGallery__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.projGallery__eyebrow {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9aa0ac;
+}
+.projGallery__title {
+  margin: 0;
+  font-family: var(--font-brand, inherit);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text, #0d0d12);
+}
+.projGallery__new {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 20px;
+  background: linear-gradient(180deg, #ff7a18, #ff4800);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 72, 0, 0.32);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.projGallery__new:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(255, 72, 0, 0.42); }
+
+.projGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.projGallery__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 64px 24px;
+  background: #fff;
+  border-radius: 24px;
+  border: 1px dashed #d9d9e0;
+  color: #6b6b75;
+}
+.projGallery__empty svg { color: var(--text, #0d0d12); opacity: 0.5; }
+.projGallery__empty h3 { margin: 6px 0 0; font-size: 18px; font-weight: 700; color: var(--text, #0d0d12); }
+.projGallery__empty p { margin: 0 0 8px; font-size: 14px; max-width: 360px; }
+
+@media (max-width: 768px) {
+  .projects { padding: 20px 16px; }
+  .projectsWrapper { border-radius: 28px; padding: 18px; }
+  .projGallery { grid-template-columns: 1fr; }
+}
+
 .projects__toolbar {
   display: flex;
   justify-content: flex-end;

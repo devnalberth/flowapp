@@ -108,6 +108,41 @@
   gap: 16px;
 }
 
+.createProjectModal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.createProjectModal__clientRow {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.createProjectModal__clientRow .createProjectModal__input { flex: 1; }
+
+.createProjectModal__clientAdd {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 105, 0, 0.4);
+  background: rgba(255, 105, 0, 0.07);
+  color: #d2410a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.createProjectModal__clientAdd:hover { background: rgba(255, 105, 0, 0.14); transform: translateY(-1px); }
+
+@media (max-width: 560px) {
+  .createProjectModal__row { grid-template-columns: 1fr; }
+}
+
 .createProjectModal__label {
   font-size: 14px;
   line-height: 21px;
@@ -194,9 +229,11 @@
 }
 
 .createProjectModal__btn--primary {
-  background: #ff9500;
-  color: #e8e8e8;
+  background: linear-gradient(180deg, #ff7a18, #ff4800);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(255, 72, 0, 0.3);
 }
+.createProjectModal__btn--primary:hover { transform: translateY(-1px); }
 
 @media (max-width: 720px) {
   .createProjectModal {

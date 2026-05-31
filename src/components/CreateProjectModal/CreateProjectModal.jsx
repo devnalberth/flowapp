@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus } from 'lucide-react'
+import ClientModal from '../ClientModal/ClientModal.jsx'
 
 import './CreateProjectModal.css'
 
@@ -21,10 +23,16 @@ const DEFAULT_FORM = {
   color: COLOR_OPTIONS[0].value,
   description: '',
   goalId: '',
+  startDate: '',
+  endDate: '',
+  clientId: '',
 }
 
-export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [], initialData = null }) {
+const toDateInput = (value) => (value ? String(value).slice(0, 10) : '')
+
+export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [], clientOptions = [], onCreateClient, initialData = null }) {
   const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }))
+  const [showClientModal, setShowClientModal] = useState(false)
   const dialogRef = useRef(null)
   const nameRef = useRef(null)
 
@@ -72,6 +80,9 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
         ...initialData,
         description: initialData.description || '',
         goalId: initialData.goalId || initialData.goal_id || DEFAULT_FORM.goalId,
+        clientId: initialData.clientId || initialData.client_id || DEFAULT_FORM.clientId,
+        startDate: toDateInput(initialData.startDate || initialData.start_date),
+        endDate: toDateInput(initialData.endDate || initialData.end_date),
       })
     } else {
       setForm(() => ({ ...DEFAULT_FORM }))
@@ -85,6 +96,14 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
   const handleSubmit = (event) => {
     event.preventDefault()
     onSubmit?.(form)
+  }
+
+  const handleCreateClient = async (clientData) => {
+    const created = await onCreateClient?.(clientData)
+    if (created?.id) {
+      setForm((prev) => ({ ...prev, clientId: created.id }))
+    }
+    setShowClientModal(false)
   }
 
   return (
@@ -178,7 +197,55 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
             </select>
           </label>
 
+          <div className="createProjectModal__row">
+            <label className="createProjectModal__field">
+              <span className="createProjectModal__label">Início</span>
+              <input
+                className="createProjectModal__input"
+                type="date"
+                name="startDate"
+                value={form.startDate}
+                onChange={updateField('startDate')}
+              />
+            </label>
+            <label className="createProjectModal__field">
+              <span className="createProjectModal__label">Prazo de término</span>
+              <input
+                className="createProjectModal__input"
+                type="date"
+                name="endDate"
+                value={form.endDate}
+                onChange={updateField('endDate')}
+              />
+            </label>
+          </div>
 
+          <label className="createProjectModal__field">
+            <span className="createProjectModal__label">Cliente (Opcional)</span>
+            <div className="createProjectModal__clientRow">
+              <select
+                className="createProjectModal__input createProjectModal__input--select"
+                name="clientId"
+                value={form.clientId}
+                onChange={updateField('clientId')}
+              >
+                <option value="">Sem cliente</option>
+                {clientOptions?.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}{client.company ? ` · ${client.company}` : ''}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="createProjectModal__clientAdd"
+                onClick={() => setShowClientModal(true)}
+                title="Cadastrar novo cliente"
+              >
+                <Plus size={16} /> Novo
+              </button>
+            </div>
+          </label>
 
           <label className="createProjectModal__field">
             <span className="createProjectModal__label">Descrição do projeto</span>
@@ -205,6 +272,14 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
           </footer>
         </form>
       </section>
+
+      {showClientModal && (
+        <ClientModal
+          open={true}
+          onClose={() => setShowClientModal(false)}
+          onSubmit={handleCreateClient}
+        />
+      )}
     </div>
   )
 }
