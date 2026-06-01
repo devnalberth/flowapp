@@ -247,3 +247,56 @@
   background: #2a2a30;
   transform: translateY(-1px);
 }
+/* Vínculo com o timer de foco */
+.createHabitModal__timerLink {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff8f3 0%, #fafafa 100%);
+  border: 1px solid #ffe2d0;
+}
+.createHabitModal__timerToggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.createHabitModal__timerToggle input { position: absolute; opacity: 0; pointer-events: none; }
+.createHabitModal__switch {
+  flex-shrink: 0;
+  width: 44px; height: 26px;
+  border-radius: 99px;
+  background: #d6d6dc;
+  position: relative;
+  transition: background 180ms ease;
+}
+.createHabitModal__switch::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: transform 180ms ease;
+}
+.createHabitModal__timerToggle input:checked + .createHabitModal__switch { background: linear-gradient(180deg, #ff4800, #ff9500); }
+.createHabitModal__timerToggle input:checked + .createHabitModal__switch::after { transform: translateX(18px); }
+.createHabitModal__timerText { display: flex; flex-direction: column; gap: 2px; }
+.createHabitModal__timerText strong { font-size: 0.92rem; color: #0d0d12; }
+.createHabitModal__timerText small { font-size: 0.78rem; color: #8b8b93; line-height: 1.35; }
+
+.createHabitModal__timerGoal { display: flex; flex-direction: column; gap: 8px; }
+.createHabitModal__timerGoal > span { font-size: 0.82rem; font-weight: 600; color: #0d0d12; }
+.createHabitModal__timerInputs { display: flex; gap: 10px; }
+.createHabitModal__timerInputs label {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff; border: 1px solid #e0e0e6; border-radius: 12px; padding: 6px 12px;
+}
+.createHabitModal__timerInputs input {
+  width: 56px; border: none; outline: none; background: transparent;
+  font: inherit; font-size: 1.05rem; font-weight: 700; color: #0d0d12; text-align: center;
+}
+.createHabitModal__timerInputs em { font-style: normal; font-size: 0.82rem; color: #8b8b93; font-weight: 600; }

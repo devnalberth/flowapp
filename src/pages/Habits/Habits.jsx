@@ -33,9 +33,9 @@ const VIEW_MODES = [
 const CATEGORIES = [
   { id: 'all', label: 'Todos', color: '#ff4800' },
   { id: 'saude', label: 'Saúde', color: '#0a9463' },
-  { id: 'trabalho', label: 'Trabalho', color: '#ff7a00' },
-  { id: 'aprendizado', label: 'Aprendizado', color: '#4f5bd5' },
-  { id: 'mindfulness', label: 'Mindfulness', color: '#ff4800' },
+  { id: 'produtividade', label: 'Produtividade', color: '#16a34a' },
+  { id: 'estudos', label: 'Estudos', color: '#ff7a00' },
+  { id: 'mindfulness', label: 'Mindfulness', color: '#7c5cff' },
 ]
 
 const ICON_OPTIONS = [
@@ -49,7 +49,13 @@ const ICON_OPTIONS = [
 const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Habits({ user, onNavigate, onLogout }) {
-  const { habits, addHabit, updateHabit, deleteHabit, completeHabit, completeHabitForDate } = useApp()
+  const { habits, addHabit, updateHabit, deleteHabit, completeHabit, completeHabitForDate, syncTimerHabits } = useApp()
+
+  // Ao abrir a aba, conclui automaticamente hábitos cuja meta de foco do dia já foi batida.
+  useEffect(() => {
+    if (habits?.length) syncTimerHabits?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits.length])
 
   const [viewMode, setViewMode] = useState('daily')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -129,13 +135,18 @@ export default function Habits({ user, onNavigate, onLogout }) {
     return list.includes(dateStr)
   }
 
+  // Chave de data LOCAL (corrige o bug de fuso que adiantava o dia à noite)
+  const toLocalKey = (d) => {
+    const offset = d.getTimezoneOffset()
+    return new Date(d.getTime() - offset * 60 * 1000).toISOString().split('T')[0]
+  }
   const getDateString = (date) => {
     if (typeof date === 'number') {
       const d = new Date()
       d.setDate(d.getDate() + date)
-      return d.toISOString().split('T')[0]
+      return toLocalKey(d)
     }
-    return date.toISOString().split('T')[0]
+    return toLocalKey(date)
   }
 
   // Gera dados para a semana atual

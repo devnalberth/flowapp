@@ -50,6 +50,8 @@ const normalizeHabit = (habit) => {
     completions: completions,
     customDays: customDays, // Mapeado para o front
     selectedDays: customDays, // Alias para compatibilidade
+    timerCategory: habit.timer_category || null,
+    timerGoalMinutes: habit.timer_goal_minutes ?? null,
   };
 };
 
@@ -80,6 +82,8 @@ export const habitService = {
       completed_dates: Array.isArray(habit.completions) ? habit.completions : [],
       // Salva custom_days
       custom_days: Array.isArray(habit.customDays) ? habit.customDays : [],
+      timer_category: habit.timerCategory || null,
+      timer_goal_minutes: habit.timerGoalMinutes ?? null,
       user_id: userId,
     };
 
@@ -114,6 +118,8 @@ export const habitService = {
     if (updates.customDays !== undefined) {
       payload.custom_days = Array.isArray(updates.customDays) ? updates.customDays : [];
     }
+    if (updates.timerCategory !== undefined) payload.timer_category = updates.timerCategory || null;
+    if (updates.timerGoalMinutes !== undefined) payload.timer_goal_minutes = updates.timerGoalMinutes ?? null;
 
     // Garante que ao atualizar, enviamos array
     if (updates.completions !== undefined) {

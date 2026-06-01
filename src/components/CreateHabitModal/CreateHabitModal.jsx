@@ -6,10 +6,13 @@ const DESCRIPTION_LIMIT = 200
 
 const HABIT_CATEGORIES = [
   { id: 'saude', label: 'Saúde & Energia', icon: '⚡' },
-  { id: 'trabalho', label: 'Trabalho', icon: '💼' },
-  { id: 'aprendizado', label: 'Aprendizado', icon: '📚' },
+  { id: 'produtividade', label: 'Produtividade', icon: '💼' },
+  { id: 'estudos', label: 'Estudos', icon: '📚' },
   { id: 'mindfulness', label: 'Mindfulness', icon: '🧘' },
 ]
+
+// Categorias que podem ser concluídas pelo timer de foco, e o canal correspondente.
+const TIMER_CATEGORY_OF = { produtividade: 'work', estudos: 'study' }
 
 const FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Diário' },
@@ -34,6 +37,9 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
     time: '',
     frequency: 'daily',
     selectedDays: [],
+    timerEnabled: false,
+    timerHours: 0,
+    timerMinutes: 30,
   })
   const labelRef = useRef(null)
 
@@ -50,6 +56,7 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
       }
 
       // Modo de edição
+      const goalMin = habit.timerGoalMinutes ?? null
       setFormData({
         label: habit.label || habit.name || '',
         category: habit.category || HABIT_CATEGORIES[0].id,
@@ -57,6 +64,9 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
         time: habit.time || '',
         frequency: (days.length > 0) ? 'custom' : (habit.frequency || 'daily'),
         selectedDays: days,
+        timerEnabled: !!habit.timerCategory,
+        timerHours: goalMin != null ? Math.floor(goalMin / 60) : 0,
+        timerMinutes: goalMin != null ? goalMin % 60 : 30,
       })
     } else {
       // Modo de criação
@@ -67,6 +77,9 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
         time: '',
         frequency: 'daily',
         selectedDays: [],
+        timerEnabled: false,
+        timerHours: 0,
+        timerMinutes: 30,
       })
     }
     
@@ -93,6 +106,11 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
   const handleSubmit = (event) => {
     event.preventDefault()
     
+    // Vínculo com o timer (só faz sentido para Produtividade/Estudos)
+    const timerChannel = TIMER_CATEGORY_OF[formData.category]
+    const linkTimer = formData.timerEnabled && !!timerChannel
+    const goalMinutes = (Number(formData.timerHours) || 0) * 60 + (Number(formData.timerMinutes) || 0)
+
     // Prepara o payload
     const payload = {
         label: formData.label,
@@ -103,9 +121,11 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
         frequency: formData.frequency,
         // Envia 'customDays' para o banco, mesmo que o form use selectedDays
         customDays: formData.frequency === 'custom' ? formData.selectedDays : [],
-        selectedDays: formData.frequency === 'custom' ? formData.selectedDays : []
+        selectedDays: formData.frequency === 'custom' ? formData.selectedDays : [],
+        timerCategory: linkTimer ? timerChannel : null,
+        timerGoalMinutes: linkTimer && goalMinutes > 0 ? goalMinutes : null,
     }
-    
+
     onSubmit?.(payload)
   }
 
@@ -185,6 +205,51 @@ export default function CreateHabitModal({ habit, onClose, onSubmit, onDelete })
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {TIMER_CATEGORY_OF[formData.category] && (
+            <div className="createHabitModal__timerLink">
+              <label className="createHabitModal__timerToggle">
+                <input
+                  type="checkbox"
+                  checked={formData.timerEnabled}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, timerEnabled: e.target.checked }))}
+                />
+                <span className="createHabitModal__switch" aria-hidden="true" />
+                <span className="createHabitModal__timerText">
+                  <strong>Concluir pelo timer de foco</strong>
+                  <small>
+                    {formData.category === 'estudos'
+                      ? 'Marca sozinho quando você atingir a meta de foco em Estudos no dia.'
+                      : 'Marca sozinho quando você atingir a meta de foco em Produtividade no dia.'}
+                  </small>
+                </span>
+              </label>
+
+              {formData.timerEnabled && (
+                <div className="createHabitModal__timerGoal">
+                  <span>Meta de tempo por dia</span>
+                  <div className="createHabitModal__timerInputs">
+                    <label>
+                      <input
+                        type="number" min="0" max="23"
+                        value={formData.timerHours}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, timerHours: e.target.value }))}
+                      />
+                      <em>h</em>
+                    </label>
+                    <label>
+                      <input
+                        type="number" min="0" max="59" step="5"
+                        value={formData.timerMinutes}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, timerMinutes: e.target.value }))}
+                      />
+                      <em>min</em>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

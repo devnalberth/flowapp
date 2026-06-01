@@ -6,6 +6,7 @@ import { goalService } from '../services/goalService'
 import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
 import { studyService } from '../services/studyService'
+import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
 import { eventService } from '../services/eventService'
 
@@ -24,6 +25,13 @@ function addMonthsToDate(dateInput, months) {
   const lastDay = new Date(newYear, newMonth, 0).getDate()
   const newDay = Math.min(d, lastDay)
   return `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}T12:00:00.000Z`
+}
+
+// Chave de data LOCAL (YYYY-MM-DD) — evita o bug de fuso (UTC adiantava o dia à noite no BR).
+function localDateKey(date = new Date()) {
+  const d = new Date(date)
+  const offset = d.getTimezoneOffset()
+  return new Date(d.getTime() - offset * 60 * 1000).toISOString().split('T')[0]
 }
 
 // Busca uma aula (lesson) dentro da árvore de estudos (study → módulos → matérias → aulas).
@@ -368,7 +376,7 @@ export function AppProvider({ children, userId }) {
     const habit = habits.find((h) => h.id === id)
     if (!habit) return
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateKey()
     const completedDates = Array.isArray(habit.completions)
       ? [...habit.completions]
       : Array.isArray(habit.completed_dates)
@@ -423,6 +431,38 @@ export function AppProvider({ children, userId }) {
     const updatedHabit = await habitService.updateHabit(id, userId, updates)
     if (updatedHabit) {
       setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h))
+    }
+  }
+
+  // Marca um hábito como concluído numa data (idempotente: só adiciona, nunca remove).
+  const markHabitComplete = async (id, dateStr) => {
+    if (!userId) return
+    const habit = habits.find((h) => h.id === id)
+    if (!habit) return
+    const completedDates = Array.isArray(habit.completions) ? [...habit.completions] : []
+    if (completedDates.includes(dateStr)) return // já concluído
+    completedDates.push(dateStr)
+    const currentStreak = (habit.currentStreak || 0) + 1
+    const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
+    const updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
+    setHabits(prev => prev.map(h => h.id === id ? updates : h))
+    const updated = await habitService.updateHabit(id, userId, updates)
+    if (updated) setHabits(prev => prev.map(h => h.id === id ? updated : h))
+  }
+
+  // Conclui automaticamente os hábitos vinculados ao timer cuja meta de foco
+  // (Produtividade/Estudos) já foi atingida HOJE. Chamado pelo Flow e ao abrir Hábitos.
+  const syncTimerHabits = async () => {
+    if (!userId) return
+    const totals = focusLogService.getCategoryTotals(1) // hoje: { work, study }
+    const today = localDateKey()
+    for (const h of habits) {
+      if (!h.timerCategory || !h.timerGoalMinutes) continue
+      const got = h.timerCategory === 'study' ? totals.study : totals.work
+      const done = Array.isArray(h.completions) && h.completions.includes(today)
+      if (got >= h.timerGoalMinutes && !done) {
+        await markHabitComplete(h.id, today)
+      }
     }
   }
 
@@ -769,7 +809,7 @@ export function AppProvider({ children, userId }) {
     addProject, updateProject, deleteProject,
     addClient, updateClient, deleteClient,
     addGoal, updateGoal, deleteGoal,
-    addHabit, completeHabit, completeHabitForDate, updateHabit, deleteHabit,
+    addHabit, completeHabit, completeHabitForDate, updateHabit, deleteHabit, markHabitComplete, syncTimerHabits,
     addFinance, updateFinance, deleteFinance,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,

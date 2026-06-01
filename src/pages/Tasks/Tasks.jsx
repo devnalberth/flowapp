@@ -89,7 +89,7 @@ const getWeekStart = () => {
 
 export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent } = useApp()
+  const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent, syncTimerHabits } = useApp()
   const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
   const projectCtxMap = useMemo(() => {
     const map = {}
@@ -221,6 +221,9 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       taskId: currentTask.id,
       taskTitle: displayTitle,
     })
+
+    // Conclui automaticamente hábitos vinculados ao timer cuja meta do dia foi atingida
+    syncTimerHabits?.()
 
     // Atualiza otimista e no banco
     await updateTask(focusedTaskId, {
