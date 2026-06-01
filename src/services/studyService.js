@@ -235,6 +235,7 @@ export const studyService = {
       title: updates.title,
       description: updates.description,
       kind: updates.kind,
+      parent_module_id: updates.parentModuleId ?? updates.parent_module_id,
     }
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k])
     const { data, error } = await supabase

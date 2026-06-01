@@ -18,10 +18,12 @@ export default function ModuleModal({
   allowedKinds = ['module'],
   initial = null,
   parentLabel = null,
+  parentOptions = null,
 }) {
   const [kind, setKind] = useState(allowedKinds[0])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [parentId, setParentId] = useState('')
   const [saving, setSaving] = useState(false)
   const titleRef = useRef(null)
 
@@ -30,6 +32,7 @@ export default function ModuleModal({
       setKind(initial?.kind || allowedKinds[0])
       setTitle(initial?.title || '')
       setDescription(initial?.description || '')
+      setParentId(initial?.parentId || '')
       requestAnimationFrame(() => titleRef.current?.focus())
       document.body.style.overflow = 'hidden'
     }
@@ -48,13 +51,19 @@ export default function ModuleModal({
 
   const meta = KIND_META[kind] || KIND_META.module
   const showPicker = allowedKinds.length > 1
+  const showMove = mode === 'edit' && Array.isArray(parentOptions) && parentOptions.length > 0
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) return
     setSaving(true)
     try {
-      await onSubmit?.({ title: title.trim(), description: description.trim() || null, kind })
+      await onSubmit?.({
+        title: title.trim(),
+        description: description.trim() || null,
+        kind,
+        ...(showMove ? { parentModuleId: parentId || null } : {}),
+      })
       onClose?.()
     } catch (err) {
       console.error('Erro ao salvar módulo:', err)
@@ -138,6 +147,18 @@ export default function ModuleModal({
             required
           />
         </div>
+
+        {showMove && (
+          <div className="moduleModal__field">
+            <label>Mover para</label>
+            <select className="moduleModal__select" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+              {parentOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+            <p className="moduleModal__moveHint">Reorganize o fluxo movendo {meta.label.toLowerCase()} para outro módulo ou sub-módulo.</p>
+          </div>
+        )}
 
         <div className="moduleModal__field">
           <label>Descrição <span className="moduleModal__opt">(opcional)</span></label>

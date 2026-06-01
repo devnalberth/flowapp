@@ -26,6 +26,25 @@ const fmtShort = (iso) => {
   return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]}`
 }
 
+// Lista de destinos válidos ("mover para") ao editar uma matéria/sub-módulo.
+// - Matéria pode ir para qualquer módulo OU sub-módulo do estudo.
+// - Sub-módulo só pode ficar dentro de um módulo.
+function buildParentOptions(study, kind, excludeId) {
+  if (!study || kind === 'module') return null
+  const opts = []
+  for (const mod of study.modules || []) {
+    if (mod.id !== excludeId) opts.push({ id: mod.id, label: `Módulo: ${mod.title}` })
+    if (kind === 'subject') {
+      for (const child of mod.submodules || []) {
+        if (child.kind === 'submodule' && child.id !== excludeId) {
+          opts.push({ id: child.id, label: `↳ ${mod.title} › ${child.title}` })
+        }
+      }
+    }
+  }
+  return opts
+}
+
 /* ---------- Checkmark (opticamente centralizado) ---------- */
 function CheckIcon({ size = 13 }) {
   return (
@@ -247,7 +266,12 @@ export default function Studies({ user, onNavigate, onLogout }) {
     // data = { title, description, kind }
     if (!activeStudy) return
     if (moduleModal?.mode === 'edit') {
-      await updateStudyModule(moduleModal.initial.id, { title: data.title, description: data.description, kind: data.kind })
+      await updateStudyModule(moduleModal.initial.id, {
+        title: data.title,
+        description: data.description,
+        kind: data.kind,
+        ...(data.parentModuleId !== undefined ? { parentModuleId: data.parentModuleId } : {}),
+      })
     } else {
       await addStudyModule(activeStudy.id, {
         title: data.title,
@@ -290,12 +314,12 @@ export default function Studies({ user, onNavigate, onLogout }) {
     catch { alert('Erro ao excluir estudo') }
   }
 
-  const editModule = (node, kind, parentLabel = null) =>
+  const editModule = (node, kind) =>
     openModuleModal({
       mode: 'edit',
       allowedKinds: [kind],
-      initial: { id: node.id, title: node.title, description: node.description, kind },
-      parentLabel,
+      initial: { id: node.id, title: node.title, description: node.description, kind, parentId: node.parentModuleId || '' },
+      parentOptions: buildParentOptions(activeStudy, kind, node.id),
     })
 
   const handleDeleteModule = async (id, title, kindLabel = 'módulo') => {
@@ -668,6 +692,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
             allowedKinds={moduleModal.allowedKinds}
             initial={moduleModal.initial}
             parentLabel={moduleModal.parentLabel}
+            parentOptions={moduleModal.parentOptions}
             onClose={closeModuleModal}
             onSubmit={handleModuleSubmit}
           />

@@ -106,6 +106,19 @@
 .moduleModal__field input:focus,
 .moduleModal__field textarea:focus { outline: none; border-color: var(--accent, #ff4800); background: #fff; }
 
+.moduleModal__select {
+  font: inherit;
+  color: #0d0d12;
+  background: #f8f8fa;
+  border: 1px solid #ececf0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.moduleModal__select:focus { outline: none; border-color: var(--accent, #ff4800); background: #fff; }
+.moduleModal__moveHint { margin: 0; font-size: 0.76rem; color: #9a9aa2; }
+
 /* Type picker */
 .moduleModal__types { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .moduleModal__type {
