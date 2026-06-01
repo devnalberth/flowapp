@@ -469,6 +469,43 @@
 .stMateria__bar { height: 5px; margin: 0 14px; background: #ececf0; border-radius: 99px; overflow: hidden; }
 .stMateria__bar span { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #a78bfa); border-radius: 99px; }
 
+/* Sub-módulo (cyan) — destaca dentro do módulo, agrupa matérias */
+.stSubs { display: flex; flex-direction: column; gap: 10px; }
+.stSub {
+  background: #f2fafd;
+  border: 1px solid #d8eef9;
+  border-radius: 15px;
+  border-left: 3px solid #0ea5e9;
+  overflow: hidden;
+}
+.stSub__head { display: flex; align-items: center; gap: 10px; padding: 13px 14px; }
+.stSub__toggle {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  border: none; background: transparent; cursor: pointer;
+  font: inherit; text-align: left;
+}
+.stSub__tag {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: #0ea5e9; background: rgba(14, 165, 233, 0.14);
+  padding: 3px 8px; border-radius: 7px;
+}
+.stSub__toggle h4 { margin: 0; font-size: 0.98rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-brand, 'Outfit', sans-serif); }
+.stSub__stat { font-size: 0.76rem; color: #6f93a3; white-space: nowrap; }
+.stSub__bar { height: 5px; margin: 0 14px; background: #dceef6; border-radius: 99px; overflow: hidden; }
+.stSub__bar span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #38bdf8); border-radius: 99px; }
+.stSub__body { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
+.stSub__body > .stLessons { padding: 10px 14px 0; }
+.stSub__body > .stMaterias { padding: 0 14px; }
+.stSub__body > .stAddLesson { padding: 0 14px; }
+.stSub__body > .stAddMateria { margin: 0 14px; }
+
+/* Descrição opcional de um nó (módulo/sub/matéria) */
+.stNodeDesc { margin: 0; padding: 0 2px; font-size: 0.84rem; color: #6b6b73; line-height: 1.4; }
+.stMateria .stNodeDesc, .stSub__body .stNodeDesc { padding: 0 14px; }
+
 /* Lessons */
 .stLessons { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
 .stMateria .stLessons { padding: 10px 14px; }

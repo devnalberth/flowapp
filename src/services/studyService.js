@@ -46,6 +46,8 @@ const normalizeLesson = (lesson) => ({
 const normalizeModule = (module) => ({
   ...module,
   parentModuleId: module?.parent_module_id ?? module?.parentModuleId ?? null,
+  kind: module?.kind ?? (module?.parent_module_id ? 'subject' : 'module'),
+  description: module?.description ?? null,
   lessons: Array.isArray(module?.lessons)
     ? module.lessons.map(normalizeLesson).sort(compareByVisualOrder)
     : [],
@@ -213,6 +215,8 @@ export const studyService = {
           study_item_id: studyItemId,
           title: moduleData.title,
           parent_module_id: moduleData.parentModuleId || null,
+          kind: moduleData.kind || (moduleData.parentModuleId ? 'subject' : 'module'),
+          description: moduleData.description || null,
         },
       ])
       .select()
@@ -227,9 +231,15 @@ export const studyService = {
   },
 
   async updateModule(moduleId, updates) {
+    const payload = {
+      title: updates.title,
+      description: updates.description,
+      kind: updates.kind,
+    }
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k])
     const { data, error } = await supabase
       .from('study_modules')
-      .update({ title: updates.title })
+      .update(payload)
       .eq('id', moduleId)
       .select()
       .single()

@@ -57,6 +57,21 @@ export function flattenLessons(study) {
   return out
 }
 
+// Conta nós por tipo (sub-módulos e matérias) em toda a árvore, fora o nível raiz.
+export function tallyKinds(modules = []) {
+  let submodules = 0
+  let subjects = 0
+  const walk = (mods) => {
+    for (const m of mods || []) {
+      if (m.kind === 'submodule') submodules += 1
+      else if (m.kind === 'subject') subjects += 1
+      walk(m.submodules || [])
+    }
+  }
+  for (const top of modules || []) walk(top.submodules || [])
+  return { submodules, subjects }
+}
+
 // Status derivado: respeita PAUSED manual, senão deriva do progresso.
 export function deriveStudyStatus(study) {
   const progress = studyProgress(study)
@@ -78,7 +93,9 @@ const startOfWeek = (d = new Date()) => {
 export function studyOverview(study) {
   const counts = countLessonsRecursively(study?.modules || [])
   const modulesCount = (study?.modules || []).length
-  const materiasCount = (study?.modules || []).reduce((acc, m) => acc + (m.submodules?.length || 0), 0)
+  const kinds = tallyKinds(study?.modules || [])
+  const materiasCount = kinds.subjects
+  const submodulesCount = kinds.submodules
   const lessons = flattenLessons(study)
 
   const scheduled = lessons.filter((l) => l.scheduledDate)
@@ -98,6 +115,7 @@ export function studyOverview(study) {
     completedLessons: counts.completed,
     modulesCount,
     materiasCount,
+    submodulesCount,
     scheduledCount: scheduled.length,
     upcoming,
     nextLesson: upcoming[0] || null,

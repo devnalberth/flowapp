@@ -3,10 +3,11 @@ import { useApp } from '../../context/AppContext'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
 import LessonModal from '../../components/LessonModal/LessonModal.jsx'
+import ModuleModal from '../../components/ModuleModal/ModuleModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import {
-  Pencil, Trash2, X, Check, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock,
-  Layers, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2,
+  Pencil, Trash2, X, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock,
+  Layers, Boxes, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2,
 } from 'lucide-react'
 import {
   STUDY_TYPE_META, STUDY_STATUS_META, studyProgress, moduleProgress,
@@ -161,6 +162,11 @@ function StudyOverviewPanel({ overview }) {
           })}
         </div>
         <div className="stOverview__foot">
+          {overview.submodulesCount > 0 && (
+            <span className="stChip" style={{ '--accent': '#0ea5e9', background: 'rgba(14,165,233,0.1)', color: '#0ea5e9' }}>
+              <Boxes size={13} /> {overview.submodulesCount} sub-módulo{overview.submodulesCount > 1 ? 's' : ''}
+            </span>
+          )}
           {overview.avgRating > 0 && (
             <span className="stChip"><Star size={13} fill="#ff7a00" color="#ff7a00" /> {overview.avgRating} média</span>
           )}
@@ -188,17 +194,13 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [isModalOpen, setModalOpen] = useState(false)
-  const [isAddModuleModalOpen, setAddModuleModalOpen] = useState(false)
-  const [isAddMateriaModalOpen, setAddMateriaModalOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState({})
   const [expandedMaterias, setExpandedMaterias] = useState({})
-  const [newModuleTitle, setNewModuleTitle] = useState('')
-  const [newMateriaTitle, setNewMateriaTitle] = useState('')
-  const [materiaParentId, setMateriaParentId] = useState(null)
+  const [expandedSubmodules, setExpandedSubmodules] = useState({})
   const [newLessonInputs, setNewLessonInputs] = useState({})
-  const [editingModuleId, setEditingModuleId] = useState(null)
-  const [editingModuleTitle, setEditingModuleTitle] = useState('')
   const [selectedLesson, setSelectedLesson] = useState(null)
+  // Modal de criar/editar módulo, sub-módulo ou matéria
+  const [moduleModal, setModuleModal] = useState(null)
 
   const activeStudy = useMemo(() => studies.find((s) => s.id === activeStudyId) ?? null, [studies, activeStudyId])
   const agg = useMemo(() => aggregateStudies(studies), [studies])
@@ -238,30 +240,26 @@ export default function Studies({ user, onNavigate, onLogout }) {
     }
   }
 
-  const handleAddModule = async () => {
-    if (!activeStudy || !newModuleTitle.trim()) return
-    try {
-      await addStudyModule(activeStudy.id, { title: newModuleTitle.trim() })
-      setNewModuleTitle('')
-      setAddModuleModalOpen(false)
-    } catch (error) { alert('Erro ao adicionar módulo: ' + error.message) }
-  }
+  const openModuleModal = (cfg) => setModuleModal(cfg)
+  const closeModuleModal = () => setModuleModal(null)
 
-  const openAddMateria = (moduleId) => {
-    setMateriaParentId(moduleId)
-    setNewMateriaTitle('')
-    setAddMateriaModalOpen(true)
-  }
-
-  const handleAddMateria = async () => {
-    const title = newMateriaTitle.trim()
-    if (!activeStudy || !title || !materiaParentId) return
-    try {
-      await addStudyModule(activeStudy.id, { title, parentModuleId: materiaParentId })
-      setNewMateriaTitle('')
-      setAddMateriaModalOpen(false)
-      setExpandedModules((prev) => ({ ...prev, [materiaParentId]: true }))
-    } catch (error) { alert('Erro ao adicionar matéria: ' + error.message) }
+  const handleModuleSubmit = async (data) => {
+    // data = { title, description, kind }
+    if (!activeStudy) return
+    if (moduleModal?.mode === 'edit') {
+      await updateStudyModule(moduleModal.initial.id, { title: data.title, description: data.description, kind: data.kind })
+    } else {
+      await addStudyModule(activeStudy.id, {
+        title: data.title,
+        description: data.description,
+        kind: data.kind,
+        parentModuleId: moduleModal?.parentId || null,
+      })
+      if (moduleModal?.parentId) {
+        setExpandedModules((prev) => ({ ...prev, [moduleModal.parentId]: true }))
+        setExpandedSubmodules((prev) => ({ ...prev, [moduleModal.parentId]: true }))
+      }
+    }
   }
 
   const handleLessonInputChange = (id, field, value) => {
@@ -292,14 +290,16 @@ export default function Studies({ user, onNavigate, onLogout }) {
     catch { alert('Erro ao excluir estudo') }
   }
 
-  const startEditModule = (mod) => { setEditingModuleId(mod.id); setEditingModuleTitle(mod.title) }
-  const saveModuleEdit = async () => {
-    if (!editingModuleId || !editingModuleTitle.trim()) return
-    try { await updateStudyModule(editingModuleId, { title: editingModuleTitle.trim() }); setEditingModuleId(null); setEditingModuleTitle('') }
-    catch { alert('Erro ao atualizar') }
-  }
-  const handleDeleteModule = async (id, title, kind = 'módulo') => {
-    if (!confirm(`Excluir ${kind} "${title}"? As aulas serão perdidas.`)) return
+  const editModule = (node, kind, parentLabel = null) =>
+    openModuleModal({
+      mode: 'edit',
+      allowedKinds: [kind],
+      initial: { id: node.id, title: node.title, description: node.description, kind },
+      parentLabel,
+    })
+
+  const handleDeleteModule = async (id, title, kindLabel = 'módulo') => {
+    if (!confirm(`Excluir ${kindLabel} "${title}"? Todo o conteúdo dentro dele será perdido.`)) return
     try { await deleteStudyModule(id) } catch { alert('Erro ao excluir') }
   }
 
@@ -380,7 +380,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
     )
   }
 
-  /* ---------- Matéria (submodule) ---------- */
+  /* ---------- Matéria (kind=subject) ---------- */
   const renderMateria = (materia) => {
     const progress = moduleProgress(materia)
     const isOpen = expandedMaterias[materia.id]
@@ -390,42 +390,60 @@ export default function Studies({ user, onNavigate, onLogout }) {
         <header className="stMateria__head">
           <button type="button" className="stMateria__toggle" onClick={() => setExpandedMaterias((p) => ({ ...p, [materia.id]: !p[materia.id] }))}>
             <span className="stMateria__tag">Matéria</span>
-            {editingModuleId === materia.id ? (
-              <input
-                className="stInlineEdit"
-                value={editingModuleTitle}
-                onChange={(e) => setEditingModuleTitle(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => { if (e.key === 'Enter') saveModuleEdit() }}
-                autoFocus
-              />
-            ) : (
-              <h4>{materia.title}</h4>
-            )}
+            <h4>{materia.title}</h4>
             <span className="stMateria__stat">{counts.completed}/{counts.total} · {progress}%</span>
             <ChevronDown size={15} className={`stChevron ${isOpen ? 'is-open' : ''}`} />
           </button>
           <div className="stRowActions">
-            {editingModuleId === materia.id ? (
-              <>
-                <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={13} /></button>
-                <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={13} /></button>
-              </>
-            ) : (
-              <>
-                <button className="stRowActions__btn" onClick={() => startEditModule(materia)}><Pencil size={13} /></button>
-                <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(materia.id, materia.title, 'matéria')}><Trash2 size={13} /></button>
-              </>
-            )}
+            <button className="stRowActions__btn" onClick={() => editModule(materia, 'subject')} title="Editar"><Pencil size={13} /></button>
+            <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(materia.id, materia.title, 'matéria')} title="Excluir"><Trash2 size={13} /></button>
           </div>
         </header>
         <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
           <div className="stMateria__body">
             <div className="stMateria__bar"><span style={{ width: `${progress}%` }} /></div>
+            {materia.description && <p className="stNodeDesc">{materia.description}</p>}
             <div className="stLessons">
               {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
             </div>
             {renderAddLesson(materia.id)}
+          </div>
+        </div>
+      </article>
+    )
+  }
+
+  /* ---------- Sub-módulo (kind=submodule) ---------- */
+  const renderSubmodule = (sub) => {
+    const progress = moduleProgress(sub)
+    const isOpen = expandedSubmodules[sub.id]
+    const counts = countLessonsRecursively([sub])
+    const directLessons = Array.isArray(sub.lessons) ? sub.lessons : []
+    const materias = (sub.submodules || []).filter((c) => c.kind !== 'submodule')
+    return (
+      <article key={sub.id} className="stSub">
+        <header className="stSub__head">
+          <button type="button" className="stSub__toggle" onClick={() => setExpandedSubmodules((p) => ({ ...p, [sub.id]: !p[sub.id] }))}>
+            <span className="stSub__tag"><Boxes size={12} /> Sub-módulo</span>
+            <h4>{sub.title}</h4>
+            <span className="stSub__stat">{counts.completed}/{counts.total} · {progress}%</span>
+            <ChevronDown size={15} className={`stChevron ${isOpen ? 'is-open' : ''}`} />
+          </button>
+          <div className="stRowActions">
+            <button className="stRowActions__btn" onClick={() => editModule(sub, 'submodule')} title="Editar"><Pencil size={13} /></button>
+            <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(sub.id, sub.title, 'sub-módulo')} title="Excluir"><Trash2 size={13} /></button>
+          </div>
+        </header>
+        <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
+          <div className="stSub__body">
+            <div className="stSub__bar"><span style={{ width: `${progress}%` }} /></div>
+            {sub.description && <p className="stNodeDesc">{sub.description}</p>}
+            {directLessons.length > 0 && <div className="stLessons">{directLessons.map(renderLessonRow)}</div>}
+            {materias.length > 0 && <div className="stMaterias">{materias.map(renderMateria)}</div>}
+            {renderAddLesson(sub.id)}
+            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['subject'], parentId: sub.id, parentLabel: sub.title })}>
+              <Plus size={14} /> Adicionar matéria
+            </button>
           </div>
         </div>
       </article>
@@ -438,10 +456,12 @@ export default function Studies({ user, onNavigate, onLogout }) {
     const progress = moduleProgress(mod)
     const counts = countLessonsRecursively([mod])
     const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
-    const isEditing = editingModuleId === mod.id
+    const children = mod.submodules || []
+    const subChildren = children.filter((c) => c.kind === 'submodule')
+    const materiaChildren = children.filter((c) => c.kind !== 'submodule')
     return (
       <section key={mod.id} className={`stModule ${isOpen ? 'is-expanded' : ''}`}>
-        <header className="stModule__head" onClick={() => { if (!isEditing) setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] })) }}>
+        <header className="stModule__head" onClick={() => setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] }))}>
           <div className="stModule__lead">
             <div className="stModule__index">{String(index + 1).padStart(2, '0')}</div>
             <div className="stModule__ring"><ProgressRing value={progress} size={44} stroke={5} /></div>
@@ -449,34 +469,14 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
           <div className="stModule__meta">
             <span className="stModule__eyebrow">Módulo</span>
-            {isEditing ? (
-              <input
-                className="stInlineEdit stInlineEdit--lg"
-                value={editingModuleTitle}
-                onChange={(e) => setEditingModuleTitle(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => { if (e.key === 'Enter') saveModuleEdit() }}
-                autoFocus
-              />
-            ) : (
-              <h3>{mod.title}</h3>
-            )}
+            <h3>{mod.title}</h3>
             <span className="stModule__stat">{counts.completed}/{counts.total} aulas · {progress}%</span>
           </div>
 
           <div className="stModule__tail">
             <div className="stRowActions" onClick={(e) => e.stopPropagation()}>
-              {isEditing ? (
-                <>
-                  <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={14} /></button>
-                  <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={14} /></button>
-                </>
-              ) : (
-                <>
-                  <button className="stRowActions__btn" onClick={() => startEditModule(mod)}><Pencil size={14} /></button>
-                  <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)}><Trash2 size={14} /></button>
-                </>
-              )}
+              <button className="stRowActions__btn" onClick={() => editModule(mod, 'module')} title="Editar"><Pencil size={14} /></button>
+              <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)} title="Excluir"><Trash2 size={14} /></button>
             </div>
             <ChevronDown size={18} className={`stChevron stModule__chevron ${isOpen ? 'is-open' : ''}`} />
           </div>
@@ -484,18 +484,24 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
         {isOpen && (
           <div className="stModule__body">
+            {mod.description && <p className="stNodeDesc">{mod.description}</p>}
+
             {directLessons.length > 0 && (
               <div className="stLessons">{directLessons.map(renderLessonRow)}</div>
             )}
 
-            {mod.submodules?.length > 0 && (
-              <div className="stMaterias">{mod.submodules.map(renderMateria)}</div>
+            {subChildren.length > 0 && (
+              <div className="stSubs">{subChildren.map(renderSubmodule)}</div>
+            )}
+
+            {materiaChildren.length > 0 && (
+              <div className="stMaterias">{materiaChildren.map(renderMateria)}</div>
             )}
 
             {renderAddLesson(mod.id, 'Nova aula neste módulo')}
 
-            <button type="button" className="stAddMateria" onClick={() => openAddMateria(mod.id)}>
-              <Plus size={14} /> Adicionar matéria
+            <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject'], parentId: mod.id, parentLabel: mod.title })}>
+              <Plus size={14} /> Adicionar sub-módulo ou matéria
             </button>
           </div>
         )}
@@ -620,7 +626,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
                   <div className="stDetail__modulesHead">
                     <h3>Conteúdo</h3>
-                    <button className="stDetail__addModule" onClick={() => setAddModuleModalOpen(true)}>
+                    <button className="stDetail__addModule" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['module'] })}>
                       <Plus size={15} /> Novo módulo
                     </button>
                   </div>
@@ -629,8 +635,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
                     {activeStudy.modules.length === 0 ? (
                       <div className="stModules__empty">
                         <Layers size={26} />
-                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona matérias e aulas.</p>
-                        <button onClick={() => setAddModuleModalOpen(true)}><Plus size={15} /> Criar módulo</button>
+                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos, matérias e aulas.</p>
+                        <button onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['module'] })}><Plus size={15} /> Criar módulo</button>
                       </div>
                     ) : (
                       activeStudy.modules.map((mod, i) => renderModule(mod, i))
@@ -655,21 +661,15 @@ export default function Studies({ user, onNavigate, onLogout }) {
           />
         )}
 
-        {isAddModuleModalOpen && (
-          <AddNameModal
-            title="Novo módulo" placeholder="Ex: Fundamentos"
-            value={newModuleTitle} onChange={setNewModuleTitle}
-            onClose={() => { setAddModuleModalOpen(false); setNewModuleTitle('') }}
-            onSubmit={handleAddModule} submitLabel="Criar módulo"
-          />
-        )}
-
-        {isAddMateriaModalOpen && (
-          <AddNameModal
-            title="Nova matéria" placeholder="Ex: Lógica de Programação"
-            value={newMateriaTitle} onChange={setNewMateriaTitle}
-            onClose={() => { setAddMateriaModalOpen(false); setNewMateriaTitle(''); setMateriaParentId(null) }}
-            onSubmit={handleAddMateria} submitLabel="Criar matéria"
+        {moduleModal && (
+          <ModuleModal
+            open
+            mode={moduleModal.mode}
+            allowedKinds={moduleModal.allowedKinds}
+            initial={moduleModal.initial}
+            parentLabel={moduleModal.parentLabel}
+            onClose={closeModuleModal}
+            onSubmit={handleModuleSubmit}
           />
         )}
 
@@ -677,29 +677,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <FloatingCreateButton label="Novo estudo" caption="Criar estudo" ariaLabel="Criar novo estudo" onClick={() => setModalOpen(true)} />
         )}
       </div>
-    </div>
-  )
-}
-
-function AddNameModal({ title, placeholder, value, onChange, onClose, onSubmit, submitLabel }) {
-  return (
-    <div className="stQuick" onClick={onClose}>
-      <div className="stQuick__backdrop" />
-      <form
-        className="stQuick__panel"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { e.preventDefault(); onSubmit() }}
-      >
-        <header className="stQuick__head">
-          <h3>{title}</h3>
-          <button type="button" onClick={onClose} className="stQuick__close"><X size={18} /></button>
-        </header>
-        <input className="stQuick__input" type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus />
-        <footer className="stQuick__foot">
-          <button type="button" className="stQuick__btn stQuick__btn--ghost" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="stQuick__btn stQuick__btn--primary">{submitLabel}</button>
-        </footer>
-      </form>
     </div>
   )
 }
