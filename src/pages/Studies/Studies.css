@@ -448,6 +448,8 @@
 }
 @keyframes stBodyIn { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
 
+/* Filhos do módulo intercalados (sub-módulos + matérias) em ordem de criação */
+.stNodes { display: flex; flex-direction: column; gap: 10px; }
 .stMaterias { display: flex; flex-direction: column; gap: 10px; }
 .stMateria {
   background: #faf9fb;

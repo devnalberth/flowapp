@@ -450,9 +450,9 @@ export default function Studies({ user, onNavigate, onLogout }) {
     const progress = moduleProgress(mod)
     const counts = countLessonsRecursively([mod])
     const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
+    // Filhos (sub-módulos + matérias) já vêm ordenados por data de criação;
+    // renderizamos na mesma ordem, intercalando os tipos como foram cadastrados.
     const children = mod.submodules || []
-    const subChildren = children.filter((c) => c.kind === 'submodule')
-    const materiaChildren = children.filter((c) => c.kind !== 'submodule')
     return (
       <section key={mod.id} className={`stModule ${isOpen ? 'is-expanded' : ''}`}>
         <header className="stModule__head" onClick={() => setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] }))}>
@@ -484,12 +484,10 @@ export default function Studies({ user, onNavigate, onLogout }) {
               <div className="stLessons">{directLessons.map(renderLessonRow)}</div>
             )}
 
-            {subChildren.length > 0 && (
-              <div className="stSubs">{subChildren.map(renderSubmodule)}</div>
-            )}
-
-            {materiaChildren.length > 0 && (
-              <div className="stMaterias">{materiaChildren.map(renderMateria)}</div>
+            {children.length > 0 && (
+              <div className="stNodes">
+                {children.map((c) => (c.kind === 'submodule' ? renderSubmodule(c) : renderMateria(c)))}
+              </div>
             )}
 
             <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject', 'lesson'], parentId: mod.id, parentLabel: mod.title })}>
