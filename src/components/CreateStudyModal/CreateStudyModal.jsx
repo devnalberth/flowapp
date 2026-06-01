@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
-import { X, Book, GraduationCap, BookOpen, Upload, Image } from 'lucide-react'
+import { X, Book, GraduationCap, BookOpen, Upload, Compass } from 'lucide-react'
 import { studyService } from '../../services/studyService'
 import './CreateStudyModal.css'
 
 const STUDY_TYPES = [
-  { id: 'COURSE', label: 'Curso Online', icon: BookOpen },
+  { id: 'COURSE', label: 'Curso', icon: BookOpen },
   { id: 'UNIVERSITY', label: 'Faculdade', icon: GraduationCap },
+  { id: 'MENTORSHIP', label: 'Mentoria', icon: Compass },
   { id: 'BOOK', label: 'Livro', icon: Book },
 ]
 
@@ -126,6 +127,7 @@ export default function CreateStudyModal({ onClose, onSubmit, userId }) {
     switch (formData.type) {
       case 'COURSE': return 'Nome do Curso'
       case 'UNIVERSITY': return 'Nome da Faculdade/Curso'
+      case 'MENTORSHIP': return 'Nome da Mentoria'
       case 'BOOK': return 'Título do Livro'
       default: return 'Nome'
     }

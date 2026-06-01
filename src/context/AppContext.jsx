@@ -26,6 +26,25 @@ function addMonthsToDate(dateInput, months) {
   return `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}T12:00:00.000Z`
 }
 
+// Busca uma aula (lesson) dentro da árvore de estudos (study → módulos → matérias → aulas).
+// Retorna a aula normalizada (com taskId, scheduledDate) ou null.
+function findLessonInStudies(studies, lessonId) {
+  const searchModules = (modules) => {
+    for (const mod of modules || []) {
+      const found = (mod.lessons || []).find((l) => l.id === lessonId)
+      if (found) return found
+      const nested = searchModules(mod.submodules || [])
+      if (nested) return nested
+    }
+    return null
+  }
+  for (const study of studies || []) {
+    const found = searchModules(study.modules || [])
+    if (found) return found
+  }
+  return null
+}
+
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -122,6 +141,11 @@ export function AppProvider({ children, userId }) {
   const updateTask = async (id, updates) => {
     if (!userId) return
 
+    // Sync reverso: se a tarefa veio de uma aula (study_lesson_id) e o usuário
+    // alterou a conclusão na aba de Tarefas, espelha a conclusão na aula.
+    const existingTask = tasks.find(t => t.id === id)
+    const linkedLessonId = existingTask?.studyLessonId || existingTask?.study_lesson_id || null
+
     // CORREÇÃO: Normaliza os campos para snake_case para que o filtro funcione corretamente
     const normalizedUpdates = {
       ...updates,
@@ -163,12 +187,36 @@ export function AppProvider({ children, userId }) {
       console.error("Erro ao sincronizar tarefa:", error)
       // Se der erro de rede, aí sim poderíamos reverter, mas manter assim é melhor para UX
     }
+
+    // Espelha a conclusão na aula vinculada (chama o service direto p/ não re-disparar o sync).
+    if (linkedLessonId && updates.completed !== undefined) {
+      try {
+        await studyService.toggleLessonComplete(linkedLessonId, !!updates.completed)
+        const allStudies = await studyService.getStudies(userId)
+        setStudies(allStudies)
+      } catch (error) {
+        console.error('Erro ao espelhar conclusão na aula:', error)
+      }
+    }
   }
 
   const deleteTask = async (id) => {
     if (!userId) return
+    // Se a tarefa veio de uma aula, desvincula a aula (limpa task_id) para não
+    // deixar referência órfã.
+    const existing = tasks.find(t => t.id === id)
+    const linkedLessonId = existing?.studyLessonId || existing?.study_lesson_id || null
     setTasks(prev => prev.filter(t => t.id !== id))
     await taskService.deleteTask(id, userId)
+    if (linkedLessonId) {
+      try {
+        await studyService.updateLesson(linkedLessonId, { taskId: null })
+        const allStudies = await studyService.getStudies(userId)
+        setStudies(allStudies)
+      } catch (error) {
+        console.error('Erro ao desvincular aula da tarefa removida:', error)
+      }
+    }
   }
 
   // Goal Actions
@@ -520,30 +568,111 @@ export function AppProvider({ children, userId }) {
     setStudies(allStudies)
   }
 
+  // Cria uma tarefa espelho de uma aula agendada (aparece na aba de Tarefas).
+  const createLessonTask = async (lesson, scheduledDate) => {
+    const newTask = await taskService.createTask(userId, {
+      title: lesson.title,
+      dueDate: scheduledDate,
+      startDate: scheduledDate,
+      status: 'todo',
+      priority: 'medium',
+      tags: ['Estudos'],
+      completed: !!lesson.isCompleted,
+      studyLessonId: lesson.id,
+    })
+    setTasks(prev => [newTask, ...prev])
+    return newTask
+  }
+
   const addStudyLesson = async (moduleId, lessonData) => {
     if (!userId) return
-    await studyService.createLesson(moduleId, lessonData)
+    const lesson = await studyService.createLesson(moduleId, lessonData)
+    // Só aulas COM data agendada viram tarefa (aparecem na aba de Tarefas).
+    if (lesson?.id && lessonData.scheduledDate) {
+      const task = await createLessonTask(lesson, lessonData.scheduledDate)
+      await studyService.updateLesson(lesson.id, { taskId: task.id })
+    }
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+    return lesson
   }
 
   const updateStudyLesson = async (lessonId, updates) => {
     if (!userId) return
-    await studyService.updateLesson(lessonId, updates)
+    const current = findLessonInStudies(studies, lessonId)
+    const hadTask = current?.taskId || null
+    // Data resultante após o update (mantém a atual se não for enviada)
+    const nextDate = updates.scheduledDate !== undefined ? updates.scheduledDate : current?.scheduledDate
+    const nextTitle = updates.title !== undefined ? updates.title : current?.title
+
+    const saved = await studyService.updateLesson(lessonId, updates)
+
+    // Sincroniza a tarefa-espelho conforme a data agendada
+    try {
+      if (nextDate) {
+        if (hadTask) {
+          // Atualiza a tarefa existente (título/data)
+          const updatedTask = await taskService.updateTask(hadTask, userId, {
+            title: nextTitle,
+            dueDate: nextDate,
+            startDate: nextDate,
+          })
+          setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
+        } else {
+          // Acabou de ganhar uma data → cria a tarefa e vincula
+          const task = await createLessonTask({ ...saved, title: nextTitle }, nextDate)
+          await studyService.updateLesson(lessonId, { taskId: task.id })
+        }
+      } else if (hadTask) {
+        // Removeu a data → remove a tarefa-espelho
+        await taskService.deleteTask(hadTask, userId)
+        setTasks(prev => prev.filter(t => t.id !== hadTask))
+        await studyService.updateLesson(lessonId, { taskId: null })
+      }
+    } catch (error) {
+      console.error('Erro ao sincronizar aula↔tarefa:', error)
+    }
+
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+    return saved
   }
 
   const deleteStudyLesson = async (lessonId) => {
     if (!userId) return
+    const current = findLessonInStudies(studies, lessonId)
     await studyService.deleteLesson(lessonId)
+    // Remove a tarefa-espelho vinculada, se houver
+    if (current?.taskId) {
+      try {
+        await taskService.deleteTask(current.taskId, userId)
+        setTasks(prev => prev.filter(t => t.id !== current.taskId))
+      } catch (error) {
+        console.error('Erro ao remover tarefa da aula:', error)
+      }
+    }
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
   }
 
   const toggleStudyLesson = async (lessonId, isCompleted) => {
     if (!userId) return
+    const current = findLessonInStudies(studies, lessonId)
     await studyService.toggleLessonComplete(lessonId, isCompleted)
+    // Espelha a conclusão na tarefa vinculada (sem re-disparar o sync reverso)
+    if (current?.taskId) {
+      try {
+        const completedAt = isCompleted ? new Date().toISOString() : null
+        const updatedTask = await taskService.updateTask(current.taskId, userId, {
+          completed: isCompleted,
+          status: isCompleted ? 'done' : 'todo',
+          completed_at: completedAt,
+        })
+        setTasks(prev => prev.map(t => t.id === current.taskId ? updatedTask : t))
+      } catch (error) {
+        console.error('Erro ao espelhar conclusão na tarefa:', error)
+      }
+    }
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
   }

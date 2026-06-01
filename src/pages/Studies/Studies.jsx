@@ -4,93 +4,222 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
 import LessonModal from '../../components/LessonModal/LessonModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Pencil, Trash2, X, Check, ArrowLeft, ChevronDown, PlayCircle, Plus } from 'lucide-react'
+import {
+  Pencil, Trash2, X, Check, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock,
+  Layers, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2,
+} from 'lucide-react'
+import {
+  STUDY_TYPE_META, STUDY_STATUS_META, studyProgress, moduleProgress,
+  countLessonsRecursively, studyOverview, aggregateStudies, deriveStudyStatus,
+} from '../../utils/studyMetrics'
 
 import './Studies.css'
 
-const statusLabelMap = {
-  NOT_STARTED: 'Não iniciado',
-  IN_PROGRESS: 'Em andamento',
-  COMPLETED: 'Concluído',
+const TYPE_ICON = { COURSE: BookOpen, UNIVERSITY: GraduationCap, BOOK: Book, MENTORSHIP: Compass }
+
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const fmtShort = (iso) => {
+  if (!iso) return ''
+  const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number)
+  if (!y) return ''
+  return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]}`
 }
 
-const typeLabelMap = {
-  COURSE: 'Curso Online',
-  UNIVERSITY: 'Faculdade',
-  BOOK: 'Livro',
-}
-
-const countLessonsRecursively = (modules = []) =>
-  modules.reduce(
-    (acc, module) => {
-      const moduleLessons = Array.isArray(module.lessons) ? module.lessons : []
-      const completedModuleLessons = moduleLessons.filter((lesson) => lesson.isCompleted).length
-      const nested = countLessonsRecursively(module.submodules || [])
-
-      acc.total += moduleLessons.length + nested.total
-      acc.completed += completedModuleLessons + nested.completed
-      return acc
-    },
-    { total: 0, completed: 0 }
+/* ---------- Progress ring (conic-gradient) ---------- */
+function ProgressRing({ value = 0, size = 64, stroke = 7, children }) {
+  return (
+    <div
+      className="ringProg"
+      style={{
+        width: size, height: size,
+        background: `conic-gradient(#ff6a00 ${value * 3.6}deg, #ececf0 0deg)`,
+      }}
+    >
+      <div className="ringProg__hole" style={{ inset: stroke }}>
+        {children ?? <span className="ringProg__val">{value}%</span>}
+      </div>
+    </div>
   )
-
-const calcProgressFromStats = ({ total, completed }) => {
-  if (!total) return 0
-  return Math.round((completed / total) * 100)
 }
 
-const calcStudyProgress = (study) => calcProgressFromStats(countLessonsRecursively(study?.modules || []))
-const calcModuleProgress = (module) => calcProgressFromStats(countLessonsRecursively([module]))
+/* ---------- General dashboard (top of hub) ---------- */
+function StudiesDashboard({ agg }) {
+  const kpis = [
+    { label: 'Estudos', value: agg.totalStudies, icon: Layers },
+    { label: 'Em andamento', value: agg.inProgress, icon: TrendingUp },
+    { label: 'Concluídos', value: agg.completed, icon: Check },
+    { label: 'Aulas esta semana', value: agg.lessonsThisWeek, icon: CalendarClock },
+  ]
+  const types = Object.entries(agg.byType)
 
-const getLessonCounts = (entity) => {
-  const stats = countLessonsRecursively([entity])
-  return { total: stats.total, completed: stats.completed }
+  return (
+    <section className="stDash">
+      <div className="stDash__hero">
+        <ProgressRing value={agg.overallProgress} size={108} stroke={11} />
+        <div className="stDash__heroText">
+          <span className="stDash__eyebrow">Painel de estudos</span>
+          <h2>{agg.overallProgress}% da jornada concluída</h2>
+          <p>{agg.completedLessons} de {agg.totalLessons} aulas finalizadas{agg.avgRating > 0 ? ` · nota média ${agg.avgRating}★` : ''}</p>
+        </div>
+      </div>
+
+      <div className="stDash__kpis">
+        {kpis.map((k) => {
+          const Icon = k.icon
+          return (
+            <div className="stKpi" key={k.label}>
+              <span className="stKpi__icon"><Icon size={16} /></span>
+              <strong>{k.value}</strong>
+              <span className="stKpi__label">{k.label}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="stDash__cols">
+        <div className="stDash__panel">
+          <h4>Próximas aulas</h4>
+          {agg.upcoming.length === 0 ? (
+            <p className="stDash__empty">Nenhuma aula agendada. Defina uma data em uma aula para vê-la aqui (e nas Tarefas).</p>
+          ) : (
+            <ul className="stUpcoming">
+              {agg.upcoming.map((l) => (
+                <li key={l.id}>
+                  <span className="stUpcoming__date">{fmtShort(l.scheduledDate)}</span>
+                  <span className="stUpcoming__title">{l.title}</span>
+                  <span className="stUpcoming__study">{l.studyTitle}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="stDash__panel">
+          <h4>Por tipo</h4>
+          {types.length === 0 ? (
+            <p className="stDash__empty">Sem estudos cadastrados.</p>
+          ) : (
+            <div className="stTypeBars">
+              {types.map(([key, t]) => {
+                const meta = STUDY_TYPE_META[key] || STUDY_TYPE_META.COURSE
+                const p = t.total ? Math.round((t.completed / t.total) * 100) : 0
+                return (
+                  <div className="stTypeBar" key={key}>
+                    <div className="stTypeBar__top">
+                      <span>{meta.icon} {meta.label}</span>
+                      <span className="stTypeBar__count">{t.count}</span>
+                    </div>
+                    <div className="stTypeBar__track"><span style={{ width: `${p}%`, background: meta.color }} /></div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- Per-study overview (inside detail) ---------- */
+function StudyOverviewPanel({ overview }) {
+  const kpis = [
+    { label: 'Módulos', value: overview.modulesCount, icon: Layers },
+    { label: 'Matérias', value: overview.materiasCount, icon: BookOpen },
+    { label: 'Aulas', value: overview.totalLessons, icon: ListChecks },
+    { label: 'Agendadas', value: overview.scheduledCount, icon: Calendar },
+  ]
+  return (
+    <section className="stOverview">
+      <div className="stOverview__ring">
+        <ProgressRing value={overview.progress} size={120} stroke={12} />
+        <span className="stOverview__ringLabel">
+          {overview.completedLessons}/{overview.totalLessons} aulas
+        </span>
+      </div>
+      <div className="stOverview__right">
+        <div className="stOverview__kpis">
+          {kpis.map((k) => {
+            const Icon = k.icon
+            return (
+              <div className="stKpi stKpi--plain" key={k.label}>
+                <span className="stKpi__icon"><Icon size={16} /></span>
+                <strong>{k.value}</strong>
+                <span className="stKpi__label">{k.label}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="stOverview__foot">
+          {overview.avgRating > 0 && (
+            <span className="stChip"><Star size={13} fill="#ff7a00" color="#ff7a00" /> {overview.avgRating} média</span>
+          )}
+          {overview.nextLesson ? (
+            <span className="stChip stChip--accent">
+              <CalendarClock size={13} /> Próxima: {overview.nextLesson.title} · {fmtShort(overview.nextLesson.scheduledDate)}
+            </span>
+          ) : (
+            <span className="stChip stChip--muted">Sem aulas agendadas</span>
+          )}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 export default function Studies({ user, onNavigate, onLogout }) {
   const {
-    studies, addStudy, deleteStudy, updateStudy,
+    studies, addStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
-    toggleStudyLesson, loading
+    toggleStudyLesson, loading,
   } = useApp()
   const [activeStudyId, setActiveStudyId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [isModalOpen, setModalOpen] = useState(false)
   const [isAddModuleModalOpen, setAddModuleModalOpen] = useState(false)
-  const [isAddSubmoduleModalOpen, setAddSubmoduleModalOpen] = useState(false)
+  const [isAddMateriaModalOpen, setAddMateriaModalOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState({})
-  const [expandedSubmodules, setExpandedSubmodules] = useState({})
+  const [expandedMaterias, setExpandedMaterias] = useState({})
   const [newModuleTitle, setNewModuleTitle] = useState('')
-  const [newSubmoduleTitle, setNewSubmoduleTitle] = useState('')
-  const [submoduleParentId, setSubmoduleParentId] = useState(null)
+  const [newMateriaTitle, setNewMateriaTitle] = useState('')
+  const [materiaParentId, setMateriaParentId] = useState(null)
   const [newLessonInputs, setNewLessonInputs] = useState({})
-  // Edit states
   const [editingModuleId, setEditingModuleId] = useState(null)
   const [editingModuleTitle, setEditingModuleTitle] = useState('')
-  const [editingLessonId, setEditingLessonId] = useState(null)
-  const [editingLessonTitle, setEditingLessonTitle] = useState('')
-  // Lesson modal state
   const [selectedLesson, setSelectedLesson] = useState(null)
 
-  const activeStudy = useMemo(() => studies.find((study) => study.id === activeStudyId) ?? null, [studies, activeStudyId])
+  const activeStudy = useMemo(() => studies.find((s) => s.id === activeStudyId) ?? null, [studies, activeStudyId])
+  const agg = useMemo(() => aggregateStudies(studies), [studies])
 
   const filteredStudies = useMemo(() => {
     return studies.filter((study) => {
-      const statusOk = statusFilter === 'ALL' || study.status === statusFilter
+      const liveStatus = deriveStudyStatus(study)
+      const statusOk = statusFilter === 'ALL' || liveStatus === statusFilter
       const typeOk = typeFilter === 'ALL' || study.type === typeFilter
       return statusOk && typeOk
     })
   }, [studies, statusFilter, typeFilter])
 
-  const handleOpenModal = () => {
-    setModalOpen(true)
-  }
+  // keep selected lesson in sync with reloaded studies
+  const liveSelectedLesson = useMemo(() => {
+    if (!selectedLesson) return null
+    const overview = activeStudy
+    const find = (mods) => {
+      for (const m of mods || []) {
+        const f = (m.lessons || []).find((l) => l.id === selectedLesson.id)
+        if (f) return f
+        const n = find(m.submodules || [])
+        if (n) return n
+      }
+      return null
+    }
+    return find(overview?.modules) || selectedLesson
+  }, [selectedLesson, activeStudy])
 
   const handleCreateStudy = async (studyData) => {
     try {
-      // O studyData já vem com o coverUrl (se houver upload feito no modal)
       await addStudy(studyData)
       setModalOpen(false)
     } catch (error) {
@@ -99,365 +228,255 @@ export default function Studies({ user, onNavigate, onLogout }) {
     }
   }
 
-  const handleToggleModule = (moduleId) => {
-    setExpandedModules((prev) => ({ ...prev, [moduleId]: !prev[moduleId] }))
-  }
-
-  const handleToggleSubmodule = (submoduleId) => {
-    setExpandedSubmodules((prev) => ({ ...prev, [submoduleId]: !prev[submoduleId] }))
-  }
-
   const handleAddModule = async () => {
     if (!activeStudy || !newModuleTitle.trim()) return
     try {
       await addStudyModule(activeStudy.id, { title: newModuleTitle.trim() })
       setNewModuleTitle('')
       setAddModuleModalOpen(false)
-    } catch (error) {
-      console.error('Error adding module:', error)
-      alert('Erro ao adicionar módulo: ' + error.message)
-    }
+    } catch (error) { alert('Erro ao adicionar módulo: ' + error.message) }
   }
 
-  const openAddSubmoduleModal = (moduleId) => {
-    setSubmoduleParentId(moduleId)
-    setNewSubmoduleTitle('')
-    setAddSubmoduleModalOpen(true)
+  const openAddMateria = (moduleId) => {
+    setMateriaParentId(moduleId)
+    setNewMateriaTitle('')
+    setAddMateriaModalOpen(true)
   }
 
-  const handleAddSubmodule = async () => {
-    const title = newSubmoduleTitle.trim()
-    if (!activeStudy || !title) return
-    if (!submoduleParentId) return
-
+  const handleAddMateria = async () => {
+    const title = newMateriaTitle.trim()
+    if (!activeStudy || !title || !materiaParentId) return
     try {
-      await addStudyModule(activeStudy.id, { title, parentModuleId: submoduleParentId })
-      setNewSubmoduleTitle('')
-      setAddSubmoduleModalOpen(false)
-      setExpandedModules((prev) => ({ ...prev, [submoduleParentId]: true }))
-    } catch (error) {
-      console.error('Error adding submodule:', error)
-      alert('Erro ao adicionar sub-módulo: ' + error.message)
-    }
+      await addStudyModule(activeStudy.id, { title, parentModuleId: materiaParentId })
+      setNewMateriaTitle('')
+      setAddMateriaModalOpen(false)
+      setExpandedModules((prev) => ({ ...prev, [materiaParentId]: true }))
+    } catch (error) { alert('Erro ao adicionar matéria: ' + error.message) }
   }
 
-  const handleLessonInputChange = (moduleId, field, value) => {
-    setNewLessonInputs((prev) => ({
-      ...prev,
-      [moduleId]: {
-        ...prev[moduleId],
-        [field]: value,
-      },
-    }))
+  const handleLessonInputChange = (id, field, value) => {
+    setNewLessonInputs((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }))
   }
 
-  const handleAddLesson = async (submoduleId) => {
-    const input = newLessonInputs[submoduleId]
+  const handleAddLesson = async (containerId) => {
+    const input = newLessonInputs[containerId]
     if (!activeStudy || !input?.title?.trim()) return
     try {
-      await addStudyLesson(submoduleId, {
+      await addStudyLesson(containerId, {
         title: input.title.trim(),
-        videoUrl: input.accessUrl?.trim() || null,
+        scheduledDate: input.scheduledDate || null,
       })
-      setNewLessonInputs((prev) => ({ ...prev, [submoduleId]: { title: '', duration: '', accessUrl: '' } }))
-    } catch (error) {
-      console.error('Error adding lesson:', error)
-      alert('Erro ao adicionar lição: ' + error.message)
-    }
+      setNewLessonInputs((prev) => ({ ...prev, [containerId]: { title: '', scheduledDate: '' } }))
+    } catch (error) { alert('Erro ao adicionar aula: ' + error.message) }
   }
 
-  const handleToggleLesson = async (lessonId, currentStatus) => {
-    if (!activeStudy) return
-    try {
-      await toggleStudyLesson(lessonId, !currentStatus)
-    } catch (error) {
-      console.error('Error toggling lesson:', error)
-      alert('Erro ao atualizar lição: ' + error.message)
-    }
+  const handleToggleLesson = async (lessonId, current) => {
+    try { await toggleStudyLesson(lessonId, !current) }
+    catch (error) { alert('Erro ao atualizar aula: ' + error.message) }
   }
 
-  // Delete Study
   const handleDeleteStudy = async () => {
     if (!activeStudy) return
     if (!confirm(`Excluir "${activeStudy.title}"? Todos os módulos e aulas serão perdidos.`)) return
-    try {
-      await deleteStudy(activeStudy.id)
-      setActiveStudyId(null)
-    } catch (error) {
-      console.error('Error deleting study:', error)
-      alert('Erro ao excluir estudo')
-    }
+    try { await deleteStudy(activeStudy.id); setActiveStudyId(null) }
+    catch { alert('Erro ao excluir estudo') }
   }
 
-  // Module CRUD
-  const handleStartEditModule = (module) => {
-    setEditingModuleId(module.id)
-    setEditingModuleTitle(module.title)
-  }
-
-  const handleSaveModuleEdit = async () => {
+  const startEditModule = (mod) => { setEditingModuleId(mod.id); setEditingModuleTitle(mod.title) }
+  const saveModuleEdit = async () => {
     if (!editingModuleId || !editingModuleTitle.trim()) return
-    try {
-      await updateStudyModule(editingModuleId, { title: editingModuleTitle.trim() })
-      setEditingModuleId(null)
-      setEditingModuleTitle('')
-    } catch (error) {
-      console.error('Error updating module:', error)
-      alert('Erro ao atualizar módulo')
-    }
+    try { await updateStudyModule(editingModuleId, { title: editingModuleTitle.trim() }); setEditingModuleId(null); setEditingModuleTitle('') }
+    catch { alert('Erro ao atualizar') }
+  }
+  const handleDeleteModule = async (id, title, kind = 'módulo') => {
+    if (!confirm(`Excluir ${kind} "${title}"? As aulas serão perdidas.`)) return
+    try { await deleteStudyModule(id) } catch { alert('Erro ao excluir') }
   }
 
-  const handleDeleteModule = async (moduleId, moduleTitle) => {
-    if (!confirm(`Excluir módulo "${moduleTitle}"? Todas as aulas serão perdidas.`)) return
-    try {
-      await deleteStudyModule(moduleId)
-    } catch (error) {
-      console.error('Error deleting module:', error)
-      alert('Erro ao excluir módulo')
-    }
+  const handleDeleteLesson = async (id, title) => {
+    if (!confirm(`Excluir aula "${title}"?`)) return
+    try { await deleteStudyLesson(id) } catch { alert('Erro ao excluir aula') }
   }
 
-  // Lesson CRUD
-  const handleStartEditLesson = (lesson) => {
-    setEditingLessonId(lesson.id)
-    setEditingLessonTitle(lesson.title)
+  const handleSaveLesson = async (lessonId, updates) => { await updateStudyLesson(lessonId, updates) }
+
+  /* ---------- Lesson row ---------- */
+  const renderLessonRow = (lesson) => {
+    const ratingStars = lesson.rating > 0 ? '★'.repeat(lesson.rating) : ''
+    const resCount = Array.isArray(lesson.resources) ? lesson.resources.length : 0
+    return (
+      <div key={lesson.id} className={`stLesson ${lesson.isCompleted ? 'is-done' : ''}`}>
+        <button
+          type="button"
+          className={`stLesson__check ${lesson.isCompleted ? 'is-done' : ''}`}
+          onClick={() => handleToggleLesson(lesson.id, lesson.isCompleted)}
+          aria-label={lesson.isCompleted ? 'Desmarcar' : 'Concluir'}
+        >
+          {lesson.isCompleted ? <Check size={13} strokeWidth={3} /> : null}
+        </button>
+
+        <button type="button" className="stLesson__title" onClick={() => setSelectedLesson(lesson)}>
+          <span className="stLesson__name">{lesson.title}</span>
+          <span className="stLesson__badges">
+            {lesson.scheduledDate && (
+              <span className="stLesson__badge stLesson__badge--date">
+                <Calendar size={11} /> {fmtShort(lesson.scheduledDate)}
+              </span>
+            )}
+            {lesson.scheduledDate && (
+              <span className="stLesson__badge stLesson__badge--task" title="Esta aula aparece na aba Tarefas">
+                <CalendarClock size={11} /> nas Tarefas
+              </span>
+            )}
+            {resCount > 0 && (
+              <span className="stLesson__badge"><Link2 size={11} /> {resCount}</span>
+            )}
+            {ratingStars && <span className="stLesson__rating">{ratingStars}</span>}
+          </span>
+        </button>
+
+        <div className="stLesson__actions">
+          <button className="stLesson__act" onClick={() => setSelectedLesson(lesson)} title="Detalhes / revisão"><Pencil size={13} /></button>
+          <button className="stLesson__act stLesson__act--danger" onClick={() => handleDeleteLesson(lesson.id, lesson.title)} title="Excluir"><Trash2 size={13} /></button>
+        </div>
+      </div>
+    )
   }
 
-  const handleSaveLessonEdit = async () => {
-    if (!editingLessonId || !editingLessonTitle.trim()) return
-    try {
-      await updateStudyLesson(editingLessonId, { title: editingLessonTitle.trim() })
-      setEditingLessonId(null)
-      setEditingLessonTitle('')
-    } catch (error) {
-      console.error('Error updating lesson:', error)
-      alert('Erro ao atualizar aula')
-    }
-  }
-
-  const handleDeleteLesson = async (lessonId, lessonTitle) => {
-    if (!confirm(`Excluir aula "${lessonTitle}"?`)) return
-    try {
-      await deleteStudyLesson(lessonId)
-    } catch (error) {
-      console.error('Error deleting lesson:', error)
-      alert('Erro ao excluir aula')
-    }
-  }
-
-  // Open lesson modal
-  const handleOpenLesson = (lesson) => {
-    setSelectedLesson(lesson)
-  }
-
-  // Save lesson from modal
-  const handleSaveLesson = async (lessonId, updates) => {
-    await updateStudyLesson(lessonId, updates)
-  }
-
-  const renderLessonRow = (lesson) => (
-    <div key={lesson.id} className="studyLessonRow">
-      <button
-        type="button"
-        className={`studyLessonRow__check ${lesson.isCompleted ? 'is-done' : ''}`}
-        onClick={() => handleToggleLesson(lesson.id, lesson.isCompleted)}
-        title={lesson.isCompleted ? 'Marcar como não concluída' : 'Marcar como concluída'}
-      >
-        {lesson.isCompleted ? <Check size={12} /> : null}
-      </button>
-
-      {editingLessonId === lesson.id ? (
+  /* ---------- Add-lesson inline form ---------- */
+  const renderAddLesson = (containerId, placeholder = 'Nova aula') => {
+    const input = newLessonInputs[containerId] ?? { title: '', scheduledDate: '' }
+    return (
+      <div className="stAddLesson">
         <input
           type="text"
-          className="studyLessonRow__editInput"
-          value={editingLessonTitle}
-          onChange={(e) => setEditingLessonTitle(e.target.value)}
-          autoFocus
+          className="stAddLesson__title"
+          placeholder={placeholder}
+          value={input.title}
+          onChange={(e) => handleLessonInputChange(containerId, 'title', e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleAddLesson(containerId) }}
         />
-      ) : (
-        <div className="studyLessonRow__title" onClick={() => handleOpenLesson(lesson)}>
-          <strong>{lesson.title}</strong>
-        </div>
-      )}
-
-      {lesson.accessUrl && (
-        <a href={lesson.accessUrl} target="_blank" rel="noreferrer" className="studyLessonRow__link">
-          Abrir
-        </a>
-      )}
-
-      <div className="studyLessonRow__actions">
-        {editingLessonId === lesson.id ? (
-          <>
-            <button className="studyLessonRow__actionBtn" onClick={handleSaveLessonEdit} title="Salvar"><Check size={12} /></button>
-            <button className="studyLessonRow__actionBtn" onClick={() => setEditingLessonId(null)} title="Cancelar"><X size={12} /></button>
-          </>
-        ) : (
-          <>
-            <button className="studyLessonRow__actionBtn" onClick={() => handleStartEditLesson(lesson)} title="Editar"><Pencil size={12} /></button>
-            <button className="studyLessonRow__actionBtn studyLessonRow__actionBtn--danger" onClick={() => handleDeleteLesson(lesson.id, lesson.title)} title="Excluir"><Trash2 size={12} /></button>
-          </>
-        )}
+        <input
+          type="date"
+          className="stAddLesson__date"
+          title="Agendar (aparece nas Tarefas)"
+          value={input.scheduledDate || ''}
+          onChange={(e) => handleLessonInputChange(containerId, 'scheduledDate', e.target.value)}
+        />
+        <button type="button" className="stAddLesson__btn" onClick={() => handleAddLesson(containerId)}>
+          <Plus size={15} /> Aula
+        </button>
       </div>
-    </div>
-  )
+    )
+  }
 
-  const renderSubmodule = (submodule) => {
-    const progress = calcModuleProgress(submodule)
-    const isOpen = expandedSubmodules[submodule.id]
-    const lessonInput = newLessonInputs[submodule.id] ?? { title: '', duration: '', accessUrl: '' }
-    const lessonCount = getLessonCounts(submodule)
-
+  /* ---------- Matéria (submodule) ---------- */
+  const renderMateria = (materia) => {
+    const progress = moduleProgress(materia)
+    const isOpen = expandedMaterias[materia.id]
+    const counts = countLessonsRecursively([materia])
     return (
-      <article key={submodule.id} className="studySubmodule">
-        <header className="studySubmodule__header">
-          <button type="button" className="studySubmodule__toggle" onClick={() => handleToggleSubmodule(submodule.id)}>
-            <span className="studySubmodule__icon"><PlayCircle size={18} /></span>
-            {editingModuleId === submodule.id ? (
+      <article key={materia.id} className="stMateria">
+        <header className="stMateria__head">
+          <button type="button" className="stMateria__toggle" onClick={() => setExpandedMaterias((p) => ({ ...p, [materia.id]: !p[materia.id] }))}>
+            <span className="stMateria__tag">Matéria</span>
+            {editingModuleId === materia.id ? (
               <input
-                type="text"
-                className="studySubmodule__editInput"
+                className="stInlineEdit"
                 value={editingModuleTitle}
                 onChange={(e) => setEditingModuleTitle(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveModuleEdit() }}
                 autoFocus
               />
             ) : (
-              <div className="studySubmodule__meta">
-                <div className="studySubmodule__titleRow">
-                  <h4>{submodule.title}</h4>
-                  <span className="studySubmodule__badge">MÓDULO</span>
-                  <span className="studySubmodule__stats">{lessonCount.total} AULAS • {progress}%</span>
-                </div>
-              </div>
+              <h4>{materia.title}</h4>
             )}
-            <ChevronDown size={16} className={`studySubmodule__chevron ${isOpen ? 'is-open' : ''}`} />
+            <span className="stMateria__stat">{counts.completed}/{counts.total} · {progress}%</span>
+            <ChevronDown size={15} className={`stChevron ${isOpen ? 'is-open' : ''}`} />
           </button>
-
-          <div className="studySubmodule__actions">
-            {editingModuleId === submodule.id ? (
+          <div className="stRowActions">
+            {editingModuleId === materia.id ? (
               <>
-                <button className="studySubmodule__actionBtn" onClick={handleSaveModuleEdit} title="Salvar"><Check size={14} /></button>
-                <button className="studySubmodule__actionBtn" onClick={() => setEditingModuleId(null)} title="Cancelar"><X size={14} /></button>
+                <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={13} /></button>
+                <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={13} /></button>
               </>
             ) : (
               <>
-                <button className="studySubmodule__actionBtn" onClick={() => handleStartEditModule(submodule)} title="Editar"><Pencil size={14} /></button>
-                <button className="studySubmodule__actionBtn studySubmodule__actionBtn--danger" onClick={() => handleDeleteModule(submodule.id, submodule.title)} title="Excluir"><Trash2 size={14} /></button>
+                <button className="stRowActions__btn" onClick={() => startEditModule(materia)}><Pencil size={13} /></button>
+                <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(materia.id, materia.title, 'matéria')}><Trash2 size={13} /></button>
               </>
             )}
           </div>
         </header>
-
-        <div className={`studySubmodule__content ${isOpen ? 'is-open' : ''}`}>
-          <div className="studySubmodule__progressBar"><span style={{ width: `${progress}%` }} /></div>
-
-          <div className="studySubmodule__lessons">
-            {submodule.lessons.length > 0 ? (
-              submodule.lessons.map(renderLessonRow)
-            ) : (
-              <p className="studySubmodule__empty">Nenhuma aula neste sub-módulo.</p>
-            )}
+        <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
+          <div className="stMateria__bar"><span style={{ width: `${progress}%` }} /></div>
+          <div className="stLessons">
+            {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
           </div>
-
-          <div className="studyAddLessonForm">
-            <input
-              type="text"
-              placeholder="Nova aula"
-              value={lessonInput.title}
-              onChange={(event) => handleLessonInputChange(submodule.id, 'title', event.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Duração (opcional)"
-              value={lessonInput.duration}
-              onChange={(event) => handleLessonInputChange(submodule.id, 'duration', event.target.value)}
-            />
-            <input
-              type="url"
-              placeholder="Link (opcional)"
-              value={lessonInput.accessUrl}
-              onChange={(event) => handleLessonInputChange(submodule.id, 'accessUrl', event.target.value)}
-            />
-            <button type="button" onClick={() => handleAddLesson(submodule.id)}>
-              Nova aula
-            </button>
-          </div>
+          {renderAddLesson(materia.id)}
         </div>
       </article>
     )
   }
 
-  const renderLevel = (module, index) => {
-    const isOpen = expandedModules[module.id]
-    const progress = calcModuleProgress(module)
-    const lessonCount = getLessonCounts(module)
-
+  /* ---------- Módulo (top level) ---------- */
+  const renderModule = (mod, index) => {
+    const isOpen = expandedModules[mod.id]
+    const progress = moduleProgress(mod)
+    const counts = countLessonsRecursively([mod])
+    const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
     return (
-      <section key={module.id} className="studyLevel">
-        <header className="studyLevel__header">
-          <button type="button" className="studyLevel__toggle" onClick={() => handleToggleModule(module.id)}>
-            <div className="studyLevel__meta">
-              <span className="studyLevel__eyebrow">NÍVEL {index + 1}</span>
-              {editingModuleId === module.id ? (
-                <input
-                  type="text"
-                  className="studyLevel__editInput"
-                  value={editingModuleTitle}
-                  onChange={(e) => setEditingModuleTitle(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  autoFocus
-                />
-              ) : (
-                <div className="studyLevel__titleRow">
-                  <h3>{module.title}</h3>
-                </div>
-              )}
-            </div>
-            <ChevronDown size={16} className={`studyLevel__chevron ${isOpen ? 'is-open' : ''}`} />
-          </button>
-
-          <div className="studyLevel__actions">
-            {editingModuleId === module.id ? (
+      <section key={mod.id} className="stModule">
+        <header className="stModule__head" onClick={() => setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] }))}>
+          <div className="stModule__index">{String(index + 1).padStart(2, '0')}</div>
+          <div className="stModule__meta">
+            <span className="stModule__eyebrow">Módulo</span>
+            {editingModuleId === mod.id ? (
+              <input
+                className="stInlineEdit stInlineEdit--lg"
+                value={editingModuleTitle}
+                onChange={(e) => setEditingModuleTitle(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveModuleEdit() }}
+                autoFocus
+              />
+            ) : (
+              <h3>{mod.title}</h3>
+            )}
+            <span className="stModule__stat">{counts.completed}/{counts.total} aulas · {progress}%</span>
+          </div>
+          <div className="stModule__ring"><ProgressRing value={progress} size={46} stroke={5} /></div>
+          <div className="stRowActions" onClick={(e) => e.stopPropagation()}>
+            {editingModuleId === mod.id ? (
               <>
-                <button className="studyLevel__actionBtn" onClick={handleSaveModuleEdit} title="Salvar"><Check size={14} /></button>
-                <button className="studyLevel__actionBtn" onClick={() => setEditingModuleId(null)} title="Cancelar"><X size={14} /></button>
+                <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={14} /></button>
+                <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={14} /></button>
               </>
             ) : (
               <>
-                <button className="studyLevel__actionBtn" onClick={() => handleStartEditModule(module)} title="Editar"><Pencil size={14} /></button>
-                <button className="studyLevel__actionBtn studyLevel__actionBtn--danger" onClick={() => handleDeleteModule(module.id, module.title)} title="Excluir"><Trash2 size={14} /></button>
+                <button className="stRowActions__btn" onClick={() => startEditModule(mod)}><Pencil size={14} /></button>
+                <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)}><Trash2 size={14} /></button>
               </>
             )}
           </div>
+          <ChevronDown size={18} className={`stChevron stModule__chevron ${isOpen ? 'is-open' : ''}`} />
         </header>
 
-        <div className={`studyLevel__content ${isOpen ? 'is-open' : ''}`}>
-          <div className="studyLevel__progressMeta">
-            <span>{lessonCount.completed}/{lessonCount.total} aulas concluídas</span>
-            <strong>{progress}% concluído</strong>
-          </div>
-          <div className="studyLevel__progressBar"><span style={{ width: `${progress}%` }} /></div>
-
-          {Array.isArray(module.lessons) && module.lessons.length > 0 && (
-            <div className="studyLevel__legacyLessons">
-              <h4>Aulas deste nível</h4>
-              {module.lessons.map(renderLessonRow)}
-            </div>
-          )}
-
-          <div className="studySubmodules">
-            {module.submodules?.length > 0 ? (
-              module.submodules.map(renderSubmodule)
-            ) : (
-              <p className="studyLevel__empty">Ainda não há sub-módulos. Crie o primeiro abaixo.</p>
+        <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
+          <div className="stModule__body">
+            {directLessons.length > 0 && (
+              <div className="stLessons">{directLessons.map(renderLessonRow)}</div>
             )}
-          </div>
 
-          <div className="studyAddSubmodule">
-            <button type="button" className="studyAddSubmodule__iconBtn" onClick={() => openAddSubmoduleModal(module.id)}>
-              <Plus size={16} />
-              Novo sub-módulo
+            {mod.submodules?.length > 0 && (
+              <div className="stMaterias">{mod.submodules.map(renderMateria)}</div>
+            )}
+
+            {renderAddLesson(mod.id, 'Nova aula neste módulo')}
+
+            <button type="button" className="stAddMateria" onClick={() => openAddMateria(mod.id)}>
+              <Plus size={14} /> Adicionar matéria
             </button>
           </div>
         </div>
@@ -465,72 +484,83 @@ export default function Studies({ user, onNavigate, onLogout }) {
     )
   }
 
+  const statusFilters = [
+    { id: 'ALL', label: 'Todos' },
+    { id: 'IN_PROGRESS', label: 'Em andamento' },
+    { id: 'NOT_STARTED', label: 'Não iniciados' },
+    { id: 'COMPLETED', label: 'Concluídos' },
+  ]
+  const typeFilters = [
+    { id: 'ALL', label: 'Todos' },
+    { id: 'COURSE', label: 'Cursos' },
+    { id: 'UNIVERSITY', label: 'Faculdade' },
+    { id: 'MENTORSHIP', label: 'Mentorias' },
+    { id: 'BOOK', label: 'Livros' },
+  ]
+
   return (
     <div className="studiesPage">
       <TopNav user={user} onNavigate={onNavigate} active="Estudos" onLogout={onLogout} />
 
       <div className="studiesWrapper">
-        {/* Show filters and grid only when no study is selected */}
         {!activeStudy ? (
           <>
-            <section className="studiesFilters">
-              <div className="studiesFilters__group">
-                <button type="button" className={statusFilter === 'ALL' ? 'is-active' : ''} onClick={() => setStatusFilter('ALL')}>
-                  Todos
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === 'IN_PROGRESS' ? 'is-active' : ''}
-                  onClick={() => setStatusFilter('IN_PROGRESS')}
-                >
-                  Em andamento
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === 'COMPLETED' ? 'is-active' : ''}
-                  onClick={() => setStatusFilter('COMPLETED')}
-                >
-                  Concluídos
-                </button>
+            <StudiesDashboard agg={agg} />
+
+            <section className="stFilters">
+              <div className="stFilters__group">
+                {statusFilters.map((f) => (
+                  <button key={f.id} className={statusFilter === f.id ? 'is-active' : ''} onClick={() => setStatusFilter(f.id)}>{f.label}</button>
+                ))}
               </div>
-              <div className="studiesFilters__group">
-                <button type="button" className={typeFilter === 'ALL' ? 'is-active' : ''} onClick={() => setTypeFilter('ALL')}>
-                  Todos
-                </button>
-                <button type="button" className={typeFilter === 'COURSE' ? 'is-active' : ''} onClick={() => setTypeFilter('COURSE')}>
-                  Cursos
-                </button>
-                <button type="button" className={typeFilter === 'BOOK' ? 'is-active' : ''} onClick={() => setTypeFilter('BOOK')}>
-                  Livros
-                </button>
-                <button type="button" className={typeFilter === 'UNIVERSITY' ? 'is-active' : ''} onClick={() => setTypeFilter('UNIVERSITY')}>
-                  Faculdade
-                </button>
+              <div className="stFilters__group">
+                {typeFilters.map((f) => (
+                  <button key={f.id} className={typeFilter === f.id ? 'is-active' : ''} onClick={() => setTypeFilter(f.id)}>{f.label}</button>
+                ))}
               </div>
             </section>
 
-            <section className="studiesGrid">
-              {filteredStudies.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1', color: '#999' }}>
-                  <p>Nenhum estudo cadastrado. Clique em "Novo Estudo" para começar.</p>
+            <section className="stGrid">
+              {loading ? (
+                <p className="stGrid__empty">Carregando…</p>
+              ) : filteredStudies.length === 0 ? (
+                <div className="stGrid__empty">
+                  <Sparkles size={28} />
+                  <p>Nenhum estudo por aqui. Crie um curso, faculdade, mentoria ou livro para começar.</p>
                 </div>
               ) : (
-                filteredStudies.map((study) => {
-                  const progress = calcStudyProgress(study)
+                filteredStudies.map((study, i) => {
+                  const ov = studyOverview(study)
+                  const meta = STUDY_TYPE_META[study.type] || STUDY_TYPE_META.COURSE
+                  const Icon = TYPE_ICON[study.type] || BookOpen
+                  const st = STUDY_STATUS_META[ov.status]
                   return (
-                    <article key={study.id} className="studyCard" onClick={() => setActiveStudyId(study.id)} role="button">
-                      <div className="studyCard__cover">
-                        {study.coverUrl ? <img src={study.coverUrl} alt={study.title} /> : <div className="studyCard__coverFallback" />}
-                        <div className="studyCard__progress">
-                          <span style={{ width: `${progress}%` }} />
-                        </div>
+                    <article
+                      key={study.id}
+                      className="stCard"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                      onClick={() => setActiveStudyId(study.id)}
+                      role="button"
+                    >
+                      <div className="stCard__cover">
+                        {study.coverUrl
+                          ? <img src={study.coverUrl} alt={study.title} />
+                          : <div className="stCard__coverFallback" style={{ '--accent': meta.color }}><Icon size={30} /></div>}
+                        <span className="stCard__type" style={{ '--accent': meta.color }}>{meta.icon} {meta.label}</span>
                       </div>
-                      <div className="studyCard__content">
-                        <div className="studyCard__meta">
-                          <span className="studyCard__badge">{typeLabelMap[study.type]}</span>
+                      <div className="stCard__body">
+                        <div className="stCard__top">
+                          <h3>{study.title}</h3>
+                          <ProgressRing value={ov.progress} size={44} stroke={5} />
                         </div>
-                        <h3>{study.title}</h3>
-                        <p>{statusLabelMap[study.status]}</p>
+                        {study.category && <span className="stCard__cat">{study.category}</span>}
+                        <div className="stCard__meta">
+                          <span><ListChecks size={13} /> {ov.completedLessons}/{ov.totalLessons} aulas</span>
+                          {ov.nextLesson
+                            ? <span className="stCard__next"><Calendar size={13} /> {fmtShort(ov.nextLesson.scheduledDate)}</span>
+                            : <span className="stCard__status" style={{ color: st.color }}>{st.label}</span>}
+                        </div>
+                        <div className="stCard__bar"><span style={{ width: `${ov.progress}%` }} /></div>
                       </div>
                     </article>
                   )
@@ -539,99 +569,93 @@ export default function Studies({ user, onNavigate, onLogout }) {
             </section>
           </>
         ) : (
-          /* Study Detail Page View */
-          <div className="studyDetailPage">
-            {/* Back Button */}
-            <button className="studyDetailPage__back" onClick={() => setActiveStudyId(null)}>
-              <ArrowLeft size={20} />
-              <span>Voltar para Estudos</span>
+          <div className="stDetail">
+            <button className="stDetail__back" onClick={() => setActiveStudyId(null)}>
+              <ArrowLeft size={18} /> Voltar para Estudos
             </button>
 
-            <header className="studyDetailHeader">
-              <div className="studyDetailHeader__left">
-                <p className="studyDetailHeader__type">{typeLabelMap[activeStudy.type]}</p>
-                <h2>{activeStudy.title}</h2>
-              </div>
-              <div className="studyDetailHeader__right">
-                <div className="studyDetailHeader__progress">
-                  <span>{calcStudyProgress(activeStudy)}% concluído</span>
-                  <div>
-                    <span style={{ width: `${calcStudyProgress(activeStudy)}%` }} />
+            {(() => {
+              const ov = studyOverview(activeStudy)
+              const meta = STUDY_TYPE_META[activeStudy.type] || STUDY_TYPE_META.COURSE
+              const Icon = TYPE_ICON[activeStudy.type] || BookOpen
+              const st = STUDY_STATUS_META[ov.status]
+              return (
+                <>
+                  <header className="stDetail__header">
+                    <div className="stDetail__cover" style={{ '--accent': meta.color }}>
+                      {activeStudy.coverUrl ? <img src={activeStudy.coverUrl} alt={activeStudy.title} /> : <Icon size={34} />}
+                    </div>
+                    <div className="stDetail__headText">
+                      <div className="stDetail__chips">
+                        <span className="stChip" style={{ '--accent': meta.color }}>{meta.icon} {meta.label}</span>
+                        {activeStudy.category && <span className="stChip stChip--muted">{activeStudy.category}</span>}
+                        <span className="stChip stChip--status" style={{ color: st.color, borderColor: st.color }}>{st.label}</span>
+                      </div>
+                      <h2>{activeStudy.title}</h2>
+                      {activeStudy.url && <a className="stDetail__link" href={activeStudy.url} target="_blank" rel="noreferrer">Acessar plataforma →</a>}
+                    </div>
+                    <button className="stDetail__del" onClick={handleDeleteStudy} title="Excluir estudo"><Trash2 size={16} /></button>
+                  </header>
+
+                  <StudyOverviewPanel overview={ov} />
+
+                  <div className="stDetail__modulesHead">
+                    <h3>Conteúdo</h3>
+                    <button className="stDetail__addModule" onClick={() => setAddModuleModalOpen(true)}>
+                      <Plus size={15} /> Novo módulo
+                    </button>
                   </div>
-                </div>
-                <button className="studyDetailPage__deleteBtn" onClick={handleDeleteStudy} title="Excluir curso">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </header>
 
-            <div className="studyAddModule">
-              <button type="button" className="studyAddModule__iconBtn" onClick={() => setAddModuleModalOpen(true)}>
-                <Plus size={16} />
-                Novo módulo
-              </button>
-            </div>
-
-            <div className="studyLevels">
-              {activeStudy.modules.map((module, index) => renderLevel(module, index))}
-            </div>
+                  <div className="stModules">
+                    {activeStudy.modules.length === 0 ? (
+                      <div className="stModules__empty">
+                        <Layers size={26} />
+                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona matérias e aulas.</p>
+                        <button onClick={() => setAddModuleModalOpen(true)}><Plus size={15} /> Criar módulo</button>
+                      </div>
+                    ) : (
+                      activeStudy.modules.map((mod, i) => renderModule(mod, i))
+                    )}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
 
         {isModalOpen && (
-          <CreateStudyModal
-            onClose={() => setModalOpen(false)}
-            onSubmit={handleCreateStudy}
-            userId={user?.id}
-          />
+          <CreateStudyModal onClose={() => setModalOpen(false)} onSubmit={handleCreateStudy} userId={user?.id} />
         )}
 
         {selectedLesson && (
           <LessonModal
-            lesson={selectedLesson}
+            lesson={liveSelectedLesson}
             onClose={() => setSelectedLesson(null)}
             onSave={handleSaveLesson}
+            onToggleComplete={(id, value) => toggleStudyLesson(id, value)}
           />
         )}
 
         {isAddModuleModalOpen && (
           <AddNameModal
-            title="Novo módulo"
-            placeholder="Nome do módulo"
-            value={newModuleTitle}
-            onChange={setNewModuleTitle}
-            onClose={() => {
-              setAddModuleModalOpen(false)
-              setNewModuleTitle('')
-            }}
-            onSubmit={handleAddModule}
-            submitLabel="Criar módulo"
+            title="Novo módulo" placeholder="Ex: Fundamentos"
+            value={newModuleTitle} onChange={setNewModuleTitle}
+            onClose={() => { setAddModuleModalOpen(false); setNewModuleTitle('') }}
+            onSubmit={handleAddModule} submitLabel="Criar módulo"
           />
         )}
 
-        {isAddSubmoduleModalOpen && (
+        {isAddMateriaModalOpen && (
           <AddNameModal
-            title="Novo sub-módulo"
-            placeholder="Nome do sub-módulo"
-            value={newSubmoduleTitle}
-            onChange={setNewSubmoduleTitle}
-            onClose={() => {
-              setAddSubmoduleModalOpen(false)
-              setNewSubmoduleTitle('')
-              setSubmoduleParentId(null)
-            }}
-            onSubmit={handleAddSubmodule}
-            submitLabel="Criar sub-módulo"
+            title="Nova matéria" placeholder="Ex: Lógica de Programação"
+            value={newMateriaTitle} onChange={setNewMateriaTitle}
+            onClose={() => { setAddMateriaModalOpen(false); setNewMateriaTitle(''); setMateriaParentId(null) }}
+            onSubmit={handleAddMateria} submitLabel="Criar matéria"
           />
         )}
 
         {!activeStudy && (
-          <FloatingCreateButton
-            label="Novo estudo"
-            caption="Criar estudo"
-            ariaLabel="Criar novo estudo"
-            onClick={handleOpenModal}
-          />
+          <FloatingCreateButton label="Novo estudo" caption="Criar estudo" ariaLabel="Criar novo estudo" onClick={() => setModalOpen(true)} />
         )}
       </div>
     </div>
@@ -640,38 +664,21 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
 function AddNameModal({ title, placeholder, value, onChange, onClose, onSubmit, submitLabel }) {
   return (
-    <div className="studyQuickModal" onClick={onClose}>
-      <div className="studyQuickModal__backdrop" />
+    <div className="stQuick" onClick={onClose}>
+      <div className="stQuick__backdrop" />
       <form
-        className="studyQuickModal__panel"
+        className="stQuick__panel"
         onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => {
-          e.preventDefault()
-          onSubmit()
-        }}
+        onSubmit={(e) => { e.preventDefault(); onSubmit() }}
       >
-        <header className="studyQuickModal__header">
+        <header className="stQuick__head">
           <h3>{title}</h3>
-          <button type="button" onClick={onClose} className="studyQuickModal__close">×</button>
+          <button type="button" onClick={onClose} className="stQuick__close"><X size={18} /></button>
         </header>
-
-        <div className="studyQuickModal__body">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            autoFocus
-          />
-        </div>
-
-        <footer className="studyQuickModal__footer">
-          <button type="button" className="studyQuickModal__btn studyQuickModal__btn--secondary" onClick={onClose}>
-            Cancelar
-          </button>
-          <button type="submit" className="studyQuickModal__btn studyQuickModal__btn--primary">
-            {submitLabel}
-          </button>
+        <input className="stQuick__input" type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus />
+        <footer className="stQuick__foot">
+          <button type="button" className="stQuick__btn stQuick__btn--ghost" onClick={onClose}>Cancelar</button>
+          <button type="submit" className="stQuick__btn stQuick__btn--primary">{submitLabel}</button>
         </footer>
       </form>
     </div>

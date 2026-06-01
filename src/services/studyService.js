@@ -18,11 +18,29 @@ const compareByVisualOrder = (a, b) => {
   return String(a?.title || '').localeCompare(String(b?.title || ''), 'pt-BR')
 }
 
+const normalizeResources = (input) => {
+  if (!Array.isArray(input)) return []
+  return input
+    .map((item, index) => {
+      if (typeof item === 'string') return { id: `res-${index}`, label: item, url: item }
+      if (!item || typeof item !== 'object') return null
+      return {
+        id: item.id || `res-${index}`,
+        label: item.label || item.title || item.url || '',
+        url: item.url || '',
+      }
+    })
+    .filter((r) => r && (r.url || r.label))
+}
+
 const normalizeLesson = (lesson) => ({
   ...lesson,
   isCompleted: Boolean(lesson?.is_completed ?? lesson?.isCompleted),
   videoUrl: lesson?.video_url ?? lesson?.videoUrl ?? null,
   accessUrl: lesson?.video_url ?? lesson?.videoUrl ?? lesson?.access_url ?? lesson?.accessUrl ?? null,
+  scheduledDate: lesson?.scheduled_date ?? lesson?.scheduledDate ?? null,
+  taskId: lesson?.task_id ?? lesson?.taskId ?? null,
+  resources: normalizeResources(lesson?.resources),
 })
 
 const normalizeModule = (module) => ({
@@ -245,6 +263,11 @@ export const studyService = {
           title: lessonData.title,
           video_url: lessonData.videoUrl,
           is_completed: lessonData.isCompleted || false,
+          scheduled_date: lessonData.scheduledDate || null,
+          resources: lessonData.resources || [],
+          description: lessonData.description || null,
+          notes: lessonData.notes || null,
+          rating: lessonData.rating ?? null,
         },
       ])
       .select()
@@ -255,7 +278,7 @@ export const studyService = {
       throw error
     }
 
-    return data
+    return normalizeLesson(data)
   },
 
   async updateLesson(lessonId, updates) {
@@ -265,6 +288,10 @@ export const studyService = {
       notes: updates.notes,
       description: updates.description,
       rating: updates.rating,
+      scheduled_date: updates.scheduledDate ?? updates.scheduled_date,
+      resources: updates.resources,
+      task_id: updates.taskId ?? updates.task_id,
+      is_completed: updates.isCompleted ?? updates.is_completed,
     }
     // Remove undefined keys
     Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key])
@@ -281,7 +308,7 @@ export const studyService = {
       throw error
     }
 
-    return data
+    return normalizeLesson(data)
   },
 
   async deleteLesson(lessonId) {
@@ -309,6 +336,6 @@ export const studyService = {
       throw error
     }
 
-    return data
+    return normalizeLesson(data)
   },
 }

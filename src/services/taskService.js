@@ -34,6 +34,7 @@ const normalizeTask = (task) => {
     startDate: task.start_date,
     dueDate: task.due_date,
     projectId: task.project_id,
+    studyLessonId: task.study_lesson_id || null,
     clarifyItems: normalizedSubtasks,
     subtasks: normalizedSubtasks,
     // CORREÇÃO: Garante que time_spent seja sempre um número para o ProductivityCard
@@ -66,6 +67,7 @@ export const taskService = {
         start_date: task.startDate || null,
         due_date: task.dueDate || null,
         project_id: task.projectId || null,
+        study_lesson_id: task.studyLessonId || task.study_lesson_id || null,
         clarify_items: task.subtasks || task.clarifyItems || [],
         // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
         tags: task.tags || [],
@@ -94,6 +96,7 @@ export const taskService = {
       start_date: updates.startDate ?? updates.start_date,
       due_date: updates.dueDate ?? updates.due_date,
       project_id: updates.projectId ?? updates.project_id,
+      study_lesson_id: updates.studyLessonId ?? updates.study_lesson_id,
       clarify_items: updates.subtasks || updates.clarifyItems,
       // CORREÇÃO: Campos críticos que estavam faltando
       completed: updates.completed,
