@@ -216,7 +216,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const [expandedModules, setExpandedModules] = useState({})
   const [expandedMaterias, setExpandedMaterias] = useState({})
   const [expandedSubmodules, setExpandedSubmodules] = useState({})
-  const [newLessonInputs, setNewLessonInputs] = useState({})
   const [selectedLesson, setSelectedLesson] = useState(null)
   // Modal de criar/editar módulo, sub-módulo ou matéria
   const [moduleModal, setModuleModal] = useState(null)
@@ -272,6 +271,19 @@ export default function Studies({ user, onNavigate, onLogout }) {
         kind: data.kind,
         ...(data.parentModuleId !== undefined ? { parentModuleId: data.parentModuleId } : {}),
       })
+    } else if (data.kind === 'lesson') {
+      // Aula é criada dentro do container (módulo/sub-módulo/matéria) selecionado
+      await addStudyLesson(moduleModal.parentId, {
+        title: data.title,
+        scheduledDate: data.scheduledDate || null,
+        description: data.description,
+      })
+      const pid = moduleModal?.parentId
+      if (pid) {
+        setExpandedModules((prev) => ({ ...prev, [pid]: true }))
+        setExpandedSubmodules((prev) => ({ ...prev, [pid]: true }))
+        setExpandedMaterias((prev) => ({ ...prev, [pid]: true }))
+      }
     } else {
       await addStudyModule(activeStudy.id, {
         title: data.title,
@@ -284,22 +296,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
         setExpandedSubmodules((prev) => ({ ...prev, [moduleModal.parentId]: true }))
       }
     }
-  }
-
-  const handleLessonInputChange = (id, field, value) => {
-    setNewLessonInputs((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }))
-  }
-
-  const handleAddLesson = async (containerId) => {
-    const input = newLessonInputs[containerId]
-    if (!activeStudy || !input?.title?.trim()) return
-    try {
-      await addStudyLesson(containerId, {
-        title: input.title.trim(),
-        scheduledDate: input.scheduledDate || null,
-      })
-      setNewLessonInputs((prev) => ({ ...prev, [containerId]: { title: '', scheduledDate: '' } }))
-    } catch (error) { alert('Erro ao adicionar aula: ' + error.message) }
   }
 
   const handleToggleLesson = async (lessonId, current) => {
@@ -377,33 +373,6 @@ export default function Studies({ user, onNavigate, onLogout }) {
     )
   }
 
-  /* ---------- Add-lesson inline form ---------- */
-  const renderAddLesson = (containerId, placeholder = 'Nova aula') => {
-    const input = newLessonInputs[containerId] ?? { title: '', scheduledDate: '' }
-    return (
-      <div className="stAddLesson">
-        <input
-          type="text"
-          className="stAddLesson__title"
-          placeholder={placeholder}
-          value={input.title}
-          onChange={(e) => handleLessonInputChange(containerId, 'title', e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleAddLesson(containerId) }}
-        />
-        <input
-          type="date"
-          className="stAddLesson__date"
-          title="Agendar (aparece nas Tarefas)"
-          value={input.scheduledDate || ''}
-          onChange={(e) => handleLessonInputChange(containerId, 'scheduledDate', e.target.value)}
-        />
-        <button type="button" className="stAddLesson__btn" onClick={() => handleAddLesson(containerId)}>
-          <Plus size={15} /> Aula
-        </button>
-      </div>
-    )
-  }
-
   /* ---------- Matéria (kind=subject) ---------- */
   const renderMateria = (materia) => {
     const progress = moduleProgress(materia)
@@ -430,7 +399,9 @@ export default function Studies({ user, onNavigate, onLogout }) {
             <div className="stLessons">
               {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
             </div>
-            {renderAddLesson(materia.id)}
+            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['lesson'], parentId: materia.id, parentLabel: materia.title })}>
+              <Plus size={14} /> Adicionar aula
+            </button>
           </div>
         </div>
       </article>
@@ -464,9 +435,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
             {sub.description && <p className="stNodeDesc">{sub.description}</p>}
             {directLessons.length > 0 && <div className="stLessons">{directLessons.map(renderLessonRow)}</div>}
             {materias.length > 0 && <div className="stMaterias">{materias.map(renderMateria)}</div>}
-            {renderAddLesson(sub.id)}
-            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['subject'], parentId: sub.id, parentLabel: sub.title })}>
-              <Plus size={14} /> Adicionar matéria
+            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['subject', 'lesson'], parentId: sub.id, parentLabel: sub.title })}>
+              <Plus size={14} /> Adicionar matéria ou aula
             </button>
           </div>
         </div>
@@ -522,10 +492,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
               <div className="stMaterias">{materiaChildren.map(renderMateria)}</div>
             )}
 
-            {renderAddLesson(mod.id, 'Nova aula neste módulo')}
-
-            <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject'], parentId: mod.id, parentLabel: mod.title })}>
-              <Plus size={14} /> Adicionar sub-módulo ou matéria
+            <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject', 'lesson'], parentId: mod.id, parentLabel: mod.title })}>
+              <Plus size={14} /> Adicionar sub-módulo, matéria ou aula
             </button>
           </div>
         )}

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Layers, Boxes, BookOpen, PlayCircle, ChevronRight } from 'lucide-react'
+import { X, Layers, Boxes, BookOpen, PlayCircle, ChevronRight, Calendar, CalendarClock } from 'lucide-react'
 import './ModuleModal.css'
 
 export const KIND_META = {
   module: { label: 'Módulo', icon: Layers, color: '#ff4800', desc: 'Grande bloco do curso' },
   submodule: { label: 'Sub-módulo', icon: Boxes, color: '#0ea5e9', desc: 'Divisão dentro de um módulo' },
   subject: { label: 'Matéria', icon: BookOpen, color: '#7c5cff', desc: 'Disciplina que agrupa aulas' },
+  lesson: { label: 'Aula', icon: PlayCircle, color: '#16a34a', desc: 'Conteúdo a estudar (vira tarefa se tiver data)' },
 }
 
 const FLOW = ['module', 'submodule', 'subject']
@@ -24,6 +25,7 @@ export default function ModuleModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [parentId, setParentId] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
   const [saving, setSaving] = useState(false)
   const titleRef = useRef(null)
 
@@ -33,6 +35,7 @@ export default function ModuleModal({
       setTitle(initial?.title || '')
       setDescription(initial?.description || '')
       setParentId(initial?.parentId || '')
+      setScheduledDate(initial?.scheduledDate || '')
       requestAnimationFrame(() => titleRef.current?.focus())
       document.body.style.overflow = 'hidden'
     }
@@ -52,6 +55,7 @@ export default function ModuleModal({
   const meta = KIND_META[kind] || KIND_META.module
   const showPicker = allowedKinds.length > 1
   const showMove = mode === 'edit' && Array.isArray(parentOptions) && parentOptions.length > 0
+  const isLesson = kind === 'lesson'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -62,6 +66,7 @@ export default function ModuleModal({
         title: title.trim(),
         description: description.trim() || null,
         kind,
+        ...(isLesson ? { scheduledDate: scheduledDate || null } : {}),
         ...(showMove ? { parentModuleId: parentId || null } : {}),
       })
       onClose?.()
@@ -102,7 +107,9 @@ export default function ModuleModal({
           })}
           <span className="moduleModal__flowItem">
             <ChevronRight size={13} className="moduleModal__flowArrow" />
-            <span className="moduleModal__flowChip"><PlayCircle size={13} /> Aula</span>
+            <span className={`moduleModal__flowChip ${isLesson ? 'is-active' : ''}`} style={isLesson ? { '--c': KIND_META.lesson.color } : undefined}>
+              <PlayCircle size={13} /> Aula
+            </span>
           </span>
         </div>
 
@@ -143,10 +150,18 @@ export default function ModuleModal({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === 'module' ? 'Ex: Fundamentos do Front-end' : kind === 'submodule' ? 'Ex: HTML & CSS' : 'Ex: Flexbox e Grid'}
+            placeholder={kind === 'module' ? 'Ex: Fundamentos do Front-end' : kind === 'submodule' ? 'Ex: HTML & CSS' : kind === 'lesson' ? 'Ex: Introdução ao Flexbox' : 'Ex: Flexbox e Grid'}
             required
           />
         </div>
+
+        {isLesson && (
+          <div className="moduleModal__field">
+            <label><Calendar size={14} /> Agendar aula <span className="moduleModal__opt">(opcional)</span></label>
+            <input className="moduleModal__select" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+            <p className="moduleModal__moveHint"><CalendarClock size={12} /> Com data, a aula aparece automaticamente na aba Tarefas.</p>
+          </div>
+        )}
 
         {showMove && (
           <div className="moduleModal__field">

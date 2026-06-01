@@ -90,7 +90,8 @@
 .moduleModal__parent strong { color: #0d0d12; }
 
 .moduleModal__field { display: flex; flex-direction: column; gap: 8px; }
-.moduleModal__field > label { font-size: 0.82rem; font-weight: 700; color: #0d0d12; }
+.moduleModal__field > label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: #0d0d12; }
+.moduleModal__field > label svg { color: var(--accent, #ff4800); }
 .moduleModal__opt { font-weight: 500; color: #a0a0a8; }
 .moduleModal__field input,
 .moduleModal__field textarea {
@@ -117,10 +118,11 @@
   transition: border-color 150ms ease, background 150ms ease;
 }
 .moduleModal__select:focus { outline: none; border-color: var(--accent, #ff4800); background: #fff; }
-.moduleModal__moveHint { margin: 0; font-size: 0.76rem; color: #9a9aa2; }
+.moduleModal__moveHint { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 0.76rem; color: #9a9aa2; }
+.moduleModal__moveHint svg { color: #16a34a; flex-shrink: 0; }
 
 /* Type picker */
-.moduleModal__types { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.moduleModal__types { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .moduleModal__type {
   display: flex;
   flex-direction: column;
