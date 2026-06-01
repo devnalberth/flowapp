@@ -8,6 +8,8 @@ export default function LessonModal({ lesson, onClose, onSave, onToggleComplete 
   const [formData, setFormData] = useState({
     title: '',
     scheduledDate: '',
+    scheduledTime: '',
+    priority: 'Normal',
     description: '',
     notes: '',
     rating: 0,
@@ -21,6 +23,8 @@ export default function LessonModal({ lesson, onClose, onSave, onToggleComplete 
       setFormData({
         title: lesson.title || '',
         scheduledDate: lesson.scheduledDate ? String(lesson.scheduledDate).slice(0, 10) : '',
+        scheduledTime: lesson.scheduledTime || '',
+        priority: lesson.priority || 'Normal',
         description: lesson.description || '',
         notes: lesson.notes || '',
         rating: lesson.rating || 0,
@@ -65,6 +69,8 @@ export default function LessonModal({ lesson, onClose, onSave, onToggleComplete 
       await onSave(lesson.id, {
         title: formData.title,
         scheduledDate: formData.scheduledDate || null,
+        scheduledTime: formData.scheduledTime || null,
+        priority: formData.priority,
         description: formData.description,
         notes: formData.notes,
         rating: formData.rating,
@@ -125,15 +131,48 @@ export default function LessonModal({ lesson, onClose, onSave, onToggleComplete 
           {/* Agendamento */}
           <div className="lessonModal__field">
             <label><Calendar size={14} /> Agendar aula</label>
-            <input
-              type="date"
-              value={formData.scheduledDate}
-              onChange={(e) => handleChange('scheduledDate', e.target.value)}
-            />
+            <div className="lessonModal__dateRow">
+              <input
+                type="date"
+                value={formData.scheduledDate}
+                onChange={(e) => handleChange('scheduledDate', e.target.value)}
+              />
+              <input
+                type="time"
+                value={formData.scheduledTime}
+                onChange={(e) => handleChange('scheduledTime', e.target.value)}
+                disabled={!formData.scheduledDate}
+                title={formData.scheduledDate ? 'Horário' : 'Defina a data primeiro'}
+              />
+            </div>
             <p className="lessonModal__hint">
               <CalendarClock size={13} />
               Aulas com data aparecem automaticamente na aba <strong>Tarefas</strong>.
             </p>
+          </div>
+
+          {/* Prioridade */}
+          <div className="lessonModal__field">
+            <label>Prioridade</label>
+            <div className="lessonModal__prios">
+              {[
+                { id: 'Baixa', color: '#10b981' },
+                { id: 'Normal', color: '#6b7280' },
+                { id: 'Alta', color: '#f59e0b' },
+                { id: 'Urgente', color: '#ef4444' },
+              ].map((p) => (
+                <button
+                  type="button"
+                  key={p.id}
+                  className={`lessonModal__prio ${formData.priority === p.id ? 'is-active' : ''}`}
+                  style={{ '--pc': p.color }}
+                  onClick={() => handleChange('priority', p.id)}
+                >
+                  {p.id}
+                  {(p.id === 'Alta' || p.id === 'Urgente') && <span className="lessonModal__flowTag">Flow</span>}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Resumo */}

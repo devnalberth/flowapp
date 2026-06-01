@@ -350,7 +350,12 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <span className="stLesson__badges">
             {lesson.scheduledDate && (
               <span className="stLesson__badge stLesson__badge--date">
-                <Calendar size={11} /> {fmtShort(lesson.scheduledDate)}
+                <Calendar size={11} /> {fmtShort(lesson.scheduledDate)}{lesson.scheduledTime ? ` · ${lesson.scheduledTime}` : ''}
+              </span>
+            )}
+            {lesson.scheduledDate && (lesson.priority === 'Alta' || lesson.priority === 'Urgente') && (
+              <span className="stLesson__badge stLesson__badge--flow" title={`Prioridade ${lesson.priority} — no Flow`}>
+                ⚡ {lesson.priority}
               </span>
             )}
             {lesson.scheduledDate && (

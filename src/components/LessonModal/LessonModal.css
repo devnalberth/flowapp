@@ -169,6 +169,35 @@
   background: #fff;
 }
 
+.lessonModal__dateRow { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
+.lessonModal__dateRow input[type='time']:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.lessonModal__prios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.lessonModal__prio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: 11px;
+  border: 1.5px solid #ececf0;
+  background: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b6b73;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.lessonModal__prio:hover { border-color: color-mix(in srgb, var(--pc) 45%, #ececf0); }
+.lessonModal__prio.is-active { border-color: var(--pc); color: var(--pc); background: color-mix(in srgb, var(--pc) 9%, #fff); }
+.lessonModal__flowTag {
+  font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #fff; background: var(--pc); border-radius: 5px; padding: 1px 4px;
+}
+@media (max-width: 520px) { .lessonModal__prios { grid-template-columns: repeat(2, 1fr); } }
+
 .lessonModal__hint {
   display: inline-flex;
   align-items: center;

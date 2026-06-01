@@ -128,7 +128,7 @@ export default function CreateTaskModal({
   const [showArea, setShowArea] = useState(false)
   const [showProject, setShowProject] = useState(false)
 
-  const charCounter = useMemo(() => `${form.description.length}/${DESCRIPTION_LIMIT}`, [form.description.length])
+  const charCounter = useMemo(() => `${(form.description || '').length}/${DESCRIPTION_LIMIT}`, [form.description])
 
   useEffect(() => {
     if (open) {
@@ -143,6 +143,8 @@ export default function CreateTaskModal({
         setForm({
           ...defaultForm,
           ...initialData,
+          title: initialData.title || '',
+          description: initialData.description || '',
           dueDate,
           dueTime,
           status: normalizeStatus(initialData.status),

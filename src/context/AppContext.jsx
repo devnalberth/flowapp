@@ -57,6 +57,23 @@ function mapLessonInStudies(studies, lessonId, patch) {
   return (studies || []).map((s) => ({ ...s, modules: mapModules(s.modules || []) }))
 }
 
+// Monta os campos da tarefa-espelho de uma aula agendada.
+// - Combina data + horário no due_date; sem horário, usa só a data.
+// - Prioridade Alta/Urgente entra no Flow (tag 'flow'), além da tag 'Estudos'.
+function buildLessonTaskFields({ date, time, priority, title, completed }) {
+  const prio = priority || 'Normal'
+  const isFlow = prio === 'Alta' || prio === 'Urgente'
+  const due = date ? (time ? `${date}T${time}:00` : date) : null
+  return {
+    title,
+    dueDate: due,
+    startDate: date || null,
+    priority: prio,
+    tags: isFlow ? ['Estudos', 'flow'] : ['Estudos'],
+    ...(completed !== undefined ? { completed: !!completed } : {}),
+  }
+}
+
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -582,15 +599,16 @@ export function AppProvider({ children, userId }) {
   }
 
   // Cria uma tarefa espelho de uma aula agendada (aparece na aba de Tarefas).
-  const createLessonTask = async (lesson, scheduledDate) => {
+  const createLessonTask = async (lesson) => {
     const newTask = await taskService.createTask(userId, {
-      title: lesson.title,
-      dueDate: scheduledDate,
-      startDate: scheduledDate,
+      ...buildLessonTaskFields({
+        date: lesson.scheduledDate,
+        time: lesson.scheduledTime,
+        priority: lesson.priority,
+        title: lesson.title,
+        completed: lesson.isCompleted,
+      }),
       status: 'todo',
-      priority: 'medium',
-      tags: ['Estudos'],
-      completed: !!lesson.isCompleted,
       studyLessonId: lesson.id,
     })
     setTasks(prev => [newTask, ...prev])
@@ -602,7 +620,7 @@ export function AppProvider({ children, userId }) {
     const lesson = await studyService.createLesson(moduleId, lessonData)
     // Só aulas COM data agendada viram tarefa (aparecem na aba de Tarefas).
     if (lesson?.id && lessonData.scheduledDate) {
-      const task = await createLessonTask(lesson, lessonData.scheduledDate)
+      const task = await createLessonTask(lesson)
       await studyService.updateLesson(lesson.id, { taskId: task.id })
     }
     const allStudies = await studyService.getStudies(userId)
@@ -614,26 +632,24 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     const current = findLessonInStudies(studies, lessonId)
     const hadTask = current?.taskId || null
-    // Data resultante após o update (mantém a atual se não for enviada)
+    // Valores resultantes após o update (mantém os atuais se não vierem)
     const nextDate = updates.scheduledDate !== undefined ? updates.scheduledDate : current?.scheduledDate
+    const nextTime = updates.scheduledTime !== undefined ? updates.scheduledTime : current?.scheduledTime
+    const nextPriority = updates.priority !== undefined ? updates.priority : current?.priority
     const nextTitle = updates.title !== undefined ? updates.title : current?.title
 
     const saved = await studyService.updateLesson(lessonId, updates)
 
-    // Sincroniza a tarefa-espelho conforme a data agendada
+    // Sincroniza a tarefa-espelho conforme data/horário/prioridade
     try {
       if (nextDate) {
+        const fields = buildLessonTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: nextTitle })
         if (hadTask) {
-          // Atualiza a tarefa existente (título/data)
-          const updatedTask = await taskService.updateTask(hadTask, userId, {
-            title: nextTitle,
-            dueDate: nextDate,
-            startDate: nextDate,
-          })
+          const updatedTask = await taskService.updateTask(hadTask, userId, fields)
           setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
         } else {
           // Acabou de ganhar uma data → cria a tarefa e vincula
-          const task = await createLessonTask({ ...saved, title: nextTitle }, nextDate)
+          const task = await createLessonTask(saved)
           await studyService.updateLesson(lessonId, { taskId: task.id })
         }
       } else if (hadTask) {

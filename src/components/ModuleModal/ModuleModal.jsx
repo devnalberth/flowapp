@@ -11,6 +11,13 @@ export const KIND_META = {
 
 const FLOW = ['module', 'submodule', 'subject']
 
+const LESSON_PRIORITIES = [
+  { id: 'Baixa', label: 'Baixa', color: '#10b981' },
+  { id: 'Normal', label: 'Normal', color: '#6b7280' },
+  { id: 'Alta', label: 'Alta', color: '#f59e0b' },
+  { id: 'Urgente', label: 'Urgente', color: '#ef4444' },
+]
+
 export default function ModuleModal({
   open,
   onClose,
@@ -26,6 +33,8 @@ export default function ModuleModal({
   const [description, setDescription] = useState('')
   const [parentId, setParentId] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
+  const [scheduledTime, setScheduledTime] = useState('')
+  const [priority, setPriority] = useState('Normal')
   const [saving, setSaving] = useState(false)
   const titleRef = useRef(null)
 
@@ -36,6 +45,8 @@ export default function ModuleModal({
       setDescription(initial?.description || '')
       setParentId(initial?.parentId || '')
       setScheduledDate(initial?.scheduledDate || '')
+      setScheduledTime(initial?.scheduledTime || '')
+      setPriority(initial?.priority || 'Normal')
       requestAnimationFrame(() => titleRef.current?.focus())
       document.body.style.overflow = 'hidden'
     }
@@ -56,6 +67,9 @@ export default function ModuleModal({
   const showPicker = allowedKinds.length > 1
   const showMove = mode === 'edit' && Array.isArray(parentOptions) && parentOptions.length > 0
   const isLesson = kind === 'lesson'
+  const fem = kind === 'subject' || kind === 'lesson'
+  const artNovo = fem ? 'Nova' : 'Novo'
+  const artDo = fem ? 'da' : 'do'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -66,7 +80,7 @@ export default function ModuleModal({
         title: title.trim(),
         description: description.trim() || null,
         kind,
-        ...(isLesson ? { scheduledDate: scheduledDate || null } : {}),
+        ...(isLesson ? { scheduledDate: scheduledDate || null, scheduledTime: scheduledTime || null, priority } : {}),
         ...(showMove ? { parentModuleId: parentId || null } : {}),
       })
       onClose?.()
@@ -85,7 +99,7 @@ export default function ModuleModal({
         <header className="moduleModal__header">
           <div>
             <span className="moduleModal__eyebrow">Estrutura do curso</span>
-            <h3>{mode === 'edit' ? `Editar ${meta.label.toLowerCase()}` : showPicker ? 'Adicionar conteúdo' : `Novo ${meta.label.toLowerCase()}`}</h3>
+            <h3>{mode === 'edit' ? `Editar ${meta.label.toLowerCase()}` : showPicker ? 'Adicionar conteúdo' : `${artNovo} ${meta.label.toLowerCase()}`}</h3>
           </div>
           <button type="button" className="moduleModal__close" onClick={onClose} aria-label="Fechar"><X size={18} /></button>
         </header>
@@ -144,7 +158,7 @@ export default function ModuleModal({
         )}
 
         <div className="moduleModal__field">
-          <label>Nome {meta.label.toLowerCase()}</label>
+          <label>Nome {artDo} {meta.label.toLowerCase()}</label>
           <input
             ref={titleRef}
             type="text"
@@ -156,11 +170,37 @@ export default function ModuleModal({
         </div>
 
         {isLesson && (
-          <div className="moduleModal__field">
-            <label><Calendar size={14} /> Agendar aula <span className="moduleModal__opt">(opcional)</span></label>
-            <input className="moduleModal__select" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
-            <p className="moduleModal__moveHint"><CalendarClock size={12} /> Com data, a aula aparece automaticamente na aba Tarefas.</p>
-          </div>
+          <>
+            <div className="moduleModal__field">
+              <label><Calendar size={14} /> Agendar aula <span className="moduleModal__opt">(opcional)</span></label>
+              <div className="moduleModal__row2">
+                <input className="moduleModal__select" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+                <input className="moduleModal__select" type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} disabled={!scheduledDate} title={scheduledDate ? 'Horário' : 'Defina a data primeiro'} />
+              </div>
+              <p className="moduleModal__moveHint"><CalendarClock size={12} /> Com data, a aula aparece automaticamente na aba Tarefas.</p>
+            </div>
+
+            <div className="moduleModal__field">
+              <label>Prioridade</label>
+              <div className="moduleModal__prios">
+                {LESSON_PRIORITIES.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    className={`moduleModal__prio ${priority === p.id ? 'is-active' : ''}`}
+                    style={{ '--pc': p.color }}
+                    onClick={() => setPriority(p.id)}
+                  >
+                    {p.label}
+                    {(p.id === 'Alta' || p.id === 'Urgente') && <span className="moduleModal__flowTag">Flow</span>}
+                  </button>
+                ))}
+              </div>
+              {(priority === 'Alta' || priority === 'Urgente') && (
+                <p className="moduleModal__moveHint" style={{ color: '#ef4444' }}>⚡ Vai direto para o Flow na aba Tarefas.</p>
+              )}
+            </div>
+          </>
         )}
 
         {showMove && (

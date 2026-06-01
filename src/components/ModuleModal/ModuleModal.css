@@ -121,6 +121,44 @@
 .moduleModal__moveHint { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 0.76rem; color: #9a9aa2; }
 .moduleModal__moveHint svg { color: #16a34a; flex-shrink: 0; }
 
+.moduleModal__row2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
+.moduleModal__row2 input[type='time']:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.moduleModal__prios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.moduleModal__prio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: 11px;
+  border: 1.5px solid #ececf0;
+  background: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #6b6b73;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.moduleModal__prio:hover { border-color: color-mix(in srgb, var(--pc) 45%, #ececf0); }
+.moduleModal__prio.is-active { border-color: var(--pc); color: var(--pc); background: color-mix(in srgb, var(--pc) 9%, #fff); }
+.moduleModal__flowTag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--pc);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
+
+@media (max-width: 480px) {
+  .moduleModal__prios { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* Type picker */
 .moduleModal__types { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .moduleModal__type {

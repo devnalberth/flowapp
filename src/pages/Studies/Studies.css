@@ -561,6 +561,7 @@
 }
 .stLesson__badge--date { color: #ff4800; background: rgba(255, 72, 0, 0.1); }
 .stLesson__badge--task { color: #0ea5e9; background: rgba(14, 165, 233, 0.12); }
+.stLesson__badge--flow { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
 .stLesson__rating { font-size: 0.72rem; color: #ff7a00; letter-spacing: 1px; }
 .stLesson__actions { display: flex; gap: 4px; opacity: 0; transition: opacity 150ms ease; }
 .stLesson:hover .stLesson__actions { opacity: 1; }
