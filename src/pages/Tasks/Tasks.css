@@ -1309,3 +1309,5 @@
 .taskCtxChip--submodule em { background: #0ea5e9; }
 .taskCtxChip--subject { background: rgba(124, 92, 255, 0.1); border-color: rgba(124, 92, 255, 0.22); color: #5b43c4; }
 .taskCtxChip--subject em { background: #7c5cff; }
+.taskCtxChip--project { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.22); color: #15803d; }
+.taskCtxChip--project em { background: linear-gradient(180deg, #16a34a, #22c55e); }

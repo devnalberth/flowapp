@@ -89,6 +89,11 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   const currentUser = user ?? DEFAULT_USER
   const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent } = useApp()
   const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
+  const projectCtxMap = useMemo(() => {
+    const map = {}
+    for (const p of projects || []) map[p.id] = { title: p.title, area: p.area || null }
+    return map
+  }, [projects])
 
   // --- Estados de Filtro ---
   // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
@@ -681,7 +686,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                   <div className="taskCard__header">
                     <div>
                       {(() => {
-                        const sctx = (task.studyLessonId || task.study_lesson_id) ? lessonCtxMap[task.studyLessonId || task.study_lesson_id] : null
+                        const sId = task.studyLessonId || task.study_lesson_id
+                        const sctx = sId ? lessonCtxMap[sId] : null
                         if (sctx) {
                           return (
                             <>
@@ -694,6 +700,23 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                                 </span>
                               </div>
                               <p className="taskCard__title">{sctx.lessonTitle}</p>
+                            </>
+                          )
+                        }
+                        const pId = task.projectId || task.project_id
+                        const pctx = pId ? projectCtxMap[pId] : null
+                        if (pctx) {
+                          return (
+                            <>
+                              <div className="taskCard__ctxRow">
+                                <span className="taskCtxChip taskCtxChip--project">
+                                  <em>Projeto</em> {pctx.title}
+                                </span>
+                                {pctx.area && (
+                                  <span className="taskCtxChip"><em>Área</em> {pctx.area}</span>
+                                )}
+                              </div>
+                              <p className="taskCard__title">{task.title}</p>
                             </>
                           )
                         }
