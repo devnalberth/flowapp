@@ -573,6 +573,13 @@
 }
 
 /* Ordenação */
+.tasksListShell__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+
 .tasksListShell__sort {
   display: flex;
   align-items: center;
