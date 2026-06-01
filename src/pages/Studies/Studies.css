@@ -344,7 +344,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 .stModules__empty {
   grid-column: 1 / -1;
@@ -379,6 +379,11 @@
 }
 .stModule:not(.is-expanded):hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(0, 0, 0, 0.09); border-color: #ffd8c2; }
 .stModule.is-expanded { grid-column: 1 / -1; box-shadow: 0 16px 38px rgba(0, 0, 0, 0.08); border-color: rgba(255, 72, 0, 0.25); }
+
+/* Cards colapsados: mesma altura (stretch por linha) + rodapé ancorado embaixo */
+.stModule:not(.is-expanded) { display: flex; flex-direction: column; min-height: 168px; }
+.stModule:not(.is-expanded) .stModule__head { flex: 1; }
+.stModule:not(.is-expanded) .stModule__tail { margin-top: auto; }
 
 /* --- collapsed: compact vertical card --- */
 .stModule__head {

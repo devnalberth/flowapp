@@ -6,7 +6,7 @@ import LessonModal from '../../components/LessonModal/LessonModal.jsx'
 import ModuleModal from '../../components/ModuleModal/ModuleModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import {
-  Pencil, Trash2, X, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock,
+  Pencil, Trash2, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock, Check,
   Layers, Boxes, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2,
 } from 'lucide-react'
 import {
