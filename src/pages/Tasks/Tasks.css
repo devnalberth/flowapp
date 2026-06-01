@@ -261,6 +261,43 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.pomodoroCard__btn.dash {
+  width: 56px;
+  height: 56px;
+  min-height: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: rgba(255, 122, 0, 0.16);
+  color: #ff9500;
+  border: 1px solid rgba(255, 122, 0, 0.3);
+}
+.pomodoroCard__btn.dash:hover {
+  background: rgba(255, 122, 0, 0.26);
+}
+
+/* Badge da categoria no card de foco */
+.focusCatBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--c, #16a34a);
+  border-radius: 99px;
+  padding: 3px 11px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--c, #16a34a) 45%, transparent);
+}
+
+/* Filtro de categoria no header da lista */
+.tasksListShell__cat .tasksListShell__sortBtn { gap: 5px; }
+
 @keyframes fadeIn {
   from {
     opacity: 0;

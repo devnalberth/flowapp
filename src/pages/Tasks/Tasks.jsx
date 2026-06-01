@@ -5,10 +5,12 @@ import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw } from 'lucide-react'
+import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw, BarChart3, Briefcase, BookOpen } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
 import { buildLessonContextMap } from '../../utils/studyMetrics'
+import { categorizeTask, CATEGORY_META } from '../../utils/taskCategory'
+import FlowDashboardModal from '../../components/FlowDashboardModal/FlowDashboardModal.jsx'
 
 const STUDY_KIND_LABEL = { module: 'Módulo', submodule: 'Sub-módulo', subject: 'Matéria' }
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
@@ -108,6 +110,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   })
 
   const [sortBy, setSortBy] = useState('time') // 'time' ou 'priority'
+  const [flowCategory, setFlowCategory] = useState('all') // 'all' | 'work' | 'study'
+  const [showFlowDash, setShowFlowDash] = useState(false)
 
   // --- Estados de Dados ---
   const [tasks, setTasks] = useState([])
@@ -209,7 +213,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const localDate = new Date(now.getTime() - (offset * 60 * 1000))
     const todayStr = localDate.toISOString().split('T')[0]
 
-    focusLogService.addTime(todayStr, minutesToAdd)
+    // Registra com categoria (Produtividade/Estudos) e a tarefa, para o dashboard
+    const lid = currentTask.studyLessonId || currentTask.study_lesson_id
+    const displayTitle = (lid && lessonCtxMap[lid]?.lessonTitle) || currentTask.title
+    focusLogService.addTime(todayStr, minutesToAdd, {
+      category: categorizeTask(currentTask),
+      taskId: currentTask.id,
+      taskTitle: displayTitle,
+    })
 
     // Atualiza otimista e no banco
     await updateTask(focusedTaskId, {
@@ -416,6 +427,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       // Caso contrário, retorna o match de status calculado
       return matchesStatus
     })
+    // Filtro por categoria (Produtividade x Estudos)
+    .filter((task) => flowCategory === 'all' || categorizeTask(task) === flowCategory)
 
     // Ordenação determinística em cascata
     const todayKey = toLocalDateKey(today)
@@ -444,7 +457,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       // 4. Desempate sempre por horário
       return timeOf(a) - timeOf(b)
     })
-  }, [tasks, timelineFilter, statusFilters, sortBy])
+  }, [tasks, timelineFilter, statusFilters, sortBy, flowCategory])
 
   // Arquivamento manual por tarefa (reversível) — não mexe em `completed`,
   // então NÃO afeta o progresso de projetos/metas.
@@ -582,6 +595,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
             <div className="pomodoroCard__display">
               {focusedTaskData ? (
                 <div className="pomodoroCard__focus">
+                  {(() => {
+                    const cat = CATEGORY_META[categorizeTask(focusedTaskData)]
+                    return (
+                      <span className="focusCatBadge" style={{ '--c': cat.color }}>
+                        {cat.emoji} {cat.label}
+                      </span>
+                    )
+                  })()}
                   <span className="focusLabel">Focando em:</span>
                   <p className="focusTitle">{focusedTaskData.title}</p>
                   {/* Mostra o tempo já acumulado da tarefa se existir */}
@@ -616,6 +637,9 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
               <button className="pomodoroCard__btn reset" onClick={resetTimer}>
                 <RotateCcw size={20} />
               </button>
+              <button className="pomodoroCard__btn dash" onClick={() => setShowFlowDash(true)} title="Painel de produtividade">
+                <BarChart3 size={20} />
+              </button>
             </div>
           </section>
         )}
@@ -623,6 +647,18 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         <header className="tasksListShell__head">
           <div><p className="tasksListShell__eyebrow">Checklist</p><h2>Minhas Tarefas</h2></div>
           <div className="tasksListShell__actions">
+            <div className="tasksListShell__sort tasksListShell__cat">
+              <span className="tasksListShell__sortLabel">Categoria:</span>
+              <button className={`tasksListShell__sortBtn ${flowCategory === 'all' ? 'active' : ''}`} onClick={() => setFlowCategory('all')}>
+                Tudo
+              </button>
+              <button className={`tasksListShell__sortBtn ${flowCategory === 'work' ? 'active' : ''}`} onClick={() => setFlowCategory('work')}>
+                <Briefcase size={14} /> Produtividade
+              </button>
+              <button className={`tasksListShell__sortBtn ${flowCategory === 'study' ? 'active' : ''}`} onClick={() => setFlowCategory('study')}>
+                <BookOpen size={14} /> Estudos
+              </button>
+            </div>
             <div className="tasksListShell__sort">
               <span className="tasksListShell__sortLabel">Ordenar:</span>
               <button
@@ -809,6 +845,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
           />
         )
       }
+
+      <FlowDashboardModal open={showFlowDash} onClose={() => setShowFlowDash(false)} />
 
       <PomodoroConfigModal
         show={showPomodoroConfig}

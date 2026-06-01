@@ -33,7 +33,7 @@ export const focusLogService = {
    * @param {string} dateStr - Data no formato YYYY-MM-DD
    * @param {number} minutes - Minutos a adicionar
    */
-  addTime(dateStr, minutes) {
+  addTime(dateStr, minutes, meta = {}) {
     if (!dateStr || !minutes || minutes <= 0) return
 
     try {
@@ -46,9 +46,11 @@ export const focusLogService = {
       if (dayData === undefined || typeof dayData === 'number') {
         dayData = {
           total: typeof dayData === 'number' ? dayData : 0,
-          hours: {}
+          hours: {},
         }
       }
+      if (!dayData.categories) dayData.categories = { work: 0, study: 0 }
+      if (!dayData.tasks) dayData.tasks = {}
 
       // Adiciona ao total
       dayData.total += minutes
@@ -57,13 +59,81 @@ export const focusLogService = {
       const currentHour = new Date().getHours() // Hora local 0-23
       dayData.hours[currentHour] = (dayData.hours[currentHour] || 0) + minutes
 
+      // Categoria (work/study) e por-tarefa
+      const category = meta.category === 'study' ? 'study' : 'work'
+      dayData.categories[category] = (dayData.categories[category] || 0) + minutes
+      if (meta.taskId) {
+        const prev = dayData.tasks[meta.taskId] || { title: meta.taskTitle || 'Tarefa', minutes: 0, category }
+        prev.minutes += minutes
+        prev.category = category
+        if (meta.taskTitle) prev.title = meta.taskTitle
+        dayData.tasks[meta.taskId] = prev
+      }
+
       log[dateStr] = dayData
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(log))
-      console.log(`Focus Log: +${minutes.toFixed(1)}min em ${dateStr} (Hour ${currentHour}). Total do dia: ${dayData.total.toFixed(1)}min`)
     } catch (e) {
       console.error('Erro ao salvar focus log:', e)
     }
+  },
+
+  // Helper: gera as chaves de data local dos últimos N dias (mais antiga → hoje).
+  _localDateKeys(daysBack) {
+    const keys = []
+    const now = new Date()
+    for (let i = daysBack - 1; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      const offset = d.getTimezoneOffset()
+      const local = new Date(d.getTime() - offset * 60 * 1000)
+      keys.push(local.toISOString().split('T')[0])
+    }
+    return keys
+  },
+
+  _dayCategories(entry) {
+    if (!entry || typeof entry === 'number') return { work: typeof entry === 'number' ? entry : 0, study: 0 }
+    if (entry.categories) return { work: entry.categories.work || 0, study: entry.categories.study || 0 }
+    // Legado sem categoria: conta tudo como produtividade
+    return { work: entry.total || 0, study: 0 }
+  },
+
+  // Série por dia: [{ dateStr, label, total, work, study }]
+  getDailySeries(daysBack = 7) {
+    const log = this.getAll()
+    const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    return this._localDateKeys(daysBack).map((dateStr) => {
+      const cats = this._dayCategories(log[dateStr])
+      const [y, m, d] = dateStr.split('-').map(Number)
+      const label = WD[new Date(y, m - 1, d).getDay()]
+      return { dateStr, label, work: cats.work, study: cats.study, total: cats.work + cats.study }
+    })
+  },
+
+  // Totais de categoria num range: { work, study, total }
+  getCategoryTotals(daysBack = 7) {
+    const series = this.getDailySeries(daysBack)
+    return series.reduce(
+      (acc, d) => ({ work: acc.work + d.work, study: acc.study + d.study, total: acc.total + d.total }),
+      { work: 0, study: 0, total: 0 },
+    )
+  },
+
+  // Tarefas agregadas no range, ordenadas por tempo desc: [{ taskId, title, minutes, category }]
+  getTaskTotals(daysBack = 7) {
+    const log = this.getAll()
+    const agg = {}
+    for (const dateStr of this._localDateKeys(daysBack)) {
+      const entry = log[dateStr]
+      if (!entry || typeof entry === 'number' || !entry.tasks) continue
+      for (const [taskId, t] of Object.entries(entry.tasks)) {
+        if (!agg[taskId]) agg[taskId] = { taskId, title: t.title, minutes: 0, category: t.category || 'work' }
+        agg[taskId].minutes += t.minutes || 0
+        if (t.title) agg[taskId].title = t.title
+      }
+    }
+    return Object.values(agg).sort((a, b) => b.minutes - a.minutes)
   },
 
   /**
