@@ -25,6 +25,16 @@ const fmtShort = (iso) => {
   return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]}`
 }
 
+/* ---------- Checkmark (opticamente centralizado) ---------- */
+function CheckIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'block' }}>
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  )
+}
+
 /* ---------- Progress ring (conic-gradient) ---------- */
 function ProgressRing({ value = 0, size = 64, stroke = 7, children }) {
   return (
@@ -312,7 +322,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
           onClick={() => handleToggleLesson(lesson.id, lesson.isCompleted)}
           aria-label={lesson.isCompleted ? 'Desmarcar' : 'Concluir'}
         >
-          {lesson.isCompleted ? <Check size={13} strokeWidth={3} /> : null}
+          {lesson.isCompleted ? <CheckIcon size={13} /> : null}
         </button>
 
         <button type="button" className="stLesson__title" onClick={() => setSelectedLesson(lesson)}>
@@ -410,29 +420,36 @@ export default function Studies({ user, onNavigate, onLogout }) {
           </div>
         </header>
         <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
-          <div className="stMateria__bar"><span style={{ width: `${progress}%` }} /></div>
-          <div className="stLessons">
-            {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
+          <div className="stMateria__body">
+            <div className="stMateria__bar"><span style={{ width: `${progress}%` }} /></div>
+            <div className="stLessons">
+              {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
+            </div>
+            {renderAddLesson(materia.id)}
           </div>
-          {renderAddLesson(materia.id)}
         </div>
       </article>
     )
   }
 
-  /* ---------- Módulo (top level) ---------- */
+  /* ---------- Módulo (card; expande full-width) ---------- */
   const renderModule = (mod, index) => {
     const isOpen = expandedModules[mod.id]
     const progress = moduleProgress(mod)
     const counts = countLessonsRecursively([mod])
     const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
+    const isEditing = editingModuleId === mod.id
     return (
-      <section key={mod.id} className="stModule">
-        <header className="stModule__head" onClick={() => setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] }))}>
-          <div className="stModule__index">{String(index + 1).padStart(2, '0')}</div>
+      <section key={mod.id} className={`stModule ${isOpen ? 'is-expanded' : ''}`}>
+        <header className="stModule__head" onClick={() => { if (!isEditing) setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] })) }}>
+          <div className="stModule__lead">
+            <div className="stModule__index">{String(index + 1).padStart(2, '0')}</div>
+            <div className="stModule__ring"><ProgressRing value={progress} size={44} stroke={5} /></div>
+          </div>
+
           <div className="stModule__meta">
             <span className="stModule__eyebrow">Módulo</span>
-            {editingModuleId === mod.id ? (
+            {isEditing ? (
               <input
                 className="stInlineEdit stInlineEdit--lg"
                 value={editingModuleTitle}
@@ -446,24 +463,26 @@ export default function Studies({ user, onNavigate, onLogout }) {
             )}
             <span className="stModule__stat">{counts.completed}/{counts.total} aulas · {progress}%</span>
           </div>
-          <div className="stModule__ring"><ProgressRing value={progress} size={46} stroke={5} /></div>
-          <div className="stRowActions" onClick={(e) => e.stopPropagation()}>
-            {editingModuleId === mod.id ? (
-              <>
-                <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={14} /></button>
-                <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={14} /></button>
-              </>
-            ) : (
-              <>
-                <button className="stRowActions__btn" onClick={() => startEditModule(mod)}><Pencil size={14} /></button>
-                <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)}><Trash2 size={14} /></button>
-              </>
-            )}
+
+          <div className="stModule__tail">
+            <div className="stRowActions" onClick={(e) => e.stopPropagation()}>
+              {isEditing ? (
+                <>
+                  <button className="stRowActions__btn" onClick={saveModuleEdit}><Check size={14} /></button>
+                  <button className="stRowActions__btn" onClick={() => setEditingModuleId(null)}><X size={14} /></button>
+                </>
+              ) : (
+                <>
+                  <button className="stRowActions__btn" onClick={() => startEditModule(mod)}><Pencil size={14} /></button>
+                  <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)}><Trash2 size={14} /></button>
+                </>
+              )}
+            </div>
+            <ChevronDown size={18} className={`stChevron stModule__chevron ${isOpen ? 'is-open' : ''}`} />
           </div>
-          <ChevronDown size={18} className={`stChevron stModule__chevron ${isOpen ? 'is-open' : ''}`} />
         </header>
 
-        <div className={`stCollapse ${isOpen ? 'is-open' : ''}`}>
+        {isOpen && (
           <div className="stModule__body">
             {directLessons.length > 0 && (
               <div className="stLessons">{directLessons.map(renderLessonRow)}</div>
@@ -479,7 +498,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
               <Plus size={14} /> Adicionar matéria
             </button>
           </div>
-        </div>
+        )}
       </section>
     )
   }
