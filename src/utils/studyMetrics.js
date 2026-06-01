@@ -57,6 +57,29 @@ export function flattenLessons(study) {
   return out
 }
 
+// Mapa lessonId → contexto (curso, container imediato + tipo, nome da aula).
+// Usado na aba Tarefas para mostrar labels em vez de um título longo.
+export function buildLessonContextMap(studies = []) {
+  const map = {}
+  for (const study of studies || []) {
+    const walk = (mods) => {
+      for (const m of mods || []) {
+        for (const l of m.lessons || []) {
+          map[l.id] = {
+            studyTitle: study.title,
+            containerTitle: m.title,
+            containerKind: m.kind || 'module',
+            lessonTitle: l.title,
+          }
+        }
+        walk(m.submodules || [])
+      }
+    }
+    walk(study.modules || [])
+  }
+  return map
+}
+
 // Conta nós por tipo (sub-módulos e matérias) em toda a árvore, fora o nível raiz.
 export function tallyKinds(modules = []) {
   let submodules = 0

@@ -1267,3 +1267,45 @@
     flex-direction: column;
   }
 }
+/* Labels de contexto da aula (tarefas vindas de Estudos) */
+.taskCard__ctxRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.taskCtxChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2e2e36;
+  background: #f3f3f5;
+  border: 1px solid #ececf0;
+  border-radius: 9px;
+  padding: 3px 9px 3px 4px;
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.taskCtxChip em {
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+  color: #fff;
+  background: #9aa0aa;
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+.taskCtxChip--course { background: rgba(255, 122, 0, 0.09); border-color: rgba(255, 122, 0, 0.22); color: #8a4012; }
+.taskCtxChip--course em { background: linear-gradient(180deg, #ff4800, #ff9500); }
+.taskCtxChip--module { background: rgba(255, 122, 0, 0.09); border-color: rgba(255, 122, 0, 0.22); color: #8a4012; }
+.taskCtxChip--module em { background: #ff6a00; }
+.taskCtxChip--submodule { background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.22); color: #0b6c93; }
+.taskCtxChip--submodule em { background: #0ea5e9; }
+.taskCtxChip--subject { background: rgba(124, 92, 255, 0.1); border-color: rgba(124, 92, 255, 0.22); color: #5b43c4; }
+.taskCtxChip--subject em { background: #7c5cff; }

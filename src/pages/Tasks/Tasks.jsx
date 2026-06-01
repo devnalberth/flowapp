@@ -8,6 +8,9 @@ import FloatingCreateButton from '../../components/FloatingCreateButton/Floating
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
+import { buildLessonContextMap } from '../../utils/studyMetrics'
+
+const STUDY_KIND_LABEL = { module: 'Módulo', submodule: 'Sub-módulo', subject: 'Matéria' }
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
 
 import './Tasks.css'
@@ -84,7 +87,8 @@ const getWeekStart = () => {
 
 export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, addTask, updateTask, deleteTask, addEvent } = useApp()
+  const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent } = useApp()
+  const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
 
   // --- Estados de Filtro ---
   // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
@@ -676,11 +680,33 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                 <div className="taskCard__body">
                   <div className="taskCard__header">
                     <div>
-                      <p className="taskCard__title">{task.title}</p>
-                      <div className="taskCard__context">
-                        <span>{task.context || 'Geral'}</span>
-                        {task.project && <span>• {task.project}</span>}
-                      </div>
+                      {(() => {
+                        const sctx = (task.studyLessonId || task.study_lesson_id) ? lessonCtxMap[task.studyLessonId || task.study_lesson_id] : null
+                        if (sctx) {
+                          return (
+                            <>
+                              <div className="taskCard__ctxRow">
+                                <span className="taskCtxChip taskCtxChip--course">
+                                  <em>Curso</em> {sctx.studyTitle}
+                                </span>
+                                <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
+                                  <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
+                                </span>
+                              </div>
+                              <p className="taskCard__title">{sctx.lessonTitle}</p>
+                            </>
+                          )
+                        }
+                        return (
+                          <>
+                            <p className="taskCard__title">{task.title}</p>
+                            <div className="taskCard__context">
+                              <span>{task.context || 'Geral'}</span>
+                              {task.project && <span>• {task.project}</span>}
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
 
                     <div className="taskCard__badges">

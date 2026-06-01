@@ -57,29 +57,6 @@ function mapLessonInStudies(studies, lessonId, patch) {
   return (studies || []).map((s) => ({ ...s, modules: mapModules(s.modules || []) }))
 }
 
-// Acha o contexto (curso + container imediato) de uma aula a partir do id do container.
-function findContainerContext(studies, containerId) {
-  for (const study of studies || []) {
-    const walk = (mods) => {
-      for (const m of mods || []) {
-        if (m.id === containerId) return { studyTitle: study.title, containerTitle: m.title }
-        const found = walk(m.submodules || [])
-        if (found) return found
-      }
-      return null
-    }
-    const ctx = walk(study.modules || [])
-    if (ctx) return ctx
-  }
-  return null
-}
-
-// Título da tarefa com contexto: "Curso · Módulo/Sub-módulo — Aula".
-function composeLessonTaskTitle(ctx, lessonTitle) {
-  if (!ctx) return lessonTitle
-  return `${ctx.studyTitle} · ${ctx.containerTitle} — ${lessonTitle}`
-}
-
 // Monta os campos da tarefa-espelho de uma aula agendada.
 // - Combina data + horário no due_date; sem horário, usa só a data.
 // - Prioridade Alta/Urgente entra no Flow (tag 'flow'), além da tag 'Estudos'.
@@ -623,13 +600,12 @@ export function AppProvider({ children, userId }) {
 
   // Cria uma tarefa espelho de uma aula agendada (aparece na aba de Tarefas).
   const createLessonTask = async (lesson) => {
-    const ctx = findContainerContext(studies, lesson.module_id)
     const newTask = await taskService.createTask(userId, {
       ...buildLessonTaskFields({
         date: lesson.scheduledDate,
         time: lesson.scheduledTime,
         priority: lesson.priority,
-        title: composeLessonTaskTitle(ctx, lesson.title),
+        title: lesson.title,
         completed: lesson.isCompleted,
       }),
       status: 'todo',
@@ -667,8 +643,7 @@ export function AppProvider({ children, userId }) {
     // Sincroniza a tarefa-espelho conforme data/horário/prioridade
     try {
       if (nextDate) {
-        const ctx = findContainerContext(studies, current?.module_id || saved?.module_id)
-        const fields = buildLessonTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: composeLessonTaskTitle(ctx, nextTitle) })
+        const fields = buildLessonTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: nextTitle })
         if (hadTask) {
           const updatedTask = await taskService.updateTask(hadTask, userId, fields)
           setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
