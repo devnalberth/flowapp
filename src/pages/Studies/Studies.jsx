@@ -29,8 +29,8 @@ const fmtShort = (iso) => {
 function CheckIcon({ size = 13 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'block' }}>
-      <path d="M5 12.5l4.5 4.5L19 7" />
+      strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'block' }}>
+      <path d="M5 12.5l4 4 9.5-9" />
     </svg>
   )
 }

@@ -45,6 +45,18 @@ function findLessonInStudies(studies, lessonId) {
   return null
 }
 
+// Aplica um patch a uma aula dentro da árvore de estudos, de forma imutável.
+// Usado para updates otimistas (UI instantânea) sem recarregar tudo do banco.
+function mapLessonInStudies(studies, lessonId, patch) {
+  const mapModules = (modules) =>
+    (modules || []).map((mod) => ({
+      ...mod,
+      lessons: (mod.lessons || []).map((l) => (l.id === lessonId ? { ...l, ...patch } : l)),
+      submodules: mapModules(mod.submodules || []),
+    }))
+  return (studies || []).map((s) => ({ ...s, modules: mapModules(s.modules || []) }))
+}
+
 const AppContext = createContext(null)
 
 export function useApp() {
@@ -188,14 +200,15 @@ export function AppProvider({ children, userId }) {
       // Se der erro de rede, aí sim poderíamos reverter, mas manter assim é melhor para UX
     }
 
-    // Espelha a conclusão na aula vinculada (chama o service direto p/ não re-disparar o sync).
+    // Espelha a conclusão na aula vinculada (otimista + service direto p/ não re-disparar o sync).
     if (linkedLessonId && updates.completed !== undefined) {
+      const done = !!updates.completed
+      setStudies(prev => mapLessonInStudies(prev, linkedLessonId, { isCompleted: done, is_completed: done }))
       try {
-        await studyService.toggleLessonComplete(linkedLessonId, !!updates.completed)
-        const allStudies = await studyService.getStudies(userId)
-        setStudies(allStudies)
+        await studyService.toggleLessonComplete(linkedLessonId, done)
       } catch (error) {
         console.error('Erro ao espelhar conclusão na aula:', error)
+        setStudies(prev => mapLessonInStudies(prev, linkedLessonId, { isCompleted: !done, is_completed: !done }))
       }
     }
   }
@@ -658,23 +671,30 @@ export function AppProvider({ children, userId }) {
   const toggleStudyLesson = async (lessonId, isCompleted) => {
     if (!userId) return
     const current = findLessonInStudies(studies, lessonId)
-    await studyService.toggleLessonComplete(lessonId, isCompleted)
-    // Espelha a conclusão na tarefa vinculada (sem re-disparar o sync reverso)
+    // 1. OTIMISTA: atualiza a UI na hora (progresso/anéis recalculam ao vivo)
+    setStudies(prev => mapLessonInStudies(prev, lessonId, { isCompleted, is_completed: isCompleted }))
     if (current?.taskId) {
-      try {
+      const completedAt = isCompleted ? new Date().toISOString() : null
+      setTasks(prev => prev.map(t => t.id === current.taskId
+        ? { ...t, completed: isCompleted, completed_at: completedAt, status: isCompleted ? 'done' : 'todo' }
+        : t))
+    }
+    // 2. Persiste em background (não bloqueia a UI já atualizada)
+    try {
+      await studyService.toggleLessonComplete(lessonId, isCompleted)
+      if (current?.taskId) {
         const completedAt = isCompleted ? new Date().toISOString() : null
-        const updatedTask = await taskService.updateTask(current.taskId, userId, {
+        await taskService.updateTask(current.taskId, userId, {
           completed: isCompleted,
           status: isCompleted ? 'done' : 'todo',
           completed_at: completedAt,
         })
-        setTasks(prev => prev.map(t => t.id === current.taskId ? updatedTask : t))
-      } catch (error) {
-        console.error('Erro ao espelhar conclusão na tarefa:', error)
       }
+    } catch (error) {
+      console.error('Erro ao concluir aula:', error)
+      // Reverte em caso de falha
+      setStudies(prev => mapLessonInStudies(prev, lessonId, { isCompleted: !isCompleted, is_completed: !isCompleted }))
     }
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
   }
 
   const addDreamMap = async (dreamMap, imageFile) => {
