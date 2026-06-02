@@ -9,9 +9,53 @@
  * }
  */
 
+import { getSupabaseClient } from '../lib/supabaseClient'
+
 const STORAGE_KEY = 'flowapp_focus_log'
 
 export const focusLogService = {
+  // Persiste o dia (do localStorage) no banco — torna o histórico durável.
+  async persistDay(userId, dateStr) {
+    if (!userId || !dateStr) return
+    try {
+      const log = this.getAll()
+      let d = log[dateStr]
+      if (d === undefined) return
+      if (typeof d === 'number') d = { total: d, hours: {}, categories: { work: d, study: 0 }, tasks: {} }
+      const supabase = getSupabaseClient(true)
+      await supabase.from('focus_logs').upsert({
+        user_id: userId,
+        day: dateStr,
+        total: d.total || 0,
+        work: d.categories?.work || 0,
+        study: d.categories?.study || 0,
+        hours: d.hours || {},
+        tasks: d.tasks || {},
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,day' })
+    } catch (e) { console.error('focusLog.persistDay:', e) }
+  },
+
+  // Carrega o histórico do banco para o localStorage (DB é a fonte de verdade).
+  async hydrate(userId) {
+    if (!userId) return
+    try {
+      const supabase = getSupabaseClient(true)
+      const { data, error } = await supabase.from('focus_logs').select('*').eq('user_id', userId)
+      if (error) throw error
+      const log = this.getAll()
+      ;(data || []).forEach((row) => {
+        log[row.day] = {
+          total: Number(row.total) || 0,
+          hours: row.hours || {},
+          categories: { work: Number(row.work) || 0, study: Number(row.study) || 0 },
+          tasks: row.tasks || {},
+        }
+      })
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(log))
+    } catch (e) { console.error('focusLog.hydrate:', e) }
+  },
+
   /**
    * Obtém todos os logs de foco
    */

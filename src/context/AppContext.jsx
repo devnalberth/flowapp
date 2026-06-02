@@ -200,6 +200,9 @@ export function AppProvider({ children, userId }) {
       setFinanceAccounts(safeArray(results[11], 'financeAccounts'))
       setFinanceCards(safeArray(results[12], 'financeCards'))
 
+      // Re-hidrata o histórico de foco do banco (sobrevive a limpar cache/trocar device)
+      focusLogService.hydrate(userId)
+
     } catch (error) {
       console.error('Erro fatal no carregamento:', error)
     } finally {
@@ -945,6 +948,7 @@ export function AppProvider({ children, userId }) {
   }
 
   const value = {
+    userId,
     userId,
     tasks, projects, clients, goals, habits, finances, studies, dreamMaps, events, loading,
     addTask, updateTask, deleteTask,

@@ -35,7 +35,10 @@ class ErrorBoundary extends React.Component {
           <br /><br />
           <button 
             onClick={() => {
+              // Preserva o histórico de foco ao limpar o cache (também está salvo no banco)
+              const focus = localStorage.getItem('flowapp_focus_log');
               localStorage.clear();
+              if (focus) localStorage.setItem('flowapp_focus_log', focus);
               window.location.href = '/';
             }}
             style={{ padding: '0.75rem 1.5rem', background: '#3f3f46', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
