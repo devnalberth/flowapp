@@ -452,6 +452,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
         <CreateFinanceModal
           onClose={closeTransactionModal}
           onSubmit={handleTransactionSubmit}
+          initialData={editingTransaction}
         />
       )}
 

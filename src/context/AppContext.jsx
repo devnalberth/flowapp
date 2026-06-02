@@ -504,6 +504,13 @@ export function AppProvider({ children, userId }) {
         installmentTotal: totalAmount.toFixed(2),
         installmentGroupId: groupId,
         installmentIndex: i + 1,
+        // Propaga conta/cartão/pagamento/tags/observação para cada parcela
+        accountId: finance.accountId ?? null,
+        cardId: finance.cardId ?? null,
+        paymentMethod: finance.paymentMethod ?? null,
+        purchaseDate: finance.purchaseDate ?? null,
+        tags: Array.isArray(finance.tags) ? finance.tags : [],
+        notes: finance.notes ?? null,
       }))
 
       const newTransactions = await financeService.createTransactions(userId, transactions)

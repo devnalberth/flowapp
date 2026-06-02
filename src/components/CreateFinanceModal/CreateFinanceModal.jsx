@@ -67,8 +67,22 @@ const PAYMENT_METHODS = [
   { id: 'credito', label: 'Crédito' },
 ]
 
-export default function CreateFinanceModal({ onClose, onSubmit }) {
-  const [formData, setFormData] = useState({
+const buildInitial = (initialData) => {
+  if (initialData) {
+    const amountNum = Number(initialData.amount) || 0
+    return {
+      type: (initialData.type || 'DESPESA').toUpperCase(),
+      description: initialData.description || '',
+      amount: amountNum ? String(amountNum.toFixed(2)).replace('.', ',') : '',
+      date: initialData.date ? String(initialData.date).slice(0, 10) : new Date().toISOString().split('T')[0],
+      category: initialData.category || 'alimentacao',
+      account: initialData.account || 'conta-corrente',
+      paymentMethod: initialData.paymentMethod || initialData.payment_method || 'pix',
+      isInstallment: !!(initialData.isInstallment ?? initialData.is_installment),
+      installmentCount: initialData.installmentCount || initialData.installment_count || 2,
+    }
+  }
+  return {
     type: 'DESPESA',
     description: '',
     amount: '',
@@ -78,7 +92,12 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
     paymentMethod: 'pix',
     isInstallment: false,
     installmentCount: 2,
-  })
+  }
+}
+
+export default function CreateFinanceModal({ onClose, onSubmit, initialData = null }) {
+  const isEditing = !!initialData
+  const [formData, setFormData] = useState(() => buildInitial(initialData))
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -97,23 +116,14 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
       category: formData.category,
       // Store at noon UTC so any ±12h timezone offset never shifts the calendar day
       date: formData.date + 'T12:00:00.000Z',
+      paymentMethod: formData.paymentMethod,
       isInstallment: formData.isInstallment,
       installmentCount: installmentCount,
       // installmentTotal = total purchase price (what the user entered), NOT price × N
       installmentTotal: formData.isInstallment ? amount.toFixed(2) : null,
     })
 
-    setFormData({
-      type: 'DESPESA',
-      description: '',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      category: 'alimentacao',
-      account: 'conta-corrente',
-      paymentMethod: 'pix',
-      isInstallment: false,
-      installmentCount: 2,
-    })
+    if (!isEditing) setFormData(buildInitial(null))
     onClose()
   }
 
@@ -147,7 +157,7 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
     <div className="finance-modal-overlay" onClick={onClose}>
       <div className="finance-modal" onClick={(e) => e.stopPropagation()}>
         <header className="finance-modal__header">
-          <h2>Nova Transação</h2>
+          <h2>{isEditing ? 'Editar transação' : 'Nova Transação'}</h2>
           <button className="finance-modal__close" onClick={onClose}>
             <X size={20} />
           </button>
@@ -352,7 +362,7 @@ export default function CreateFinanceModal({ onClose, onSubmit }) {
               className="finance-modal__submit"
               disabled={!formData.description.trim() || !formData.amount}
             >
-              Salvar
+              {isEditing ? 'Salvar alterações' : 'Salvar'}
             </button>
           </div>
         </form>
