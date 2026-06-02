@@ -7,6 +7,8 @@ import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
 import { financeCategoryService } from '../services/financeCategoryService'
 import { financeTagService } from '../services/financeTagService'
+import { financeAccountService } from '../services/financeAccountService'
+import { financeCardService } from '../services/financeCardService'
 import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
@@ -27,6 +29,18 @@ function addMonthsToDate(dateInput, months) {
   const lastDay = new Date(newYear, newMonth, 0).getDate()
   const newDay = Math.min(d, lastDay)
   return `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}T12:00:00.000Z`
+}
+
+// Mês da fatura (YYYY-MM) de uma compra no cartão: se o dia da compra passou do
+// fechamento, cai na fatura do mês seguinte. Soma `offset` meses (parcelas).
+function computeInvoiceMonth(dateStr, closingDay, offset = 0) {
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number)
+  let year = y
+  let month = (m || 1) + offset
+  if (d > (closingDay || 1)) month += 1
+  while (month > 12) { month -= 12; year += 1 }
+  while (month < 1) { month += 12; year -= 1 }
+  return `${year}-${String(month).padStart(2, '0')}`
 }
 
 // Chave de data LOCAL (YYYY-MM-DD) — evita o bug de fuso (UTC adiantava o dia à noite no BR).
@@ -104,6 +118,8 @@ export function AppProvider({ children, userId }) {
   const [finances, setFinances] = useState([])
   const [financeCategories, setFinanceCategories] = useState([])
   const [financeTags, setFinanceTags] = useState([])
+  const [financeAccounts, setFinanceAccounts] = useState([])
+  const [financeCards, setFinanceCards] = useState([])
   const [studies, setStudies] = useState([])
   const [dreamMaps, setDreamMaps] = useState([])
   const [events, setEvents] = useState([])
@@ -122,6 +138,8 @@ export function AppProvider({ children, userId }) {
       setFinances([])
       setFinanceCategories([])
       setFinanceTags([])
+      setFinanceAccounts([])
+      setFinanceCards([])
       setStudies([])
       setDreamMaps([])
       setLoading(false)
@@ -145,6 +163,8 @@ export function AppProvider({ children, userId }) {
         clientService.getClients(userId),
         financeCategoryService.getCategories(userId),
         financeTagService.getTags(userId),
+        financeAccountService.getAccounts(userId),
+        financeCardService.getCards(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -177,6 +197,8 @@ export function AppProvider({ children, userId }) {
       }
       setFinanceCategories(cats)
       setFinanceTags(safeArray(results[10], 'financeTags'))
+      setFinanceAccounts(safeArray(results[11], 'financeAccounts'))
+      setFinanceCards(safeArray(results[12], 'financeCards'))
 
     } catch (error) {
       console.error('Erro fatal no carregamento:', error)
@@ -511,6 +533,9 @@ export function AppProvider({ children, userId }) {
       const perInstallment = totalAmount / N
       const baseDate = finance.date.substring(0, 10) // YYYY-MM-DD
       const baseDesc = finance.description.replace(/\s*\(\d+\/\d+\)$/, '')
+      // Cartão: cada parcela cai na fatura do mês correspondente
+      const card = finance.cardId ? financeCards.find(c => c.id === finance.cardId) : null
+      const closing = card?.closingDay ?? 1
 
       const transactions = Array.from({ length: N }, (_, i) => ({
         description: `${baseDesc} (${i + 1}/${N})`,
@@ -527,7 +552,8 @@ export function AppProvider({ children, userId }) {
         accountId: finance.accountId ?? null,
         cardId: finance.cardId ?? null,
         paymentMethod: finance.paymentMethod ?? null,
-        purchaseDate: finance.purchaseDate ?? null,
+        purchaseDate: finance.cardId ? baseDate : (finance.purchaseDate ?? null),
+        invoiceMonth: finance.cardId ? computeInvoiceMonth(baseDate, closing, i) : null,
         tags: Array.isArray(finance.tags) ? finance.tags : [],
         notes: finance.notes ?? null,
       }))
@@ -537,8 +563,18 @@ export function AppProvider({ children, userId }) {
       return newTransactions
     }
 
-    // Non-installment: single transaction
-    const newFinance = await financeService.createTransaction(userId, finance)
+    // Non-installment: single transaction (cartão → calcula a fatura)
+    let payload = finance
+    if (finance.cardId) {
+      const card = financeCards.find(c => c.id === finance.cardId)
+      const closing = card?.closingDay ?? 1
+      payload = {
+        ...finance,
+        purchaseDate: String(finance.date).slice(0, 10),
+        invoiceMonth: computeInvoiceMonth(finance.date, closing, 0),
+      }
+    }
+    const newFinance = await financeService.createTransaction(userId, payload)
     setFinances(prev => [newFinance, ...prev])
     return newFinance
   }
@@ -658,6 +694,46 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setFinanceTags(prev => prev.filter(t => t.id !== id))
     await financeTagService.deleteTag(id, userId)
+  }
+
+  // Finance Accounts
+  const addFinanceAccount = async (a) => {
+    if (!userId) return
+    const created = await financeAccountService.createAccount(userId, a)
+    setFinanceAccounts(prev => [...prev, created])
+    return created
+  }
+  const updateFinanceAccount = async (id, updates) => {
+    if (!userId) return
+    setFinanceAccounts(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x))
+    const updated = await financeAccountService.updateAccount(id, userId, updates)
+    if (updated) setFinanceAccounts(prev => prev.map(x => x.id === id ? updated : x))
+    return updated
+  }
+  const deleteFinanceAccount = async (id) => {
+    if (!userId) return
+    setFinanceAccounts(prev => prev.filter(x => x.id !== id))
+    await financeAccountService.deleteAccount(id, userId)
+  }
+
+  // Finance Cards
+  const addFinanceCard = async (card) => {
+    if (!userId) return
+    const created = await financeCardService.createCard(userId, card)
+    setFinanceCards(prev => [...prev, created])
+    return created
+  }
+  const updateFinanceCard = async (id, updates) => {
+    if (!userId) return
+    setFinanceCards(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x))
+    const updated = await financeCardService.updateCard(id, userId, updates)
+    if (updated) setFinanceCards(prev => prev.map(x => x.id === id ? updated : x))
+    return updated
+  }
+  const deleteFinanceCard = async (id) => {
+    if (!userId) return
+    setFinanceCards(prev => prev.filter(x => x.id !== id))
+    await financeCardService.deleteCard(id, userId)
   }
 
   // Study & Dream Actions
@@ -879,6 +955,8 @@ export function AppProvider({ children, userId }) {
     addFinance, updateFinance, deleteFinance,
     financeCategories, addFinanceCategory, updateFinanceCategory, deleteFinanceCategory,
     financeTags, addFinanceTag, updateFinanceTag, deleteFinanceTag,
+    financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
+    financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
