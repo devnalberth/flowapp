@@ -18,9 +18,12 @@ import CreateFinanceModal from '../../components/CreateFinanceModal/CreateFinanc
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AccountModal from '../../components/AccountModal/AccountModal.jsx'
 import InvoiceView from '../../components/InvoiceView/InvoiceView.jsx'
+import FinanceGoalCard from '../../components/FinanceGoalCard/FinanceGoalCard.jsx'
+import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
+import LimitsModal from '../../components/LimitsModal/LimitsModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
-import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth } from '../../utils/financeMetrics'
-import { Wallet, CreditCard, Plus, Pencil } from 'lucide-react'
+import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth, monthSpendByCategory, monthSpendByCard, limitStatus } from '../../utils/financeMetrics'
+import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge } from 'lucide-react'
 
 import './Finance.css'
 
@@ -103,11 +106,21 @@ export default function Finance({ user, onNavigate, onLogout }) {
     finances, addFinance, updateFinance, deleteFinance, financeCategories, loading,
     financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
     financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
+    financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
+    goals, addGoal, updateGoal, deleteGoal,
   } = useApp()
 
   const [cardModal, setCardModal] = useState(null)     // { card } | { } (novo)
   const [accountModal, setAccountModal] = useState(null)
   const [invoiceCard, setInvoiceCard] = useState(null)
+  const [goalModal, setGoalModal] = useState(null)     // { goal } | { } (nova) | null
+  const [limitsModalOpen, setLimitsModalOpen] = useState(false)
+
+  // Metas com área Financeiro (acompanhadas pelas receitas da categoria no mês)
+  const financeGoals = useMemo(
+    () => (goals || []).filter((g) => String(g.area || '').toLowerCase() === 'financeiro'),
+    [goals]
+  )
 
   // Mapa slug → { name, color, icon } a partir das categorias do usuário (com fallback nos defaults fixos)
   const catMap = useMemo(() => {
@@ -230,6 +243,26 @@ export default function Finance({ user, onNavigate, onLogout }) {
     return Object.values(breakdown).sort((a, b) => b.value - a.value)
   }, [filteredTransactions])
 
+  // Limites de gasto x gasto do mês (alerta, nunca impeditivo)
+  const limitsWithStatus = useMemo(
+    () => (financeLimits || []).map((l) => {
+      const spent = l.scope === 'card'
+        ? monthSpendByCard(filteredTransactions, l.ref)
+        : monthSpendByCategory(filteredTransactions, l.ref)
+      return { ...l, ...limitStatus(spent, l.amount) }
+    }),
+    [financeLimits, filteredTransactions]
+  )
+  const categoryLimitStatus = useMemo(() => {
+    const map = {}
+    limitsWithStatus.forEach((l) => { if (l.scope === 'category') map[l.ref] = l }) ; return map
+  }, [limitsWithStatus])
+  const cardLimitStatus = useMemo(() => {
+    const map = {}
+    limitsWithStatus.forEach((l) => { if (l.scope === 'card') map[l.ref] = l }) ; return map
+  }, [limitsWithStatus])
+  const alertCount = useMemo(() => limitsWithStatus.filter((l) => l.status === 'over').length, [limitsWithStatus])
+
   // Chart Series
   const cashflowSeries = useMemo(() => {
     const series = []
@@ -315,6 +348,26 @@ export default function Finance({ user, onNavigate, onLogout }) {
   }
   const ACCOUNT_TYPE_LABEL = { corrente: 'Conta corrente', poupanca: 'Poupança', carteira: 'Carteira', pj: 'Conta PJ', investimentos: 'Investimentos' }
 
+  // Metas financeiras
+  const AREA_OPTIONS = ['Profissional', 'Pessoal', 'Financeiro', 'Estudos']
+  const handleGoalSubmit = async (payload) => {
+    try {
+      const { projectId, ...goalData } = payload
+      if (goalModal?.goal) await updateGoal(goalModal.goal.id, goalData)
+      else await addGoal(goalData)
+      setGoalModal(null)
+    } catch (error) {
+      console.error('Erro ao salvar meta financeira:', error)
+      alert('Erro ao salvar meta: ' + (error?.message || error))
+    }
+  }
+  const handleGoalDelete = async () => {
+    if (goalModal?.goal && window.confirm('Excluir esta meta financeira?')) {
+      await deleteGoal(goalModal.goal.id)
+      setGoalModal(null)
+    }
+  }
+
   return (
     <div className="financePage">
       <TopNav user={user} active="Financeiro" onNavigate={onNavigate} onLogout={onLogout} />
@@ -352,6 +405,15 @@ export default function Finance({ user, onNavigate, onLogout }) {
           </div>
         </section>
 
+      <FinanceGoalCard
+        goals={financeGoals}
+        transactions={filteredTransactions}
+        catMap={catMap}
+        monthLabel={`${currentMonthMeta?.label || ''} ${selectedYear}`}
+        onCreate={() => setGoalModal({})}
+        onEdit={(goal) => setGoalModal({ goal })}
+      />
+
       <section className="financeWallet">
         <article className="ui-card financeWallet__col">
           <header className="financeWallet__head">
@@ -380,11 +442,17 @@ export default function Finance({ user, onNavigate, onLogout }) {
           ) : financeCards.map((card) => {
             const inv = cardInvoiceTotal(card, finances, currentInvoiceMonth(card))
             const avail = cardAvailable(card, finances)
+            const cardLim = cardLimitStatus[card.id]
             return (
               <div className="cardItem" key={card.id}>
                 <button type="button" className="cardItem__top" onClick={() => setCardModal({ card })}>
                   <span className="cardItem__brand" style={{ background: card.color }}>{card.brand || '💳'}</span>
                   <div className="cardItem__meta"><strong>{card.name}</strong><span>Fecha dia {card.closingDay} · vence dia {card.dueDay}</span></div>
+                  {cardLim && cardLim.status !== 'ok' && (
+                    <span className={`cardItem__limitBadge cardItem__limitBadge--${cardLim.status}`}>
+                      <AlertTriangle size={12} /> {cardLim.rawPct}%
+                    </span>
+                  )}
                   <Pencil size={13} className="cardItem__edit" />
                 </button>
                 <div className="cardItem__stats">
@@ -396,6 +464,54 @@ export default function Finance({ user, onNavigate, onLogout }) {
             )
           })}
         </article>
+      </section>
+
+      <section className="financeLimits ui-card">
+        <header className="financeLimits__head">
+          <div className="financeLimits__title">
+            <span className="financeLimits__badge"><Gauge size={16} /></span>
+            <div>
+              <p>Limites de gastos · {currentMonthMeta?.label}</p>
+              <h3>
+                {alertCount > 0
+                  ? <span className="financeLimits__alertText"><AlertTriangle size={14} /> {alertCount} {alertCount === 1 ? 'limite ultrapassado' : 'limites ultrapassados'}</span>
+                  : 'Tudo dentro do planejado'}
+              </h3>
+            </div>
+          </div>
+          <button type="button" className="financeLimits__manage" onClick={() => setLimitsModalOpen(true)}>
+            {financeLimits.length === 0 ? <><Plus size={14} /> Definir limites</> : 'Gerenciar'}
+          </button>
+        </header>
+
+        {limitsWithStatus.length === 0 ? (
+          <p className="financeLimits__empty">Defina tetos por categoria ou cartão e receba um alerta (sem bloqueio) ao ultrapassá-los.</p>
+        ) : (
+          <div className="financeLimits__grid">
+            {limitsWithStatus.map((l) => {
+              const meta = l.scope === 'card'
+                ? financeCards.find((c) => c.id === l.ref)
+                : catMap[l.ref]
+              const name = l.scope === 'card' ? (meta?.name || 'Cartão') : (meta?.name || l.ref)
+              const icon = l.scope === 'card' ? (meta?.brand || '💳') : (meta?.icon || '🏷️')
+              const color = (l.scope === 'card' ? meta?.color : meta?.color) || '#6b7280'
+              return (
+                <article className={`limitChip limitChip--${l.status}`} key={l.id}>
+                  <header>
+                    <span className="limitChip__icon" style={{ background: color }}>{icon}</span>
+                    <strong>{name}</strong>
+                    {l.status === 'over' && <AlertTriangle size={14} className="limitChip__warn" />}
+                  </header>
+                  <div className="limitChip__bar"><span style={{ width: `${l.pct}%` }} /></div>
+                  <footer>
+                    <span>{formatCurrency(l.spent)} / {formatCurrency(l.amount)}</span>
+                    <span className="limitChip__pct">{l.rawPct}%</span>
+                  </footer>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       <section className="financeAnalytics">
@@ -448,15 +564,23 @@ export default function Finance({ user, onNavigate, onLogout }) {
               </ResponsiveContainer>
             </div>
             <ul className="financeChart__legend">
-              {categoryBreakdown.map((entry, index) => (
-                <li key={entry.id}>
-                  <span style={{ background: catMap[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length] }} />
-                  <div>
-                    <strong>{entry.label}</strong>
-                    <small>{formatCurrency(entry.value)}</small>
-                  </div>
-                </li>
-              ))}
+              {categoryBreakdown.map((entry, index) => {
+                const lim = categoryLimitStatus[entry.id]
+                return (
+                  <li key={entry.id}>
+                    <span style={{ background: catMap[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length] }} />
+                    <div>
+                      <strong>{entry.label}</strong>
+                      <small>{formatCurrency(entry.value)}</small>
+                    </div>
+                    {lim && lim.status !== 'ok' && (
+                      <span className={`legendAlert legendAlert--${lim.status}`} title={`Limite: ${formatCurrency(lim.amount)} · ${lim.rawPct}%`}>
+                        <AlertTriangle size={12} /> {lim.rawPct}%
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         </article>
@@ -563,6 +687,34 @@ export default function Finance({ user, onNavigate, onLogout }) {
 
       {invoiceCard && (
         <InvoiceView card={invoiceCard} transactions={finances} catMap={catMap} onClose={() => setInvoiceCard(null)} />
+      )}
+
+      {goalModal && (
+        <CreateGoalModal
+          open
+          onClose={() => setGoalModal(null)}
+          onSubmit={handleGoalSubmit}
+          onDelete={goalModal.goal ? handleGoalDelete : undefined}
+          areaOptions={AREA_OPTIONS}
+          financeCategories={financeCategories}
+          defaultArea="Financeiro"
+          initialData={goalModal.goal || null}
+        />
+      )}
+
+      {limitsModalOpen && (
+        <LimitsModal
+          limits={financeLimits}
+          categories={financeCategories}
+          cards={financeCards}
+          transactions={filteredTransactions}
+          catMap={catMap}
+          monthLabel={`${currentMonthMeta?.label || ''}/${selectedYear}`}
+          onCreate={addFinanceLimit}
+          onUpdate={updateFinanceLimit}
+          onDelete={deleteFinanceLimit}
+          onClose={() => setLimitsModalOpen(false)}
+        />
       )}
 
       <FloatingCreateButton

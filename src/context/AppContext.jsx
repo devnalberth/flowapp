@@ -9,6 +9,7 @@ import { financeCategoryService } from '../services/financeCategoryService'
 import { financeTagService } from '../services/financeTagService'
 import { financeAccountService } from '../services/financeAccountService'
 import { financeCardService } from '../services/financeCardService'
+import { financeLimitService } from '../services/financeLimitService'
 import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
@@ -120,6 +121,7 @@ export function AppProvider({ children, userId }) {
   const [financeTags, setFinanceTags] = useState([])
   const [financeAccounts, setFinanceAccounts] = useState([])
   const [financeCards, setFinanceCards] = useState([])
+  const [financeLimits, setFinanceLimits] = useState([])
   const [studies, setStudies] = useState([])
   const [dreamMaps, setDreamMaps] = useState([])
   const [events, setEvents] = useState([])
@@ -140,6 +142,7 @@ export function AppProvider({ children, userId }) {
       setFinanceTags([])
       setFinanceAccounts([])
       setFinanceCards([])
+      setFinanceLimits([])
       setStudies([])
       setDreamMaps([])
       setLoading(false)
@@ -165,6 +168,7 @@ export function AppProvider({ children, userId }) {
         financeTagService.getTags(userId),
         financeAccountService.getAccounts(userId),
         financeCardService.getCards(userId),
+        financeLimitService.getLimits(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -199,6 +203,7 @@ export function AppProvider({ children, userId }) {
       setFinanceTags(safeArray(results[10], 'financeTags'))
       setFinanceAccounts(safeArray(results[11], 'financeAccounts'))
       setFinanceCards(safeArray(results[12], 'financeCards'))
+      setFinanceLimits(safeArray(results[13], 'financeLimits'))
 
       // Re-hidrata o histórico de foco do banco (sobrevive a limpar cache/trocar device)
       focusLogService.hydrate(userId)
@@ -739,6 +744,26 @@ export function AppProvider({ children, userId }) {
     await financeCardService.deleteCard(id, userId)
   }
 
+  // Finance Limits (alerta de gasto — nunca impeditivo)
+  const addFinanceLimit = async (l) => {
+    if (!userId) return
+    const created = await financeLimitService.createLimit(userId, l)
+    setFinanceLimits(prev => [...prev, created])
+    return created
+  }
+  const updateFinanceLimit = async (id, updates) => {
+    if (!userId) return
+    setFinanceLimits(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x))
+    const updated = await financeLimitService.updateLimit(id, userId, updates)
+    if (updated) setFinanceLimits(prev => prev.map(x => x.id === id ? updated : x))
+    return updated
+  }
+  const deleteFinanceLimit = async (id) => {
+    if (!userId) return
+    setFinanceLimits(prev => prev.filter(x => x.id !== id))
+    await financeLimitService.deleteLimit(id, userId)
+  }
+
   // Study & Dream Actions
   const addStudy = async (study) => {
     if (!userId) return
@@ -949,7 +974,6 @@ export function AppProvider({ children, userId }) {
 
   const value = {
     userId,
-    userId,
     tasks, projects, clients, goals, habits, finances, studies, dreamMaps, events, loading,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
@@ -961,6 +985,7 @@ export function AppProvider({ children, userId }) {
     financeTags, addFinanceTag, updateFinanceTag, deleteFinanceTag,
     financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
     financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
+    financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,

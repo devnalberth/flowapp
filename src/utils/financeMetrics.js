@@ -59,3 +59,29 @@ export function invoiceDueDate(card, invoiceMonth) {
   const [y, m] = invoiceMonth.split('-').map(Number)
   return new Date(y, m - 1, card.dueDay || 10)
 }
+
+// === Limites de gasto (recebem transações JÁ filtradas pelo mês) ===
+
+// Gasto (despesas) de uma categoria no conjunto de transações do mês.
+export function monthSpendByCategory(transactions = [], slug) {
+  return transactions
+    .filter((t) => typeOf(t) === 'DESPESA' && t.category === slug)
+    .reduce((s, t) => s + num(t.amount), 0)
+}
+
+// Gasto (despesas) lançado num cartão no conjunto de transações do mês.
+export function monthSpendByCard(transactions = [], cardIdRef) {
+  return transactions
+    .filter((t) => typeOf(t) === 'DESPESA' && cardId(t) === cardIdRef)
+    .reduce((s, t) => s + num(t.amount), 0)
+}
+
+// Estado de um limite: { spent, amount, pct, status: 'ok'|'near'|'over' }.
+export function limitStatus(spent, amount) {
+  const amt = num(amount)
+  const pct = amt > 0 ? Math.round((spent / amt) * 100) : 0
+  let status = 'ok'
+  if (spent > amt && amt > 0) status = 'over'
+  else if (pct >= 80) status = 'near'
+  return { spent, amount: amt, pct: Math.min(pct, 100), rawPct: pct, status }
+}

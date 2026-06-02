@@ -56,10 +56,12 @@ const calculateTrimester = (startDate, endDate) => {
   return [TRIMESTERS[quarter - 1]]
 }
 
-export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], projectOptions = [], initialData = null }) {
+const isFinanceArea = (area) => String(area || '').toLowerCase() === 'financeiro'
+
+export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], projectOptions = [], financeCategories = [], defaultArea = null, initialData = null }) {
   const [form, setForm] = useState(() => ({
     title: '',
-    area: areaOptions[0] ?? '',
+    area: defaultArea ?? areaOptions[0] ?? '',
     type: 'trimestral',
     trimester: 1,
     semester: 1,
@@ -67,6 +69,8 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     endDate: '',
     target: '',
     projectId: '',
+    financeCategory: '',
+    financeTarget: '',
   }))
   const titleRef = useRef(null)
 
@@ -86,7 +90,7 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
 
       setForm({
         title: initialData.title || initialData.name || '',
-        area: initialData.area || areaOptions[0] || '',
+        area: initialData.area || defaultArea || areaOptions[0] || '',
         type: initialData.type || 'trimestral',
         trimester: safeTrimester,
         semester: initialData.semester || 1,
@@ -94,11 +98,13 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
         endDate: initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
         target: initialData.target || '',
         projectId: initialData.projects?.[0]?.id || '',
+        financeCategory: initialData.financeCategory || initialData.finance_category || '',
+        financeTarget: initialData.financeTarget ?? initialData.finance_target ?? '',
       })
     } else {
       setForm({
         title: '',
-        area: areaOptions[0] ?? '',
+        area: defaultArea ?? areaOptions[0] ?? '',
         type: 'trimestral',
         trimester: 1,
         semester: 1,
@@ -106,6 +112,8 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
         endDate: `${currentYear}-03-31`,
         target: '',
         projectId: '',
+        financeCategory: '',
+        financeTarget: '',
       })
     }
 
@@ -197,10 +205,14 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
     event.preventDefault()
     const trimesters = calculatedTrimesters || []
 
+    const finance = isFinanceArea(form.area)
     const payload = {
       ...form,
       trimesters: trimesters.length > 0 ? trimesters[0].label : '1º Trimestre', // Simplificação para salvar o principal
       trimesterValues: trimesters.map(t => t.value),
+      // Só persiste vínculo financeiro quando a área é Financeiro
+      financeCategory: finance ? (form.financeCategory || null) : null,
+      financeTarget: finance && form.financeTarget !== '' ? Number(form.financeTarget) : null,
     }
     onSubmit?.(payload)
   }
@@ -249,6 +261,37 @@ export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, are
               </select>
             </label>
           </div>
+
+          {isFinanceArea(form.area) && (
+            <div className="createGoalModal__finance">
+              <p className="createGoalModal__financeHint">💰 Meta financeira — acompanhada pelas <strong>receitas da categoria</strong> no mês.</p>
+              <div className="createGoalModal__row">
+                <label className="createGoalModal__field">
+                  <span>Categoria vinculada</span>
+                  <select value={form.financeCategory} onChange={updateField('financeCategory')}>
+                    <option value="">Selecione…</option>
+                    {financeCategories
+                      .filter((c) => (c.type || '').toUpperCase() !== 'DESPESA')
+                      .map((c) => (
+                        <option key={c.slug} value={c.slug}>{c.icon ? `${c.icon} ` : ''}{c.name}</option>
+                      ))}
+                  </select>
+                </label>
+                <label className="createGoalModal__field">
+                  <span>Alvo mensal (R$)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Ex: 10000"
+                    value={form.financeTarget}
+                    onChange={updateField('financeTarget')}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
 
           <div className="createGoalModal__row">
             {form.type === 'trimestral' && (

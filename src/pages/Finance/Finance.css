@@ -809,3 +809,47 @@
 .cardItem__invoice:hover { background: rgba(255,72,0,0.18); }
 
 @media (max-width: 860px) { .financeWallet { grid-template-columns: 1fr; } }
+
+/* ===== Fase 5: Limites de gasto (alertas) ===== */
+.financeLimits { display: flex; flex-direction: column; gap: 16px; }
+.financeLimits__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.financeLimits__title { display: inline-flex; align-items: center; gap: 12px; }
+.financeLimits__badge { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center; background: #fff7ed; color: #ea580c; }
+.financeLimits__title p { margin: 0; text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; color: var(--subtext); font-weight: 700; }
+.financeLimits__title h3 { margin: 2px 0 0; font-size: 1.05rem; font-family: var(--font-brand, 'Outfit', sans-serif); }
+.financeLimits__alertText { display: inline-flex; align-items: center; gap: 6px; color: #ef4444; }
+.financeLimits__manage {
+  display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: 10px;
+  border: 1px solid #ececf0; background: #fff; color: #0d0d12; font: inherit; font-weight: 600; font-size: 0.82rem; cursor: pointer;
+}
+.financeLimits__manage:hover { border-color: #ea580c; color: #ea580c; }
+.financeLimits__empty { margin: 0; color: #9aa0aa; font-size: 0.88rem; text-align: center; padding: 12px 0; }
+.financeLimits__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+
+.limitChip { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #eef0f2; border-radius: 16px; background: #fafafa; }
+.limitChip--near { border-color: rgba(234, 88, 12, 0.35); background: rgba(234, 88, 12, 0.04); }
+.limitChip--over { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
+.limitChip header { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
+.limitChip__icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; display: grid; place-items: center; font-size: 14px; }
+.limitChip header strong { font-size: 0.88rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.limitChip__warn { color: #ef4444; flex-shrink: 0; }
+.limitChip__bar { height: 8px; border-radius: 999px; background: #ececf0; overflow: hidden; }
+.limitChip__bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #16a34a, #22c55e); transition: width .4s ease; }
+.limitChip--near .limitChip__bar span { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+.limitChip--over .limitChip__bar span { background: linear-gradient(90deg, #ef4444, #f87171); }
+.limitChip footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.78rem; color: #5b5a64; font-weight: 600; }
+.limitChip__pct { color: #9aa0aa; }
+.limitChip--over .limitChip__pct { color: #ef4444; }
+.limitChip--near .limitChip__pct { color: #ea580c; }
+
+.financeChart__legend .legendAlert {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: auto;
+  width: auto; height: auto; padding: 3px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;
+}
+.financeChart__legend .legendAlert svg { width: 12px; height: 12px; }
+.legendAlert--near { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.legendAlert--over { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
+.cardItem__limitBadge { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+.cardItem__limitBadge--near { background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+.cardItem__limitBadge--over { background: rgba(239, 68, 68, 0.12); color: #ef4444; }

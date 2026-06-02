@@ -387,7 +387,7 @@ function AreaDetail({ area, onBack, onEdit, onNavigate }) {
 
 export default function Goals({ onNavigate, onLogout, user }) {
   // CORREÇÃO: Pegando deleteGoal do contexto
-  const { goals, projects, tasks, dreamMaps, addGoal, addDreamMap, updateDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
+  const { goals, projects, tasks, dreamMaps, financeCategories, addGoal, addDreamMap, updateDreamMap, deleteDreamMap, updateGoal, deleteGoal, updateProject, loading } = useApp()
   const [selectedAreaId, setSelectedAreaId] = useState(null)
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false)
   const [editingDream, setEditingDream] = useState(null)
@@ -677,6 +677,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
           onDelete={editGoal ? handleDeleteGoal : undefined} // Passa a função de deletar apenas se for edição
           areaOptions={DEFAULT_LIFE_AREAS.map((area) => area.label)}
           projectOptions={projects}
+          financeCategories={financeCategories}
           initialData={editGoal}
         />
       )}

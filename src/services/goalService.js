@@ -4,6 +4,8 @@ const normalizeGoal = (goal) => ({
   ...goal,
   startDate: goal.start_date,
   endDate: goal.end_date,
+  financeCategory: goal.finance_category ?? null,
+  financeTarget: goal.finance_target != null ? Number(goal.finance_target) : null,
 });
 
 export const goalService = {
@@ -32,6 +34,8 @@ export const goalService = {
       end_date: goal.endDate || null,
       trimesters: goal.trimesters || null,
       trimester_values: goal.trimesterValues || null,
+      finance_category: goal.financeCategory || null,
+      finance_target: goal.financeTarget != null && goal.financeTarget !== '' ? Number(goal.financeTarget) : null,
       user_id: userId,
     }
 
@@ -60,21 +64,25 @@ export const goalService = {
 
   async updateGoal(goalId, userId, updates) {
     const supabase = getSupabaseClient(true);
+    // Monta o payload só com os campos enviados — evita zerar dados (ex.: o sync
+    // de progresso de projetos manda só { progress } e não deve apagar a meta financeira).
+    const payload = { updated_at: new Date().toISOString() }
+    if (updates.title !== undefined) payload.title = updates.title
+    if (updates.area !== undefined) payload.area = updates.area
+    if (updates.type !== undefined) payload.type = updates.type
+    if (updates.target !== undefined) payload.target = updates.target
+    if (updates.current !== undefined) payload.current = updates.current
+    if (updates.progress !== undefined) payload.progress = updates.progress
+    if (updates.startDate !== undefined) payload.start_date = updates.startDate || null
+    if (updates.endDate !== undefined) payload.end_date = updates.endDate || null
+    if (updates.trimesters !== undefined) payload.trimesters = updates.trimesters
+    if (updates.trimesterValues !== undefined) payload.trimester_values = updates.trimesterValues
+    if (updates.financeCategory !== undefined) payload.finance_category = updates.financeCategory || null
+    if (updates.financeTarget !== undefined) payload.finance_target = updates.financeTarget != null && updates.financeTarget !== '' ? Number(updates.financeTarget) : null
+
     const { data, error } = await supabase
       .from('goals')
-      .update({
-        title: updates.title,
-        area: updates.area,
-        type: updates.type,
-        target: updates.target,
-        current: updates.current,
-        progress: updates.progress,
-        start_date: updates.startDate || null,
-        end_date: updates.endDate || null,
-        trimesters: updates.trimesters,
-        trimester_values: updates.trimesterValues,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq('id', goalId)
       .eq('user_id', userId)
       .select()

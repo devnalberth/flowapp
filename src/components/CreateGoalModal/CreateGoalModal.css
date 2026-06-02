@@ -154,6 +154,32 @@
   margin-top: 8px;
 }
 
+.createGoalModal__finance {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(22, 163, 74, 0.06);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.createGoalModal__financeHint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #15803d;
+}
+
+.createGoalModal__financeHint strong {
+  font-weight: 700;
+}
+
+.createGoalModal__finance .createGoalModal__field input:focus,
+.createGoalModal__finance .createGoalModal__field select:focus {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.07);
+}
+
 .createGoalModal__info {
   background: #f0f9ff;
   border: 1px solid #bae6fd;
