@@ -94,7 +94,17 @@ const formatDate = (value) => {
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
-  const { finances, addFinance, updateFinance, deleteFinance, loading } = useApp()
+  const { finances, addFinance, updateFinance, deleteFinance, financeCategories, loading } = useApp()
+
+  // Mapa slug → { name, color, icon } a partir das categorias do usuário (com fallback nos defaults fixos)
+  const catMap = useMemo(() => {
+    const map = {}
+    ;(financeCategories || []).forEach((c) => { map[c.slug] = { name: c.name, color: c.color, icon: c.icon } })
+    Object.entries(CATEGORY_META).forEach(([slug, meta]) => { if (!map[slug]) map[slug] = { name: meta.label, color: meta.color } })
+    return map
+  }, [financeCategories])
+  const catLabel = (slug) => catMap[slug]?.name || categoryLabelMap[slug] || slug
+  const catColor = (slug) => catMap[slug]?.color || '#6b7280'
   
   // CORREÇÃO: Inicializa com a data atual do sistema
   const today = new Date()
@@ -198,7 +208,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
         if (!breakdown[t.category]) {
           breakdown[t.category] = {
             id: t.category,
-            label: categoryLabelMap[t.category] || t.category,
+            label: catLabel(t.category),
             value: 0
           }
         }
@@ -350,7 +360,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
                     paddingAngle={4}
                   >
                     {categoryBreakdown.map((entry, index) => (
-                      <Cell key={entry.id} fill={CATEGORY_META[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length]} />
+                      <Cell key={entry.id} fill={catMap[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value, name) => [formatCurrency(value), name]} />
@@ -360,7 +370,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
             <ul className="financeChart__legend">
               {categoryBreakdown.map((entry, index) => (
                 <li key={entry.id}>
-                  <span style={{ background: CATEGORY_META[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length] }} />
+                  <span style={{ background: catMap[entry.id]?.color || PIE_COLORS[index % PIE_COLORS.length] }} />
                   <div>
                     <strong>{entry.label}</strong>
                     <small>{formatCurrency(entry.value)}</small>
@@ -415,11 +425,8 @@ export default function Finance({ user, onNavigate, onLogout }) {
                   </td>
                   <td>
                     <div className="categoryCell">
-                      <span
-                        className="categoryCell__dot"
-                        style={{ background: CATEGORY_META[transaction.category]?.color || '#6b7280' }}
-                      />
-                      {categoryLabelMap[transaction.category] || transaction.category}
+                      <span className="categoryCell__dot" style={{ background: catColor(transaction.category) }} />
+                      {catMap[transaction.category]?.icon ? `${catMap[transaction.category].icon} ` : ''}{catLabel(transaction.category)}
                     </div>
                   </td>
                   <td>{formatDate(transaction.date)}</td>

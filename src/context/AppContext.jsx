@@ -5,6 +5,8 @@ import { clientService } from '../services/clientService'
 import { goalService } from '../services/goalService'
 import { habitService } from '../services/habitService'
 import { financeService } from '../services/financeService'
+import { financeCategoryService } from '../services/financeCategoryService'
+import { financeTagService } from '../services/financeTagService'
 import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
@@ -100,6 +102,8 @@ export function AppProvider({ children, userId }) {
   const [goals, setGoals] = useState([])
   const [habits, setHabits] = useState([])
   const [finances, setFinances] = useState([])
+  const [financeCategories, setFinanceCategories] = useState([])
+  const [financeTags, setFinanceTags] = useState([])
   const [studies, setStudies] = useState([])
   const [dreamMaps, setDreamMaps] = useState([])
   const [events, setEvents] = useState([])
@@ -116,6 +120,8 @@ export function AppProvider({ children, userId }) {
       setGoals([])
       setHabits([])
       setFinances([])
+      setFinanceCategories([])
+      setFinanceTags([])
       setStudies([])
       setDreamMaps([])
       setLoading(false)
@@ -137,6 +143,8 @@ export function AppProvider({ children, userId }) {
         dreamMapService.getDreamMaps(userId),
         eventService.getEvents(userId),
         clientService.getClients(userId),
+        financeCategoryService.getCategories(userId),
+        financeTagService.getTags(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -158,6 +166,17 @@ export function AppProvider({ children, userId }) {
       setDreamMaps(safeArray(results[6], 'dreamMaps'))
       setEvents(safeArray(results[7], 'events'))
       setClients(safeArray(results[8], 'clients'))
+
+      // Categorias financeiras: semeia os padrões no 1º uso
+      let cats = safeArray(results[9], 'financeCategories')
+      if (cats.length === 0) {
+        try {
+          await financeCategoryService.seedDefaults(userId)
+          cats = await financeCategoryService.getCategories(userId)
+        } catch (e) { console.error('seed categorias:', e) }
+      }
+      setFinanceCategories(cats)
+      setFinanceTags(safeArray(results[10], 'financeTags'))
 
     } catch (error) {
       console.error('Erro fatal no carregamento:', error)
@@ -601,6 +620,46 @@ export function AppProvider({ children, userId }) {
     await financeService.deleteTransaction(id, userId)
   }
 
+  // Finance Categories
+  const addFinanceCategory = async (cat) => {
+    if (!userId) return
+    const created = await financeCategoryService.createCategory(userId, cat)
+    setFinanceCategories(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')))
+    return created
+  }
+  const updateFinanceCategory = async (id, updates) => {
+    if (!userId) return
+    setFinanceCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+    const updated = await financeCategoryService.updateCategory(id, userId, updates)
+    if (updated) setFinanceCategories(prev => prev.map(c => c.id === id ? updated : c))
+    return updated
+  }
+  const deleteFinanceCategory = async (id) => {
+    if (!userId) return
+    setFinanceCategories(prev => prev.filter(c => c.id !== id))
+    await financeCategoryService.deleteCategory(id, userId)
+  }
+
+  // Finance Tags
+  const addFinanceTag = async (tag) => {
+    if (!userId) return
+    const created = await financeTagService.createTag(userId, tag)
+    setFinanceTags(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')))
+    return created
+  }
+  const updateFinanceTag = async (id, updates) => {
+    if (!userId) return
+    setFinanceTags(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+    const updated = await financeTagService.updateTag(id, userId, updates)
+    if (updated) setFinanceTags(prev => prev.map(t => t.id === id ? updated : t))
+    return updated
+  }
+  const deleteFinanceTag = async (id) => {
+    if (!userId) return
+    setFinanceTags(prev => prev.filter(t => t.id !== id))
+    await financeTagService.deleteTag(id, userId)
+  }
+
   // Study & Dream Actions
   const addStudy = async (study) => {
     if (!userId) return
@@ -818,6 +877,8 @@ export function AppProvider({ children, userId }) {
     addGoal, updateGoal, deleteGoal,
     addHabit, completeHabit, completeHabitForDate, updateHabit, deleteHabit, markHabitComplete, syncTimerHabits,
     addFinance, updateFinance, deleteFinance,
+    financeCategories, addFinanceCategory, updateFinanceCategory, deleteFinanceCategory,
+    financeTags, addFinanceTag, updateFinanceTag, deleteFinanceTag,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,

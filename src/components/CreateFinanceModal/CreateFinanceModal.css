@@ -417,3 +417,89 @@
   margin-left: auto;
   color: #ff4800;
 }
+
+/* ===== Fase 2: categoria com ícone/ações, editor inline e tags ===== */
+.fm-cat-emoji {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: 8px; font-size: 14px;
+  background: #f3f4f6;
+}
+.fm-cat-trigger { gap: 10px; }
+
+/* item vira linha: botão principal + ações */
+.fm-cat-item { padding: 0; gap: 0; }
+.fm-cat-item:hover { background: transparent; }
+.fm-cat-item__main {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border: none; background: transparent;
+  border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500;
+  color: #374151; cursor: pointer; text-align: left;
+}
+.fm-cat-item__main:hover { background: #f9fafb; }
+.fm-cat-item--active .fm-cat-item__main { background: #fff5f0; color: #111827; font-weight: 600; }
+.fm-cat-item__actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; padding-right: 4px; }
+.fm-cat-item:hover .fm-cat-item__actions { opacity: 1; }
+.fm-cat-item__actions button {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: none; background: transparent; border-radius: 7px; color: #9ca3af; cursor: pointer;
+}
+.fm-cat-item__actions button:hover { background: #eef0f2; color: #374151; }
+
+.fm-cat-add {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  margin-top: 4px; padding: 9px 12px;
+  border: 1px dashed #d1d5db; border-radius: 8px; background: transparent;
+  color: #ff4800; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.fm-cat-add:hover { background: #fff5f0; border-color: #ff4800; }
+
+/* Editor inline de categoria */
+.fm-cat-editor {
+  border: 1.5px solid #ffd8c2; background: linear-gradient(180deg, #fff8f3, #fafafa);
+  border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+}
+.fm-cat-editor__head { display: flex; align-items: center; justify-content: space-between; }
+.fm-cat-editor__head strong { font-size: 14px; }
+.fm-cat-editor__head button { border: none; background: transparent; cursor: pointer; color: #6b7280; }
+.fm-cat-editor__name {
+  width: 100%; font: inherit; padding: 10px 12px;
+  border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff;
+}
+.fm-cat-editor__name:focus { outline: none; border-color: #ff4800; }
+.fm-cat-editor__row { display: flex; flex-direction: column; gap: 6px; }
+.fm-cat-editor__row > span { font-size: 12px; font-weight: 600; color: #6b7280; }
+.fm-cat-editor__emojis { display: flex; flex-wrap: wrap; gap: 5px; }
+.fm-cat-editor__emojis button {
+  width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #ececf0;
+  background: #fff; cursor: pointer; font-size: 15px;
+}
+.fm-cat-editor__emojis button.is-on { border-color: #ff4800; background: #fff5f0; }
+.fm-cat-editor__colors { display: flex; flex-wrap: wrap; gap: 6px; }
+.fm-cat-editor__colors button {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e5e7eb; cursor: pointer;
+}
+.fm-cat-editor__colors button.is-on { box-shadow: 0 0 0 2px #0d0d12; }
+.fm-cat-editor__actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Tags */
+.fm-opt { font-weight: 400; color: #9ca3af; }
+.fm-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fm-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 11px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  background: #f3f4f6; color: #6b7280; cursor: pointer; border: 1px solid transparent;
+}
+.fm-tag:hover { border-color: #d1d5db; }
+.fm-tag--on { background: rgba(255,72,0,0.1); color: #c2410c; border-color: rgba(255,72,0,0.25); }
+.fm-tag-add { display: flex; gap: 8px; }
+.fm-tag-add input {
+  flex: 1; font: inherit; padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff;
+}
+.fm-tag-add input:focus { outline: none; border-color: #ff4800; }
+.fm-tag-add button {
+  width: 42px; flex-shrink: 0; display: grid; place-items: center;
+  border: none; border-radius: 10px; background: #0d0d12; color: #fff; cursor: pointer;
+}
