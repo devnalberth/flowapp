@@ -15,7 +15,12 @@ import {
 } from 'recharts'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateFinanceModal from '../../components/CreateFinanceModal/CreateFinanceModal.jsx'
+import CardModal from '../../components/CardModal/CardModal.jsx'
+import AccountModal from '../../components/AccountModal/AccountModal.jsx'
+import InvoiceView from '../../components/InvoiceView/InvoiceView.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth } from '../../utils/financeMetrics'
+import { Wallet, CreditCard, Plus, Pencil } from 'lucide-react'
 
 import './Finance.css'
 
@@ -94,7 +99,15 @@ const formatDate = (value) => {
 const categoryLabelMap = CATEGORY_OPTIONS.reduce((acc, category) => ({ ...acc, [category.id]: category.label }), {})
 
 export default function Finance({ user, onNavigate, onLogout }) {
-  const { finances, addFinance, updateFinance, deleteFinance, financeCategories, loading } = useApp()
+  const {
+    finances, addFinance, updateFinance, deleteFinance, financeCategories, loading,
+    financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
+    financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
+  } = useApp()
+
+  const [cardModal, setCardModal] = useState(null)     // { card } | { } (novo)
+  const [accountModal, setAccountModal] = useState(null)
+  const [invoiceCard, setInvoiceCard] = useState(null)
 
   // Mapa slug → { name, color, icon } a partir das categorias do usuário (com fallback nos defaults fixos)
   const catMap = useMemo(() => {
@@ -281,6 +294,27 @@ export default function Finance({ user, onNavigate, onLogout }) {
     }
   }
 
+  // Contas e cartões
+  const handleSaveCard = async (data) => {
+    if (cardModal?.card) await updateFinanceCard(cardModal.card.id, data)
+    else await addFinanceCard(data)
+  }
+  const handleDeleteCard = async () => {
+    if (cardModal?.card && window.confirm(`Excluir o cartão "${cardModal.card.name}"?`)) {
+      await deleteFinanceCard(cardModal.card.id); setCardModal(null)
+    }
+  }
+  const handleSaveAccount = async (data) => {
+    if (accountModal?.account) await updateFinanceAccount(accountModal.account.id, data)
+    else await addFinanceAccount(data)
+  }
+  const handleDeleteAccount = async () => {
+    if (accountModal?.account && window.confirm(`Excluir a conta "${accountModal.account.name}"?`)) {
+      await deleteFinanceAccount(accountModal.account.id); setAccountModal(null)
+    }
+  }
+  const ACCOUNT_TYPE_LABEL = { corrente: 'Conta corrente', poupanca: 'Poupança', carteira: 'Carteira', pj: 'Conta PJ', investimentos: 'Investimentos' }
+
   return (
     <div className="financePage">
       <TopNav user={user} active="Financeiro" onNavigate={onNavigate} onLogout={onLogout} />
@@ -317,6 +351,52 @@ export default function Finance({ user, onNavigate, onLogout }) {
             </div>
           </div>
         </section>
+
+      <section className="financeWallet">
+        <article className="ui-card financeWallet__col">
+          <header className="financeWallet__head">
+            <div className="financeWallet__title"><Wallet size={16} /><h3>Minhas contas</h3></div>
+            <button className="financeWallet__add" onClick={() => setAccountModal({})}><Plus size={14} /> Conta</button>
+          </header>
+          {financeAccounts.length === 0 ? (
+            <p className="financeWallet__empty">Adicione sua primeira conta para acompanhar o saldo.</p>
+          ) : financeAccounts.map((acc) => (
+            <button type="button" className="walletItem" key={acc.id} onClick={() => setAccountModal({ account: acc })}>
+              <span className="walletItem__icon" style={{ background: acc.color }}>{acc.icon || '🏦'}</span>
+              <div className="walletItem__meta"><strong>{acc.name}</strong><span>{ACCOUNT_TYPE_LABEL[acc.type] || 'Conta'}</span></div>
+              <span className="walletItem__value">{formatCurrency(accountBalance(acc, finances))}</span>
+              <Pencil size={13} className="walletItem__edit" />
+            </button>
+          ))}
+        </article>
+
+        <article className="ui-card financeWallet__col">
+          <header className="financeWallet__head">
+            <div className="financeWallet__title"><CreditCard size={16} /><h3>Meus cartões</h3></div>
+            <button className="financeWallet__add" onClick={() => setCardModal({})}><Plus size={14} /> Cartão</button>
+          </header>
+          {financeCards.length === 0 ? (
+            <p className="financeWallet__empty">Adicione seu primeiro cartão de crédito.</p>
+          ) : financeCards.map((card) => {
+            const inv = cardInvoiceTotal(card, finances, currentInvoiceMonth(card))
+            const avail = cardAvailable(card, finances)
+            return (
+              <div className="cardItem" key={card.id}>
+                <button type="button" className="cardItem__top" onClick={() => setCardModal({ card })}>
+                  <span className="cardItem__brand" style={{ background: card.color }}>{card.brand || '💳'}</span>
+                  <div className="cardItem__meta"><strong>{card.name}</strong><span>Fecha dia {card.closingDay} · vence dia {card.dueDay}</span></div>
+                  <Pencil size={13} className="cardItem__edit" />
+                </button>
+                <div className="cardItem__stats">
+                  <div><span>Fatura atual</span><strong className="negative">{formatCurrency(inv)}</strong></div>
+                  <div><span>Limite disponível</span><strong style={{ color: avail < 0 ? '#ef4444' : '#16a34a' }}>{formatCurrency(avail)}</strong></div>
+                  <button type="button" className="cardItem__invoice" onClick={() => setInvoiceCard(card)}>Ver fatura</button>
+                </div>
+              </div>
+            )
+          })}
+        </article>
+      </section>
 
       <section className="financeAnalytics">
         <article className="ui-card financeChart">
@@ -461,6 +541,28 @@ export default function Finance({ user, onNavigate, onLogout }) {
           onSubmit={handleTransactionSubmit}
           initialData={editingTransaction}
         />
+      )}
+
+      {cardModal && (
+        <CardModal
+          card={cardModal.card || null}
+          onClose={() => setCardModal(null)}
+          onSubmit={handleSaveCard}
+          onDelete={cardModal.card ? handleDeleteCard : null}
+        />
+      )}
+
+      {accountModal && (
+        <AccountModal
+          account={accountModal.account || null}
+          onClose={() => setAccountModal(null)}
+          onSubmit={handleSaveAccount}
+          onDelete={accountModal.account ? handleDeleteAccount : null}
+        />
+      )}
+
+      {invoiceCard && (
+        <InvoiceView card={invoiceCard} transactions={finances} catMap={catMap} onClose={() => setInvoiceCard(null)} />
       )}
 
       <FloatingCreateButton

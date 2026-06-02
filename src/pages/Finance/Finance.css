@@ -761,3 +761,51 @@
     padding: 24px;
   }
 }
+
+/* ===== Fase 3: Contas e Cartões ===== */
+.financeWallet { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.financeWallet__col { display: flex; flex-direction: column; gap: 12px; }
+.financeWallet__head { display: flex; align-items: center; justify-content: space-between; }
+.financeWallet__title { display: inline-flex; align-items: center; gap: 8px; }
+.financeWallet__title svg { color: #6b7280; }
+.financeWallet__title h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-brand, 'Outfit', sans-serif); }
+.financeWallet__add {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 10px;
+  border: 1px solid #ececf0; background: #fff; color: #0d0d12; font: inherit; font-weight: 600; font-size: 0.82rem; cursor: pointer;
+}
+.financeWallet__add:hover { border-color: #ff4800; color: #ff4800; }
+.financeWallet__empty { margin: 8px 0; color: #9aa0aa; font-size: 0.88rem; text-align: center; padding: 20px 0; }
+
+.walletItem {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 12px; border: 1px solid #f0f0f2; border-radius: 14px; background: #fafafa; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.walletItem:hover { border-color: #e0e0e6; background: #fff; }
+.walletItem__icon { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; font-size: 18px; }
+.walletItem__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.walletItem__meta strong { font-size: 0.95rem; }
+.walletItem__meta span { font-size: 0.76rem; color: #9aa0aa; }
+.walletItem__value { font-weight: 700; font-family: var(--font-brand, 'Outfit', sans-serif); }
+.walletItem__edit { color: #c4c4cc; flex-shrink: 0; }
+
+.cardItem { border: 1px solid #f0f0f2; border-radius: 14px; overflow: hidden; background: #fafafa; }
+.cardItem__top { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px; border: none; background: transparent; cursor: pointer; }
+.cardItem__top:hover { background: #fff; }
+.cardItem__brand { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; font-size: 18px; color: #fff; }
+.cardItem__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cardItem__meta strong { font-size: 0.95rem; }
+.cardItem__meta span { font-size: 0.76rem; color: #9aa0aa; }
+.cardItem__edit { color: #c4c4cc; flex-shrink: 0; }
+.cardItem__stats { display: flex; align-items: center; gap: 14px; padding: 10px 12px; border-top: 1px solid #f0f0f2; background: #fff; flex-wrap: wrap; }
+.cardItem__stats > div { display: flex; flex-direction: column; }
+.cardItem__stats span { font-size: 0.72rem; color: #9aa0aa; font-weight: 600; }
+.cardItem__stats strong { font-size: 0.95rem; font-family: var(--font-brand, 'Outfit', sans-serif); }
+.cardItem__stats .negative { color: #ef4444; }
+.cardItem__invoice {
+  margin-left: auto; padding: 7px 14px; border-radius: 9px; border: none;
+  background: rgba(255,72,0,0.1); color: #ff4800; font: inherit; font-weight: 600; font-size: 0.82rem; cursor: pointer;
+}
+.cardItem__invoice:hover { background: rgba(255,72,0,0.18); }
+
+@media (max-width: 860px) { .financeWallet { grid-template-columns: 1fr; } }

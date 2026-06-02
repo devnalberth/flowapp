@@ -9,12 +9,6 @@ const TRANSACTION_TYPES = [
   { id: 'TRANSFERENCIA', label: 'Transferência', icon: ArrowRightLeft, color: '#6366f1' },
 ]
 
-const ACCOUNTS = [
-  { id: 'conta-corrente', label: 'Conta Corrente' },
-  { id: 'poupanca', label: 'Poupança' },
-  { id: 'carteira', label: 'Carteira' },
-]
-
 const PAYMENT_METHODS = [
   { id: 'dinheiro', label: 'Dinheiro' },
   { id: 'pix', label: 'Pix' },
@@ -38,7 +32,8 @@ const buildInitial = (initialData) => {
       amount: amountNum ? String(amountNum.toFixed(2)).replace('.', ',') : '',
       date: initialData.date ? String(initialData.date).slice(0, 10) : new Date().toISOString().split('T')[0],
       category: initialData.category || '',
-      account: initialData.account || 'conta-corrente',
+      source: (initialData.cardId || initialData.card_id) ? `card:${initialData.cardId || initialData.card_id}`
+        : (initialData.accountId || initialData.account_id) ? `acc:${initialData.accountId || initialData.account_id}` : '',
       paymentMethod: initialData.paymentMethod || initialData.payment_method || 'pix',
       tags: Array.isArray(initialData.tags) ? initialData.tags : [],
       isInstallment: !!(initialData.isInstallment ?? initialData.is_installment),
@@ -48,14 +43,14 @@ const buildInitial = (initialData) => {
   return {
     type: 'DESPESA', description: '', amount: '',
     date: new Date().toISOString().split('T')[0],
-    category: '', account: 'conta-corrente', paymentMethod: 'pix',
+    category: '', source: '', paymentMethod: 'pix',
     tags: [], isInstallment: false, installmentCount: 2,
   }
 }
 
 export default function CreateFinanceModal({ onClose, onSubmit, initialData = null }) {
   const isEditing = !!initialData
-  const { financeCategories, financeTags, addFinanceCategory, updateFinanceCategory, deleteFinanceCategory, addFinanceTag } = useApp()
+  const { financeCategories, financeTags, addFinanceCategory, updateFinanceCategory, deleteFinanceCategory, addFinanceTag, financeAccounts, financeCards } = useApp()
 
   const [formData, setFormData] = useState(() => buildInitial(initialData))
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
@@ -85,6 +80,9 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
         if (value !== 'DESPESA') updated.isInstallment = false
       }
       if (field === 'paymentMethod' && value !== 'credito') updated.isInstallment = false
+      // Selecionou um cartão numa despesa → assume crédito (habilita parcelamento/fatura)
+      if (field === 'source' && value.startsWith('card:') && updated.type === 'DESPESA') updated.paymentMethod = 'credito'
+      if (field === 'source' && value.startsWith('acc:') && updated.paymentMethod === 'credito') updated.paymentMethod = 'pix'
       return updated
     })
   }
@@ -97,6 +95,8 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
     const amount = parseFloat(formData.amount.replace(',', '.'))
     if (isNaN(amount) || amount <= 0) return
     const installmentCount = formData.isInstallment ? (Number(formData.installmentCount) || 2) : null
+    const accountId = formData.source.startsWith('acc:') ? formData.source.slice(4) : null
+    const cardId = formData.source.startsWith('card:') ? formData.source.slice(5) : null
 
     onSubmit({
       description: formData.description.trim(),
@@ -105,6 +105,8 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
       category: formData.category,
       date: formData.date + 'T12:00:00.000Z',
       paymentMethod: formData.paymentMethod,
+      accountId,
+      cardId,
       tags: formData.tags,
       isInstallment: formData.isInstallment,
       installmentCount,
@@ -203,8 +205,18 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
           <div className="finance-modal__row">
             <div className="finance-modal__field">
               <label htmlFor="finance-account">Conta/Cartão</label>
-              <select id="finance-account" value={formData.account} onChange={(e) => handleChange('account', e.target.value)}>
-                {ACCOUNTS.map((acc) => <option key={acc.id} value={acc.id}>{acc.label}</option>)}
+              <select id="finance-account" value={formData.source} onChange={(e) => handleChange('source', e.target.value)}>
+                <option value="">Sem conta/cartão</option>
+                {(financeAccounts || []).length > 0 && (
+                  <optgroup label="Contas">
+                    {financeAccounts.map((a) => <option key={a.id} value={`acc:${a.id}`}>{a.icon || '🏦'} {a.name}</option>)}
+                  </optgroup>
+                )}
+                {(financeCards || []).length > 0 && (
+                  <optgroup label="Cartões">
+                    {financeCards.map((c) => <option key={c.id} value={`card:${c.id}`}>{c.brand || '💳'} {c.name}</option>)}
+                  </optgroup>
+                )}
               </select>
             </div>
 
