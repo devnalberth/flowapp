@@ -51,6 +51,20 @@ function localDateKey(date = new Date()) {
   return new Date(d.getTime() - offset * 60 * 1000).toISOString().split('T')[0]
 }
 
+// Quebra um due_date (ISO/timestamp) em data LOCAL (YYYY-MM-DD) + horário (HH:MM) local.
+// Usado para espelhar a reprogramação da tarefa de volta na aula de estudo vinculada.
+function localDateAndTime(value) {
+  if (!value) return { dateKey: null, time: null }
+  const raw = String(value)
+  // Data pura ("YYYY-MM-DD") → sem horário
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { dateKey: raw, time: null }
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return { dateKey: null, time: null }
+  const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return { dateKey, time }
+}
+
 // Busca uma aula (lesson) dentro da árvore de estudos (study → módulos → matérias → aulas).
 // Retorna a aula normalizada (com taskId, scheduledDate) ou null.
 function findLessonInStudies(studies, lessonId) {
@@ -283,6 +297,35 @@ export function AppProvider({ children, userId }) {
       } catch (error) {
         console.error('Erro ao espelhar conclusão na aula:', error)
         setStudies(prev => mapLessonInStudies(prev, linkedLessonId, { isCompleted: !done, is_completed: !done }))
+      }
+    }
+
+    // Espelha a REPROGRAMAÇÃO (data/horário/prioridade/título) de volta na aula vinculada.
+    // Sem isso, ao editar a data de uma tarefa-espelho de aula, a aula continuava com a
+    // data antiga e a tarefa voltava a parecer "atrasada" / divergia da agenda de Estudos.
+    if (linkedLessonId) {
+      const lessonPatch = {}
+      const newDue = normalizedUpdates.due_date
+      if (newDue !== undefined) {
+        if (newDue === null) {
+          lessonPatch.scheduledDate = null
+          lessonPatch.scheduled_date = null
+        } else {
+          const { dateKey, time } = localDateAndTime(newDue)
+          if (dateKey) { lessonPatch.scheduledDate = dateKey; lessonPatch.scheduled_date = dateKey }
+          if (time) { lessonPatch.scheduledTime = time; lessonPatch.scheduled_time = time }
+        }
+      }
+      if (updates.priority !== undefined) lessonPatch.priority = updates.priority
+      if (updates.title !== undefined) lessonPatch.title = updates.title
+
+      if (Object.keys(lessonPatch).length > 0) {
+        setStudies(prev => mapLessonInStudies(prev, linkedLessonId, lessonPatch))
+        try {
+          await studyService.updateLesson(linkedLessonId, lessonPatch)
+        } catch (error) {
+          console.error('Erro ao espelhar reprogramação na aula:', error)
+        }
       }
     }
   }

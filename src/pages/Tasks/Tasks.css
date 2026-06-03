@@ -989,6 +989,26 @@
   color: #1b1c24;
 }
 
+/* Reagendar tarefa atrasada para hoje — destaque âmbar/calor, convidativo */
+.taskCard__actionBtn--today {
+  border-color: transparent;
+  background: linear-gradient(135deg, #ff9500, #ff5a3c);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(255, 90, 60, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.taskCard__actionBtn--today:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.08);
+  box-shadow: 0 10px 22px rgba(255, 90, 60, 0.36);
+}
+
+.taskCard__actionBtn--today:active {
+  transform: translateY(0);
+}
+
 .taskCard__details {
   margin-top: 18px;
   padding: 18px 20px;

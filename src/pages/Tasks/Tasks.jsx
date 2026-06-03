@@ -551,6 +551,19 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     }
   }
 
+  // Reagenda uma tarefa atrasada para HOJE (1 clique). Usa meio-dia UTC para a
+  // chave de data local nunca "voltar" um dia por fuso. Otimista + persiste no banco.
+  const moveTaskToToday = async (task) => {
+    const todayKey = toLocalDateKey(new Date())
+    const dueDate = `${todayKey}T12:00:00.000Z`
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, due_date: dueDate, dueDate } : t))
+    try {
+      await updateTask(task.id, { dueDate })
+    } catch (e) {
+      console.error('Erro ao mover tarefa para hoje:', e)
+    }
+  }
+
   const activeDetailTask = useMemo(() =>
     detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
     , [detailTaskId, tasks])
@@ -796,6 +809,15 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                   </div>
 
                   <div className="taskCard__actions">
+                    {isLate && (
+                      <button
+                        className="taskCard__actionBtn taskCard__actionBtn--today"
+                        onClick={() => moveTaskToToday(task)}
+                        title="Reagendar esta tarefa para hoje"
+                      >
+                        <Sun size={13} /> Mover para hoje
+                      </button>
+                    )}
                     <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => { setDetailTaskId(task.id); setEditTask(null); }}>
                       Detalhes
                     </button>
