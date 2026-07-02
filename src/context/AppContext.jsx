@@ -14,6 +14,7 @@ import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
 import { eventService } from '../services/eventService'
+import { computeStreaks } from '../utils/habitStats'
 
 /**
  * Advances (or rewinds) a date string by `months` months.
@@ -475,17 +476,18 @@ export function AppProvider({ children, userId }) {
         ? [...habit.completed_dates]
         : []
 
-    let updates = {}
+    const newDates = completedDates.includes(today)
+      ? completedDates.filter(d => d !== today)
+      : [...completedDates, today]
 
-    if (completedDates.includes(today)) {
-      const newDates = completedDates.filter(d => d !== today)
-      const newCurrent = Math.max((habit.currentStreak || 1) - 1, 0)
-      updates = { ...habit, completions: newDates, currentStreak: newCurrent }
-    } else {
-      completedDates.push(today)
-      const currentStreak = (habit.currentStreak || 0) + 1
-      const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
-      updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
+    // Streaks sempre recomputados do histórico (respeita frequency/custom_days).
+    // Math.max preserva recordes caso completed_dates tenha sido podado no passado.
+    const { current, best } = computeStreaks({ ...habit, completions: newDates })
+    const updates = {
+      ...habit,
+      completions: newDates,
+      currentStreak: current,
+      bestStreak: Math.max(best, habit.bestStreak || 0),
     }
 
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
@@ -507,16 +509,18 @@ export function AppProvider({ children, userId }) {
         ? [...habit.completed_dates]
         : []
 
-    let updates = {}
+    const newDates = completedDates.includes(dateStr)
+      ? completedDates.filter(d => d !== dateStr) // desmarcar
+      : [...completedDates, dateStr] // marcar
 
-    if (completedDates.includes(dateStr)) {
-      // Desmarcar
-      const newDates = completedDates.filter(d => d !== dateStr)
-      updates = { ...habit, completions: newDates }
-    } else {
-      // Marcar
-      completedDates.push(dateStr)
-      updates = { ...habit, completions: completedDates }
+    // Corrige o bug antigo: marcar/desmarcar data arbitrária agora atualiza o streak
+    // (preencher um buraco de ontem, por exemplo, reconstrói a sequência).
+    const { current, best } = computeStreaks({ ...habit, completions: newDates })
+    const updates = {
+      ...habit,
+      completions: newDates,
+      currentStreak: current,
+      bestStreak: Math.max(best, habit.bestStreak || 0),
     }
 
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
@@ -534,9 +538,13 @@ export function AppProvider({ children, userId }) {
     const completedDates = Array.isArray(habit.completions) ? [...habit.completions] : []
     if (completedDates.includes(dateStr)) return // já concluído
     completedDates.push(dateStr)
-    const currentStreak = (habit.currentStreak || 0) + 1
-    const bestStreak = Math.max(currentStreak, habit.bestStreak || 0)
-    const updates = { ...habit, completions: completedDates, currentStreak, bestStreak }
+    const { current, best } = computeStreaks({ ...habit, completions: completedDates })
+    const updates = {
+      ...habit,
+      completions: completedDates,
+      currentStreak: current,
+      bestStreak: Math.max(best, habit.bestStreak || 0),
+    }
     setHabits(prev => prev.map(h => h.id === id ? updates : h))
     const updated = await habitService.updateHabit(id, userId, updates)
     if (updated) setHabits(prev => prev.map(h => h.id === id ? updated : h))

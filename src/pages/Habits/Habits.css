@@ -12,6 +12,163 @@
   gap: 24px;
 }
 
+/* --- KPI Strip --- */
+.habitsKpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.habitsKpis__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #e6e6ea;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.habitsKpis__card--clickable {
+  cursor: pointer;
+}
+
+.habitsKpis__card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border-color: #d0d0d8;
+}
+
+.habitsKpis__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666d80;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.habitsKpis__label svg {
+  color: #ff4800;
+}
+
+.habitsKpis__value {
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: #0d0d12;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.habitsKpis__sub {
+  font-size: 12px;
+  color: #6b6b78;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habitsKpis__bar {
+  height: 6px;
+  margin-top: 8px;
+  background: #f1f1f4;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.habitsKpis__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--grad-primary, linear-gradient(180deg, #ff4800 0%, #ff9500 100%));
+  transition: width 0.4s ease;
+}
+
+/* --- Badge "auto" (hábito vinculado ao timer de foco) --- */
+.habitAuto {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  background: #fff3e0;
+  color: #ff7a00;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+/* --- Celebração 100% do dia --- */
+.habitsCelebration {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: celebrationFade 2.6s ease forwards;
+}
+
+.habitsCelebration__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 40px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px -12px rgba(255, 72, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid #ffe1cc;
+  animation: celebrationPop 0.45s cubic-bezier(0.16, 1.4, 0.3, 1);
+}
+
+.habitsCelebration__emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.habitsCelebration__card strong {
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: #0d0d12;
+}
+
+.habitsCelebration__card span:last-child {
+  font-size: 13px;
+  color: #6b6b78;
+}
+
+@keyframes celebrationPop {
+  from {
+    transform: scale(0.7) translateY(16px);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes celebrationFade {
+  0%, 75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
 /* --- Controls & Filters --- */
 .habitsControls {
   display: flex;
@@ -215,8 +372,46 @@
 .dailyCheckItem__content {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dailyCheckItem__main {
+  display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Progresso do timer de foco (hábitos "auto") */
+.dailyCheckItem__timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dailyCheckItem__timerBar {
+  flex: 1;
+  max-width: 220px;
+  height: 6px;
+  background: #ececf1;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.dailyCheckItem__timerFill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--grad-primary, linear-gradient(180deg, #ff4800 0%, #ff9500 100%));
+  transition: width 0.4s ease;
+}
+
+.dailyCheckItem__timerText {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b6b78;
+  white-space: nowrap;
 }
 
 .dailyCheckItem__icon {
@@ -757,6 +952,12 @@
 }
 
 /* --- Responsive --- */
+@media (max-width: 900px) {
+  .habitsKpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .habitsControls__filters {
     flex-direction: column;

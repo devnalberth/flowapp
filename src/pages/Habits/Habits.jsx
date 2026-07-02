@@ -1,52 +1,48 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import CreateHabitModal from '../../components/CreateHabitModal/CreateHabitModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import { focusLogService } from '../../services/focusLogService.js'
+import {
+  localDateKey,
+  isHabitActiveOnDate,
+  getDayStats,
+  getRangeStats,
+  computeStreaks,
+  getHabitConsistency,
+  formatMinutes,
+} from '../../utils/habitStats.js'
+import { CATEGORIES, WEEKDAY_NAMES, getHabitIcon, TIMER_CATEGORY_LABEL } from './habitsMeta.js'
+import HabitsStats from './HabitsStats.jsx'
+import HabitDetailModal from './HabitDetailModal.jsx'
 import {
   Calendar,
   BarChart3,
   TrendingUp,
+  Activity,
   Search,
-  Sparkles,
-  Dumbbell,
-  Brain,
-  BookOpen,
-  Book,
   Plus,
   Edit2,
-  Trash2,
   Check,
   X,
+  Zap,
+  Flame,
+  CheckCircle2,
+  Trophy,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
 
 import './Habits.css'
+import './HabitsStats.css'
 
 const VIEW_MODES = [
   { id: 'daily', label: 'Diário', icon: Calendar },
   { id: 'weekly', label: 'Semanal', icon: BarChart3 },
   { id: 'monthly', label: 'Mensal', icon: TrendingUp },
+  { id: 'stats', label: 'Estatísticas', icon: Activity },
 ]
-
-const CATEGORIES = [
-  { id: 'all', label: 'Todos', color: '#ff4800' },
-  { id: 'saude', label: 'Saúde', color: '#0a9463' },
-  { id: 'produtividade', label: 'Produtividade', color: '#16a34a' },
-  { id: 'estudos', label: 'Estudos', color: '#ff7a00' },
-  { id: 'mindfulness', label: 'Mindfulness', color: '#7c5cff' },
-]
-
-const ICON_OPTIONS = [
-  { id: 'sparkles', icon: Sparkles, label: 'Sparkles' },
-  { id: 'dumbbell', icon: Dumbbell, label: 'Dumbbell' },
-  { id: 'brain', icon: Brain, label: 'Brain' },
-  { id: 'bookopen', icon: BookOpen, label: 'Book Open' },
-  { id: 'book', icon: Book, label: 'Book' },
-]
-
-const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export default function Habits({ user, onNavigate, onLogout }) {
   const { habits, addHabit, updateHabit, deleteHabit, completeHabit, completeHabitForDate, syncTimerHabits } = useApp()
@@ -62,6 +58,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingHabit, setEditingHabit] = useState(null)
+  const [detailHabitId, setDetailHabitId] = useState(null)
 
   // Estado para visualizações semanal/mensal
   const [selectedDate, setSelectedDate] = useState(null)
@@ -70,83 +67,116 @@ export default function Habits({ user, onNavigate, onLogout }) {
   // Estado para navegação do mês
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // Obter ícone por ID
-  const getIcon = (iconId) => {
-    const iconOption = ICON_OPTIONS.find(opt => opt.id === iconId)
-    return iconOption ? iconOption.icon : Sparkles
-  }
-
-  // Habits com ícones e streaks calculados
-  const habitsWithMeta = useMemo(() => {
-    return habits.map(habit => ({
-      ...habit,
-      icon: getIcon(habit.iconId || 'sparkles'),
-      streak: habit.current_streak || 0,
-    }))
+  // Tempo de foco de HOJE por categoria ({ work, study }) — alimenta o progresso
+  // dos hábitos vinculados ao timer. localStorage não é reativo: atualiza no mount,
+  // quando os hábitos mudam (pós-sync) e num intervalo de 60s.
+  const [focusTotals, setFocusTotals] = useState(() => focusLogService.getCategoryTotals(1))
+  useEffect(() => {
+    const update = () => setFocusTotals(focusLogService.getCategoryTotals(1))
+    update()
+    const id = setInterval(update, 60000)
+    return () => clearInterval(id)
   }, [habits])
 
-  // === LÓGICA DE FILTRAGEM ===
+  // Habits com ícones e streaks SEMPRE derivados do histórico de conclusões
+  const habitsWithMeta = useMemo(() => {
+    return habits.map(habit => {
+      const { current, best } = computeStreaks(habit)
+      return {
+        ...habit,
+        icon: getHabitIcon(habit.iconId || 'sparkles'),
+        streak: current,
+        bestStreakComputed: Math.max(best, habit.bestStreak || 0),
+      }
+    })
+  }, [habits])
+
+  // === FILTRAGEM ===
+  const categoryFilteredHabits = useMemo(() => {
+    return habitsWithMeta.filter(h => categoryFilter === 'all' || h.category === categoryFilter)
+  }, [habitsWithMeta, categoryFilter])
+
   const filteredHabits = useMemo(() => {
     const today = new Date()
-    const currentDayOfWeek = today.getDay()
-
-    return habitsWithMeta.filter((habit) => {
-      const matchesCategory = categoryFilter === 'all' || habit.category === categoryFilter
+    return categoryFilteredHabits.filter((habit) => {
       const matchesSearch = (habit.label || habit.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-
-      if (!matchesCategory || !matchesSearch) return false
-
-      if (!habit.frequency || habit.frequency === 'daily') return true
-
-      if (habit.frequency === 'custom' || habit.frequency === 'weekly') {
-        let days = []
-
-        if (Array.isArray(habit.customDays)) days = habit.customDays
-        else if (Array.isArray(habit.selectedDays)) days = habit.selectedDays
-        else if (typeof habit.customDays === 'string') {
-          try { days = JSON.parse(habit.customDays) } catch (e) {
-            days = habit.customDays.split(',').map(d => parseInt(d.trim()))
-          }
-        }
-
-        const numericDays = days.map(d => Number(d))
-
-        if (numericDays.length === 0) return false;
-
-        return numericDays.includes(currentDayOfWeek);
-      }
-
-      return true
+      return matchesSearch && isHabitActiveOnDate(habit, today)
     })
-  }, [habitsWithMeta, categoryFilter, searchTerm])
+  }, [categoryFilteredHabits, searchTerm])
 
-  // === LÓGICA DE CHECKLIST ===
-  const toggleHabitCompletion = async (habitId, dateStr) => {
-    if (completeHabit) {
-      await completeHabit(habitId)
+  // Progresso de foco do dia para hábitos vinculados ao timer (null se não vinculado)
+  const timerProgressOf = (habit) => {
+    if (!habit.timerCategory || !habit.timerGoalMinutes) return null
+    const got = habit.timerCategory === 'study' ? focusTotals.study : focusTotals.work
+    return {
+      got,
+      goal: habit.timerGoalMinutes,
+      pct: Math.min(1, got / habit.timerGoalMinutes),
+      catLabel: TIMER_CATEGORY_LABEL[habit.timerCategory] || 'foco',
     }
+  }
+
+  // Ordenação inteligente do checklist: pendentes primeiro (hábitos de timer com
+  // mais progresso no topo), concluídos por último.
+  const dailyHabits = useMemo(() => {
+    const todayKey = localDateKey()
+    const progressOf = (h) => {
+      if (!h.timerCategory || !h.timerGoalMinutes) return -1
+      const got = h.timerCategory === 'study' ? focusTotals.study : focusTotals.work
+      return Math.min(1, got / h.timerGoalMinutes)
+    }
+    return [...filteredHabits].sort((a, b) => {
+      const aDone = a.completions?.includes(todayKey) ? 1 : 0
+      const bDone = b.completions?.includes(todayKey) ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+      return progressOf(b) - progressOf(a)
+    })
+  }, [filteredHabits, focusTotals])
+
+  // === KPIs (sempre sobre TODOS os hábitos, independente de filtros) ===
+  const kpis = useMemo(() => {
+    const today = new Date()
+    const day = getDayStats(habitsWithMeta, today)
+
+    let topStreakHabit = null
+    let bestEver = 0
+    for (const h of habitsWithMeta) {
+      if (!topStreakHabit || h.streak > topStreakHabit.streak) topStreakHabit = h
+      bestEver = Math.max(bestEver, h.bestStreakComputed || 0)
+    }
+
+    const weekStart = new Date(today)
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+    const week = getRangeStats(habitsWithMeta, weekStart, today)
+
+    const topConsistent = getHabitConsistency(habitsWithMeta, 30).find(r => r.rate !== null) || null
+
+    return { day, topStreakHabit, bestEver, week, topConsistent }
+  }, [habitsWithMeta])
+
+  // === CELEBRAÇÃO 100% ===
+  const [showCelebration, setShowCelebration] = useState(false)
+  const prevRateRef = useRef(kpis.day.rate)
+  useEffect(() => {
+    const prev = prevRateRef.current
+    prevRateRef.current = kpis.day.rate
+    if (kpis.day.scheduled > 0 && kpis.day.rate === 1 && prev !== null && prev < 1) {
+      setShowCelebration(true)
+      const t = setTimeout(() => setShowCelebration(false), 2600)
+      return () => clearTimeout(t)
+    }
+  }, [kpis.day.rate, kpis.day.scheduled])
+
+  // === CHECKLIST ===
+  const toggleHabitCompletion = async (habitId) => {
+    if (completeHabit) await completeHabit(habitId)
   }
 
   const isHabitComplete = (habit, dateStr) => {
     const list = Array.isArray(habit.completions)
       ? habit.completions
       : (Array.isArray(habit.completed_dates) ? habit.completed_dates : [])
-
     return list.includes(dateStr)
-  }
-
-  // Chave de data LOCAL (corrige o bug de fuso que adiantava o dia à noite)
-  const toLocalKey = (d) => {
-    const offset = d.getTimezoneOffset()
-    return new Date(d.getTime() - offset * 60 * 1000).toISOString().split('T')[0]
-  }
-  const getDateString = (date) => {
-    if (typeof date === 'number') {
-      const d = new Date()
-      d.setDate(d.getDate() + date)
-      return toLocalKey(d)
-    }
-    return toLocalKey(date)
   }
 
   // Gera dados para a semana atual
@@ -155,23 +185,11 @@ export default function Habits({ user, onNavigate, onLogout }) {
     const currentDay = today.getDay()
 
     return WEEKDAY_NAMES.map((day, index) => {
-      const offset = index - currentDay
       const date = new Date()
-      date.setDate(date.getDate() + offset)
-      const dateStr = getDateString(date)
+      date.setDate(date.getDate() + (index - currentDay))
+      const dateStr = localDateKey(date)
 
-      const activeHabitsForDay = habitsWithMeta.filter(h => {
-        if (!h.frequency || h.frequency === 'daily') return true;
-
-        let days = [];
-        if (Array.isArray(h.customDays)) days = h.customDays;
-        else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
-
-        const numericDays = days.map(d => Number(d))
-        if (numericDays.length > 0) return numericDays.includes(index);
-        return false;
-      });
-
+      const activeHabitsForDay = habitsWithMeta.filter(h => isHabitActiveOnDate(h, date))
       const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, dateStr))
       const completion = activeHabitsForDay.length > 0 ? completed.length / activeHabitsForDay.length : 0
 
@@ -201,29 +219,15 @@ export default function Habits({ user, onNavigate, onLogout }) {
     const calendar = []
     let currentWeek = []
 
-    // Adiciona dias vazios no início
     for (let i = 0; i < startingDayOfWeek; i++) {
       currentWeek.push(null)
     }
 
-    // Adiciona os dias do mês
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day)
-      const dateStr = getDateString(date)
+      const dateStr = localDateKey(date)
 
-      // Calcula progresso do dia
-      const activeHabitsForDay = habitsWithMeta.filter(h => {
-        if (!h.frequency || h.frequency === 'daily') return true;
-
-        let days = [];
-        if (Array.isArray(h.customDays)) days = h.customDays;
-        else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
-
-        const numericDays = days.map(d => Number(d))
-        if (numericDays.length > 0) return numericDays.includes(date.getDay());
-        return h.frequency === 'daily';
-      });
-
+      const activeHabitsForDay = habitsWithMeta.filter(h => isHabitActiveOnDate(h, date))
       const completed = activeHabitsForDay.filter(habit => isHabitComplete(habit, dateStr))
       const completion = activeHabitsForDay.length > 0 ? completed.length / activeHabitsForDay.length : 0
 
@@ -243,7 +247,6 @@ export default function Habits({ user, onNavigate, onLogout }) {
       }
     }
 
-    // Completa a última semana com dias vazios
     if (currentWeek.length > 0) {
       while (currentWeek.length < 7) {
         currentWeek.push(null)
@@ -258,23 +261,10 @@ export default function Habits({ user, onNavigate, onLogout }) {
   const selectedDayData = useMemo(() => {
     if (!selectedDate) return null
 
-    const dateStr = getDateString(selectedDate)
-    const dayOfWeek = selectedDate.getDay()
-
-    const habitsForDay = habitsWithMeta.filter(h => {
-      if (!h.frequency || h.frequency === 'daily') return true;
-
-      let days = [];
-      if (Array.isArray(h.customDays)) days = h.customDays;
-      else if (typeof h.customDays === 'string') { try { days = JSON.parse(h.customDays) } catch (e) { } }
-
-      const numericDays = days.map(d => Number(d))
-      if (numericDays.length > 0) return numericDays.includes(dayOfWeek);
-      return h.frequency === 'daily';
-    }).map(h => ({
-      ...h,
-      isCompleted: isHabitComplete(h, dateStr)
-    }))
+    const dateStr = localDateKey(selectedDate)
+    const habitsForDay = habitsWithMeta
+      .filter(h => isHabitActiveOnDate(h, selectedDate))
+      .map(h => ({ ...h, isCompleted: isHabitComplete(h, dateStr) }))
 
     return {
       date: selectedDate,
@@ -284,6 +274,11 @@ export default function Habits({ user, onNavigate, onLogout }) {
       total: habitsForDay.length,
     }
   }, [selectedDate, habitsWithMeta])
+
+  const detailHabit = useMemo(
+    () => habitsWithMeta.find(h => h.id === detailHabitId) || null,
+    [habitsWithMeta, detailHabitId],
+  )
 
   // Handlers
   const handleDayClick = (dateObj) => {
@@ -345,6 +340,8 @@ export default function Habits({ user, onNavigate, onLogout }) {
     return '#e5e7eb' // Cinza
   }
 
+  const todayKey = localDateKey()
+
   return (
     <div className="habitsPage">
       <TopNav user={user} active="Hábitos" onNavigate={onNavigate} onLogout={onLogout} />
@@ -359,6 +356,30 @@ export default function Habits({ user, onNavigate, onLogout }) {
           onSubmit={handleSaveHabit}
           onDelete={editingHabit ? handleDeleteHabit : undefined}
         />
+      )}
+
+      {/* Modal de Detalhe de um Hábito */}
+      {detailHabit && (
+        <HabitDetailModal
+          habit={detailHabit}
+          timerProgress={timerProgressOf(detailHabit)}
+          onClose={() => setDetailHabitId(null)}
+          onEdit={() => {
+            setDetailHabitId(null)
+            handleEditHabit(detailHabit)
+          }}
+        />
+      )}
+
+      {/* Celebração ao fechar 100% do dia */}
+      {showCelebration && (
+        <div className="habitsCelebration" role="status">
+          <div className="habitsCelebration__card">
+            <span className="habitsCelebration__emoji">🎉</span>
+            <strong>Dia completo!</strong>
+            <span>Todos os hábitos de hoje foram concluídos</span>
+          </div>
+        </div>
       )}
 
       {/* Modal de Detalhes do Dia */}
@@ -424,6 +445,63 @@ export default function Habits({ user, onNavigate, onLogout }) {
       )}
 
       <div className="habitsWrapper">
+        {/* KPI Strip — pulso do dia, visível em todas as views */}
+        <section className="habitsKpis">
+          <article className="habitsKpis__card">
+            <span className="habitsKpis__label"><CheckCircle2 size={14} /> Hoje</span>
+            <span className="habitsKpis__value">
+              {kpis.day.scheduled > 0 ? `${kpis.day.completed}/${kpis.day.scheduled}` : '—'}
+            </span>
+            <span className="habitsKpis__sub">
+              {kpis.day.rate !== null ? `${Math.round(kpis.day.rate * 100)}% concluído` : 'sem hábitos hoje'}
+            </span>
+            <div className="habitsKpis__bar">
+              <span style={{ width: `${Math.round((kpis.day.rate || 0) * 100)}%` }} />
+            </div>
+          </article>
+
+          <article className="habitsKpis__card">
+            <span className="habitsKpis__label"><Flame size={14} /> Sequência ativa</span>
+            <span className="habitsKpis__value">
+              {kpis.topStreakHabit && kpis.topStreakHabit.streak > 0
+                ? `${kpis.topStreakHabit.streak} ${kpis.topStreakHabit.streak === 1 ? 'dia' : 'dias'}`
+                : '—'}
+            </span>
+            <span className="habitsKpis__sub">
+              {kpis.topStreakHabit && kpis.topStreakHabit.streak > 0
+                ? (kpis.topStreakHabit.label || kpis.topStreakHabit.name)
+                : 'comece hoje 🔥'}
+              {kpis.bestEver > 0 && ` · recorde: ${kpis.bestEver}`}
+            </span>
+          </article>
+
+          <article className="habitsKpis__card">
+            <span className="habitsKpis__label"><TrendingUp size={14} /> Semana</span>
+            <span className="habitsKpis__value">
+              {kpis.week.rate !== null ? `${Math.round(kpis.week.rate * 100)}%` : '—'}
+            </span>
+            <span className="habitsKpis__sub">
+              {kpis.week.scheduled > 0
+                ? `${kpis.week.completed} de ${kpis.week.scheduled} conclusões`
+                : 'sem hábitos na semana'}
+            </span>
+          </article>
+
+          <article
+            className={`habitsKpis__card ${kpis.topConsistent ? 'habitsKpis__card--clickable' : ''}`}
+            onClick={() => kpis.topConsistent && setDetailHabitId(kpis.topConsistent.id)}
+            title={kpis.topConsistent ? 'Ver detalhes do hábito' : undefined}
+          >
+            <span className="habitsKpis__label"><Trophy size={14} /> Mais consistente · 30d</span>
+            <span className="habitsKpis__value">
+              {kpis.topConsistent ? `${Math.round(kpis.topConsistent.rate * 100)}%` : '—'}
+            </span>
+            <span className="habitsKpis__sub">
+              {kpis.topConsistent ? kpis.topConsistent.label : 'sem dados ainda'}
+            </span>
+          </article>
+        </section>
+
         {/* Controles e Filtros */}
         <section className="habitsControls">
           <div className="habitsControls__modes">
@@ -444,15 +522,17 @@ export default function Habits({ user, onNavigate, onLogout }) {
           </div>
 
           <div className="habitsControls__filters">
-            <div className="searchBox">
-              <Search className="searchBox__icon" size={16} />
-              <input
-                type="text"
-                placeholder="Buscar hábitos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            {viewMode !== 'stats' && (
+              <div className="searchBox">
+                <Search className="searchBox__icon" size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar hábitos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            )}
             <div className="categoryFilters">
               {CATEGORIES.map((cat) => (
                 <button
@@ -487,16 +567,16 @@ export default function Habits({ user, onNavigate, onLogout }) {
               </div>
 
               <div className="dailyChecklist">
-                {filteredHabits.length === 0 ? (
+                {dailyHabits.length === 0 ? (
                   <div className="habitsEmpty">
                     <p>Nenhum hábito programado para hoje.</p>
                   </div>
                 ) : (
-                  filteredHabits.map((habit) => {
+                  dailyHabits.map((habit) => {
                     const category = CATEGORIES.find(c => c.id === habit.category)
                     const IconComponent = habit.icon
-                    const todayStr = getDateString(0)
-                    const isChecked = isHabitComplete(habit, todayStr)
+                    const isChecked = isHabitComplete(habit, todayKey)
+                    const timer = timerProgressOf(habit)
 
                     return (
                       <div
@@ -508,17 +588,38 @@ export default function Habits({ user, onNavigate, onLogout }) {
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => toggleHabitCompletion(habit.id, todayStr)}
+                            onChange={() => toggleHabitCompletion(habit.id)}
                           />
                         </div>
 
                         <div
                           className="dailyCheckItem__content"
-                          onClick={() => handleEditHabit(habit)}
+                          onClick={() => setDetailHabitId(habit.id)}
                         >
-                          <IconComponent className="dailyCheckItem__icon" size={20} strokeWidth={2} />
-                          <span className="dailyCheckItem__label">{habit.label || habit.name}</span>
-                          {habit.focus && <span className="dailyCheckItem__focus">{habit.focus}</span>}
+                          <div className="dailyCheckItem__main">
+                            <IconComponent className="dailyCheckItem__icon" size={20} strokeWidth={2} />
+                            <span className="dailyCheckItem__label">{habit.label || habit.name}</span>
+                            {habit.focus && <span className="dailyCheckItem__focus">{habit.focus}</span>}
+                            {timer && (
+                              <span className="habitAuto" title="Concluído automaticamente pelo timer de foco">
+                                <Zap size={11} /> auto
+                              </span>
+                            )}
+                          </div>
+
+                          {timer && !isChecked && (
+                            <div className="dailyCheckItem__timer">
+                              <div className="dailyCheckItem__timerBar">
+                                <span
+                                  className="dailyCheckItem__timerFill"
+                                  style={{ width: `${Math.round(timer.pct * 100)}%` }}
+                                />
+                              </div>
+                              <span className="dailyCheckItem__timerText">
+                                {formatMinutes(timer.got)} / {formatMinutes(timer.goal)} de {timer.catLabel}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="dailyCheckItem__actions">
@@ -557,7 +658,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
                         <span className="weekDayCard__number">{slot.dayNumber}</span>
                       </div>
 
-                      <div className="weekDayCard__ring" style={{ 
+                      <div className="weekDayCard__ring" style={{
 // @ts-ignore
                       '--progress': progressPercent }}>
                         <svg viewBox="0 0 36 36">
@@ -680,6 +781,15 @@ export default function Habits({ user, onNavigate, onLogout }) {
                 <span><span className="legendDot" style={{ backgroundColor: '#10b981' }} /> &gt; 80%</span>
               </div>
             </div>
+          )}
+
+          {/* VISUALIZAÇÃO ESTATÍSTICAS */}
+          {viewMode === 'stats' && (
+            <HabitsStats
+              habits={categoryFilteredHabits}
+              onOpenDetail={setDetailHabitId}
+              onDayClick={handleDayClick}
+            />
           )}
         </section>
 
