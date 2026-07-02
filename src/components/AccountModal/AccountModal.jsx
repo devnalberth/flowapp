@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { X, Trash2, Wallet } from 'lucide-react'
+import BankLogo from '../BankLogo/BankLogo.jsx'
+import BankPicker from '../BankLogo/BankPicker.jsx'
 import './AccountModal.css'
 
 const COLORS = ['#0d0d12', '#16a34a', '#1d4ed8', '#ec7000', '#820ad1', '#cc092f', '#0891b2', '#ff4800']
-const ICONS = ['🏦', '💰', '👛', '💼', '📈', '🐷', '💵', '🪙']
 const TYPES = [
   { id: 'corrente', label: 'Conta corrente' },
   { id: 'poupanca', label: 'Poupança' },
@@ -18,7 +19,7 @@ export default function AccountModal({ account = null, onClose, onSubmit, onDele
   const [form, setForm] = useState(() => ({
     name: account?.name || '',
     type: account?.type || 'corrente',
-    icon: account?.icon || ICONS[0],
+    icon: account?.icon || '',
     color: account?.color || COLORS[0],
     initialBalance: account ? fmtMoney(account.initialBalance) : '',
     includeInTotal: account ? account.includeInTotal !== false : true,
@@ -46,7 +47,7 @@ export default function AccountModal({ account = null, onClose, onSubmit, onDele
     <div className="acctModal" onClick={onClose}>
       <div className="acctModal__panel" onClick={(e) => e.stopPropagation()} style={{ '--accent': form.color }}>
         <header className="acctModal__header">
-          <div className="acctModal__avatar" style={{ background: form.color }}>{form.icon}</div>
+          <BankLogo value={form.icon} name={form.name} color={form.color} size={44} />
           <div>
             <p className="acctModal__eyebrow"><Wallet size={12} /> Conta</p>
             <h3>{isEditing ? 'Editar conta' : 'Nova conta'}</h3>
@@ -69,12 +70,14 @@ export default function AccountModal({ account = null, onClose, onSubmit, onDele
           </label>
 
           <div className="acctModal__field">
-            <span>Ícone</span>
-            <div className="acctModal__chips">
-              {ICONS.map((b) => (
-                <button key={b} type="button" className={form.icon === b ? 'is-on' : ''} onClick={() => setForm({ ...form, icon: b })}>{b}</button>
-              ))}
-            </div>
+            <span>Instituição</span>
+            <BankPicker
+              value={form.icon}
+              name={form.name}
+              onSelect={(bank) => setForm((f) => bank
+                ? { ...f, icon: `bank:${bank.id}`, color: bank.color }
+                : { ...f, icon: 'none' })}
+            />
           </div>
 
           <div className="acctModal__field">

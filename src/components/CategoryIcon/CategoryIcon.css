@@ -1,0 +1,14 @@
+.categoryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.categoryIcon svg {
+  display: block;
+}
+
+.categoryIcon__emoji {
+  line-height: 1;
+}

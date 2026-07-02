@@ -1,0 +1,87 @@
+.bankPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bankPicker__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f6f6f8;
+  border: 1px solid #ececf1;
+  border-radius: 10px;
+  color: #8b8b95;
+}
+
+.bankPicker__search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+  color: #0d0d12;
+}
+
+.bankPicker__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 172px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.bankPicker__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 7px;
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bankPicker__item:hover {
+  border-color: #d0d0d8;
+  transform: translateY(-1px);
+}
+
+.bankPicker__item.is-on {
+  border-color: var(--accent, #ff4800);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #ff4800) 18%, transparent);
+}
+
+.bankPicker__item em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  color: #5b5a64;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bankPicker__none {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #f3f4f6;
+  color: #8b8b95;
+}
+
+.bankPicker__empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: #8b8b95;
+}

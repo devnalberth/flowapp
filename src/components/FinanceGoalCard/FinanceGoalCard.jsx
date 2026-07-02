@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Target, Plus, Pencil, TrendingUp, CheckCircle2 } from 'lucide-react'
+import CategoryIcon from '../CategoryIcon/CategoryIcon.jsx'
 import './FinanceGoalCard.css'
 
 const fmtMoney = (n) =>
@@ -63,7 +64,7 @@ export default function FinanceGoalCard({ goals = [], transactions = [], catMap 
               >
                 <header className="financeGoalItem__head">
                   <span className="financeGoalItem__cat">
-                    <i style={{ background: accent }}>{cat.icon || '💰'}</i>
+                    <CategoryIcon slug={g.financeCategory} icon={cat.icon} color={accent} size={22} />
                     {cat.name || g.financeCategory}
                   </span>
                   <Pencil size={13} className="financeGoalItem__edit" />

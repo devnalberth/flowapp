@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { X, ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cardInvoiceTotal, cardAvailable, currentInvoiceMonth, invoiceTransactions, invoiceDueDate } from '../../utils/financeMetrics'
+import BankLogo from '../BankLogo/BankLogo.jsx'
 import './InvoiceView.css'
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -20,7 +21,7 @@ export default function InvoiceView({ card, transactions = [], catMap = {}, onCl
     <div className="invoiceView" onClick={onClose}>
       <div className="invoiceView__panel" onClick={(e) => e.stopPropagation()} style={{ '--accent': card.color }}>
         <header className="invoiceView__header">
-          <div className="invoiceView__brand" style={{ background: card.color }}>{card.brand || '💳'}</div>
+          <BankLogo value={card.brand} name={card.name} color={card.color} size={44} radius={11} />
           <div>
             <strong>{card.name}</strong>
             <span>Fecha dia {card.closingDay} · vence dia {card.dueDay}</span>

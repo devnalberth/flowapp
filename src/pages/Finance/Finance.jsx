@@ -22,6 +22,8 @@ import FinanceGoalCard from '../../components/FinanceGoalCard/FinanceGoalCard.js
 import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
 import LimitsModal from '../../components/LimitsModal/LimitsModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
+import BankLogo from '../../components/BankLogo/BankLogo.jsx'
+import CategoryIcon from '../../components/CategoryIcon/CategoryIcon.jsx'
 import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth, monthSpendByCategory, monthSpendByCard, limitStatus } from '../../utils/financeMetrics'
 import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge } from 'lucide-react'
 
@@ -424,7 +426,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
             <p className="financeWallet__empty">Adicione sua primeira conta para acompanhar o saldo.</p>
           ) : financeAccounts.map((acc) => (
             <button type="button" className="walletItem" key={acc.id} onClick={() => setAccountModal({ account: acc })}>
-              <span className="walletItem__icon" style={{ background: acc.color }}>{acc.icon || '🏦'}</span>
+              <BankLogo value={acc.icon} name={acc.name} color={acc.color} size={38} radius={10} />
               <div className="walletItem__meta"><strong>{acc.name}</strong><span>{ACCOUNT_TYPE_LABEL[acc.type] || 'Conta'}</span></div>
               <span className="walletItem__value">{formatCurrency(accountBalance(acc, finances))}</span>
               <Pencil size={13} className="walletItem__edit" />
@@ -446,7 +448,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
             return (
               <div className="cardItem" key={card.id}>
                 <button type="button" className="cardItem__top" onClick={() => setCardModal({ card })}>
-                  <span className="cardItem__brand" style={{ background: card.color }}>{card.brand || '💳'}</span>
+                  <BankLogo value={card.brand} name={card.name} color={card.color} size={38} radius={10} />
                   <div className="cardItem__meta"><strong>{card.name}</strong><span>Fecha dia {card.closingDay} · vence dia {card.dueDay}</span></div>
                   {cardLim && cardLim.status !== 'ok' && (
                     <span className={`cardItem__limitBadge cardItem__limitBadge--${cardLim.status}`}>
@@ -493,12 +495,13 @@ export default function Finance({ user, onNavigate, onLogout }) {
                 ? financeCards.find((c) => c.id === l.ref)
                 : catMap[l.ref]
               const name = l.scope === 'card' ? (meta?.name || 'Cartão') : (meta?.name || l.ref)
-              const icon = l.scope === 'card' ? (meta?.brand || '💳') : (meta?.icon || '🏷️')
-              const color = (l.scope === 'card' ? meta?.color : meta?.color) || '#6b7280'
+              const color = meta?.color || '#6b7280'
               return (
                 <article className={`limitChip limitChip--${l.status}`} key={l.id}>
                   <header>
-                    <span className="limitChip__icon" style={{ background: color }}>{icon}</span>
+                    {l.scope === 'card'
+                      ? <BankLogo value={meta?.brand} name={meta?.name} color={color} size={28} radius={8} />
+                      : <CategoryIcon slug={l.ref} icon={meta?.icon} color={color} size={28} />}
                     <strong>{name}</strong>
                     {l.status === 'over' && <AlertTriangle size={14} className="limitChip__warn" />}
                   </header>
@@ -629,8 +632,13 @@ export default function Finance({ user, onNavigate, onLogout }) {
                   </td>
                   <td>
                     <div className="categoryCell">
-                      <span className="categoryCell__dot" style={{ background: catColor(transaction.category) }} />
-                      {catMap[transaction.category]?.icon ? `${catMap[transaction.category].icon} ` : ''}{catLabel(transaction.category)}
+                      <CategoryIcon
+                        slug={transaction.category}
+                        icon={catMap[transaction.category]?.icon}
+                        color={catColor(transaction.category)}
+                        size={22}
+                      />
+                      {catLabel(transaction.category)}
                     </div>
                   </td>
                   <td>{formatDate(transaction.date)}</td>

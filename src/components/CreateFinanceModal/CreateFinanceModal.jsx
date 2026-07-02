@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { X, TrendingUp, TrendingDown, ArrowRightLeft, Calendar, CreditCard, Tag, Repeat, ChevronDown, Check, Plus, Pencil, Trash2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import CategoryIcon, { ICON_BY_EMOJI } from '../CategoryIcon/CategoryIcon.jsx'
 import './CreateFinanceModal.css'
 
 const TRANSACTION_TYPES = [
@@ -209,12 +210,12 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
                 <option value="">Sem conta/cartão</option>
                 {(financeAccounts || []).length > 0 && (
                   <optgroup label="Contas">
-                    {financeAccounts.map((a) => <option key={a.id} value={`acc:${a.id}`}>{a.icon || '🏦'} {a.name}</option>)}
+                    {financeAccounts.map((a) => <option key={a.id} value={`acc:${a.id}`}>{a.name}</option>)}
                   </optgroup>
                 )}
                 {(financeCards || []).length > 0 && (
                   <optgroup label="Cartões">
-                    {financeCards.map((c) => <option key={c.id} value={`card:${c.id}`}>{c.brand || '💳'} {c.name}</option>)}
+                    {financeCards.map((c) => <option key={c.id} value={`card:${c.id}`}>{c.name}</option>)}
                   </optgroup>
                 )}
               </select>
@@ -225,7 +226,7 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
                 <label><Tag size={14} /> Categoria</label>
                 <div className="fm-cat-selector">
                   <button type="button" className="fm-cat-trigger" onClick={() => setShowCategoryDropdown((p) => !p)}>
-                    <span className="fm-cat-emoji">{activeCategory?.icon || '📦'}</span>
+                    <CategoryIcon slug={activeCategory?.slug} icon={activeCategory?.icon} color={activeCategory?.color || '#6b7280'} size={26} />
                     <span className="fm-cat-trigger__label">{activeCategory?.name || 'Selecionar'}</span>
                     <ChevronDown size={14} className={`fm-cat-chevron ${showCategoryDropdown ? 'fm-cat-chevron--open' : ''}`} />
                   </button>
@@ -236,7 +237,7 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
                         {categories.map((cat) => (
                           <div key={cat.id} className={`fm-cat-item ${formData.category === cat.slug ? 'fm-cat-item--active' : ''}`}>
                             <button type="button" className="fm-cat-item__main" onClick={() => { handleChange('category', cat.slug); setShowCategoryDropdown(false) }}>
-                              <span className="fm-cat-emoji" style={{ background: `${cat.color}22` }}>{cat.icon || '📦'}</span>
+                              <CategoryIcon slug={cat.slug} icon={cat.icon} color={cat.color || '#6b7280'} size={26} />
                               <span>{cat.name}</span>
                               {formData.category === cat.slug && <Check size={14} className="fm-cat-check" />}
                             </button>
@@ -267,9 +268,14 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
               <div className="fm-cat-editor__row">
                 <span>Ícone</span>
                 <div className="fm-cat-editor__emojis">
-                  {EMOJI_PALETTE.map((em) => (
-                    <button key={em} type="button" className={catEditor.icon === em ? 'is-on' : ''} onClick={() => setCatEditor({ ...catEditor, icon: em })}>{em}</button>
-                  ))}
+                  {EMOJI_PALETTE.map((em) => {
+                    const OptionIcon = ICON_BY_EMOJI[em]
+                    return (
+                      <button key={em} type="button" className={catEditor.icon === em ? 'is-on' : ''} onClick={() => setCatEditor({ ...catEditor, icon: em })}>
+                        {OptionIcon ? <OptionIcon size={15} strokeWidth={2.2} /> : em}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <div className="fm-cat-editor__row">

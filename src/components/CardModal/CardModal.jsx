@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { X, Trash2, CreditCard } from 'lucide-react'
+import BankLogo from '../BankLogo/BankLogo.jsx'
+import BankPicker from '../BankLogo/BankPicker.jsx'
 import './CardModal.css'
 
 const COLORS = ['#0d0d12', '#820ad1', '#ec7000', '#cc092f', '#00a868', '#2a2a72', '#ff4800', '#1d4ed8', '#db2777', '#0891b2']
-const BRANDS = ['💳', '🟣', '🟠', '🔴', '🟢', '🔵', '🏦', '⚫', '💠', '✨']
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 
 const fmtMoney = (n) => (Number(n) || 0).toFixed(2).replace('.', ',')
@@ -12,7 +13,7 @@ export default function CardModal({ card = null, onClose, onSubmit, onDelete }) 
   const isEditing = !!card
   const [form, setForm] = useState(() => ({
     name: card?.name || '',
-    brand: card?.brand || BRANDS[0],
+    brand: card?.brand || '',
     color: card?.color || COLORS[0],
     creditLimit: card ? fmtMoney(card.creditLimit) : '',
     closingDay: card?.closingDay || 1,
@@ -41,7 +42,7 @@ export default function CardModal({ card = null, onClose, onSubmit, onDelete }) 
     <div className="cardModal" onClick={onClose}>
       <div className="cardModal__panel" onClick={(e) => e.stopPropagation()} style={{ '--accent': form.color }}>
         <header className="cardModal__header">
-          <div className="cardModal__avatar" style={{ background: form.color }}>{form.brand}</div>
+          <BankLogo value={form.brand} name={form.name} color={form.color} size={44} />
           <div>
             <p className="cardModal__eyebrow"><CreditCard size={12} /> Cartão de crédito</p>
             <h3>{isEditing ? 'Editar cartão' : 'Novo cartão'}</h3>
@@ -57,12 +58,15 @@ export default function CardModal({ card = null, onClose, onSubmit, onDelete }) 
           </label>
 
           <div className="cardModal__field">
-            <span>Ícone</span>
-            <div className="cardModal__chips">
-              {BRANDS.map((b) => (
-                <button key={b} type="button" className={form.brand === b ? 'is-on' : ''} onClick={() => setForm({ ...form, brand: b })}>{b}</button>
-              ))}
-            </div>
+            <span>Banco / bandeira</span>
+            <BankPicker
+              value={form.brand}
+              name={form.name}
+              includeNetworks
+              onSelect={(bank) => setForm((f) => bank
+                ? { ...f, brand: `bank:${bank.id}`, color: bank.color }
+                : { ...f, brand: 'none' })}
+            />
           </div>
 
           <div className="cardModal__field">

@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { X, Plus, Trash2, Pencil, AlertTriangle, Tag, CreditCard, Check } from 'lucide-react'
 import { monthSpendByCategory, monthSpendByCard, limitStatus } from '../../utils/financeMetrics'
+import BankLogo from '../BankLogo/BankLogo.jsx'
+import CategoryIcon from '../CategoryIcon/CategoryIcon.jsx'
 import './LimitsModal.css'
 
 const fmtMoney = (n) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n) || 0)
@@ -23,10 +25,6 @@ export default function LimitsModal({
   const refLabel = (limit) => {
     if (limit.scope === 'card') return cards.find((c) => c.id === limit.ref)?.name || 'Cartão'
     return catMap[limit.ref]?.name || categories.find((c) => c.slug === limit.ref)?.name || limit.ref
-  }
-  const refIcon = (limit) => {
-    if (limit.scope === 'card') return cards.find((c) => c.id === limit.ref)?.brand || '💳'
-    return catMap[limit.ref]?.icon || '🏷️'
   }
   const refColor = (limit) => {
     if (limit.scope === 'card') return cards.find((c) => c.id === limit.ref)?.color || '#6b7280'
@@ -87,7 +85,7 @@ export default function LimitsModal({
                   const disabled = usedRefs.has(val)
                   return (
                     <option key={val} value={val} disabled={disabled}>
-                      {(form.scope === 'card' ? (o.brand || '💳') : (o.icon || '🏷️'))} {o.name}{disabled ? ' (já tem limite)' : ''}
+                      {o.name}{disabled ? ' (já tem limite)' : ''}
                     </option>
                   )
                 })}
@@ -118,7 +116,15 @@ export default function LimitsModal({
               const st = limitStatus(spentOf(limit), limit.amount)
               return (
                 <div className={`limitRow limitRow--${st.status}`} key={limit.id}>
-                  <span className="limitRow__icon" style={{ background: refColor(limit) }}>{refIcon(limit)}</span>
+                  {limit.scope === 'card'
+                    ? <BankLogo
+                        value={cards.find((c) => c.id === limit.ref)?.brand}
+                        name={refLabel(limit)}
+                        color={refColor(limit)}
+                        size={36}
+                        radius={10}
+                      />
+                    : <CategoryIcon slug={limit.ref} icon={catMap[limit.ref]?.icon} color={refColor(limit)} size={36} />}
                   <div className="limitRow__body">
                     <div className="limitRow__top">
                       <strong>{refLabel(limit)}</strong>
