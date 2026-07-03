@@ -40,21 +40,17 @@ export const goalService = {
     }
 
     try {
-      console.debug('[goalService.createGoal] payload:', payload)
       const { data, error } = await supabase
         .from('goals')
         .insert(payload)
         .select()
         .single()
 
-      console.debug('[goalService.createGoal] response data:', data, 'error:', error)
-
       if (error) {
         console.error('goalService.createGoal supabase response:', { data, error })
         throw error
       }
 
-      console.debug('goalService.createGoal inserted:', data)
       return normalizeGoal(data)
     } catch (err) {
       console.error('[goalService.createGoal] Error creating goal:', err)

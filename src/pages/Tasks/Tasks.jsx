@@ -204,8 +204,6 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
 
     const newTimeSpent = (currentTask.time_spent || 0) + minutesToAdd
 
-    console.log(`Salvando foco: +${minutesToAdd.toFixed(2)} min na tarefa ${currentTask.title}`)
-
     // NOVO: Registra no log diário de foco (localStorage)
     // Usa data local para evitar problemas de fuso horário
     const now = new Date()

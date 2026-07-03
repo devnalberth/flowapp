@@ -29,7 +29,6 @@ export const dreamMapService = {
       console.error('dreamMapService.createDreamMap supabase response:', { data, error });
       throw error;
     }
-    console.debug('dreamMapService.createDreamMap inserted:', data);
     return data;
   },
 

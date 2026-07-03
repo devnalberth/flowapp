@@ -55,7 +55,7 @@ function ProfileModal({ user, onClose }) {
   const validate = () => {
     if (!name.trim()) return 'Informe um nome.'
     if (wantsPasswordChange) {
-      if (password.length < 6) return 'A nova senha precisa de pelo menos 6 caracteres.'
+      if (password.length < 8) return 'A nova senha precisa de pelo menos 8 caracteres.'
       if (password !== passwordConfirm) return 'As senhas não coincidem.'
     }
     return ''
@@ -138,7 +138,7 @@ function ProfileModal({ user, onClose }) {
               <input
                 type="password"
                 value={password}
-                placeholder="Mínimo de 6 caracteres"
+                placeholder="Mínimo de 8 caracteres"
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
               />

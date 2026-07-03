@@ -80,7 +80,6 @@ export const taskService = {
       console.error('taskService.createTask supabase response:', { data, error });
       throw error;
     }
-    console.debug('taskService.createTask inserted:', data);
     return normalizeTask(data);
   },
 
