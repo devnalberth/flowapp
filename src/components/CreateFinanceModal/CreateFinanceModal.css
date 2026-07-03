@@ -223,6 +223,17 @@
   color: #111827;
 }
 
+.fm-recurring-hint {
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  background: #fff8f3;
+  border: 1px solid #ffe1cc;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b45309;
+}
+
 .finance-modal__installment {
   background: #f9fafb;
   border-radius: 12px;

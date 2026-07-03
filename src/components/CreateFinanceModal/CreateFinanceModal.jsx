@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { X, TrendingUp, TrendingDown, ArrowRightLeft, Calendar, CreditCard, Tag, Repeat, ChevronDown, Check, Plus, Pencil, Trash2 } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, ArrowRightLeft, Calendar, CreditCard, Tag, Repeat, ChevronDown, Check, Plus, Pencil, Trash2, CalendarSync } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import CategoryIcon, { ICON_BY_EMOJI } from '../CategoryIcon/CategoryIcon.jsx'
 import './CreateFinanceModal.css'
@@ -39,6 +39,8 @@ const buildInitial = (initialData) => {
       tags: Array.isArray(initialData.tags) ? initialData.tags : [],
       isInstallment: !!(initialData.isInstallment ?? initialData.is_installment),
       installmentCount: initialData.installmentCount || initialData.installment_count || 2,
+      isRecurring: false,
+      paid: initialData.paid !== false,
     }
   }
   return {
@@ -46,6 +48,7 @@ const buildInitial = (initialData) => {
     date: new Date().toISOString().split('T')[0],
     category: '', source: '', paymentMethod: 'pix',
     tags: [], isInstallment: false, installmentCount: 2,
+    isRecurring: false, paid: true,
   }
 }
 
@@ -79,8 +82,16 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
       if (field === 'type') {
         updated.category = ''
         if (value !== 'DESPESA') updated.isInstallment = false
+        if (value === 'TRANSFERENCIA') updated.isRecurring = false
       }
       if (field === 'paymentMethod' && value !== 'credito') updated.isInstallment = false
+      // Parcelamento e recorrência são mutuamente exclusivos
+      if (field === 'isInstallment' && value) updated.isRecurring = false
+      if (field === 'isRecurring' && value) updated.isInstallment = false
+      // Data futura → lançamento entra como "a pagar" por padrão
+      if (field === 'date' && typeof value === 'string') {
+        updated.paid = value <= new Date().toISOString().split('T')[0]
+      }
       // Selecionou um cartão numa despesa → assume crédito (habilita parcelamento/fatura)
       if (field === 'source' && value.startsWith('card:') && updated.type === 'DESPESA') updated.paymentMethod = 'credito'
       if (field === 'source' && value.startsWith('acc:') && updated.paymentMethod === 'credito') updated.paymentMethod = 'pix'
@@ -112,6 +123,8 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
       isInstallment: formData.isInstallment,
       installmentCount,
       installmentTotal: formData.isInstallment ? amount.toFixed(2) : null,
+      isRecurring: formData.isRecurring,
+      paid: formData.paid,
     })
     if (!isEditing) setFormData(buildInitial(null))
     onClose()
@@ -353,6 +366,33 @@ export default function CreateFinanceModal({ onClose, onSubmit, initialData = nu
                 </div>
               )}
             </>
+          )}
+
+          {/* Recorrência mensal (assinaturas, aluguel, salário...) — só na criação */}
+          {!isEditing && formData.type !== 'TRANSFERENCIA' && !formData.isInstallment && (
+            <div className="finance-modal__field">
+              <label className="finance-modal__checkbox">
+                <input type="checkbox" checked={formData.isRecurring} onChange={(e) => handleChange('isRecurring', e.target.checked)} />
+                <CalendarSync size={16} /><span>Repetir todo mês</span>
+              </label>
+              {formData.isRecurring && (
+                <p className="fm-recurring-hint">
+                  Será lançado automaticamente todo dia {Number(formData.date.slice(8, 10))} como "a pagar".
+                  Gerencie em Financeiro → Próximos vencimentos → Recorrências.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Status de pagamento */}
+          {formData.type !== 'TRANSFERENCIA' && (
+            <div className="finance-modal__field">
+              <label className="finance-modal__checkbox">
+                <input type="checkbox" checked={formData.paid} onChange={(e) => handleChange('paid', e.target.checked)} />
+                <Check size={16} />
+                <span>{formData.type === 'RECEITA' ? 'Já recebido' : 'Já pago'}</span>
+              </label>
+            </div>
           )}
 
           <div className="finance-modal__actions">

@@ -10,6 +10,7 @@ import { financeTagService } from '../services/financeTagService'
 import { financeAccountService } from '../services/financeAccountService'
 import { financeCardService } from '../services/financeCardService'
 import { financeLimitService } from '../services/financeLimitService'
+import { financeRecurrenceService } from '../services/financeRecurrenceService'
 import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
@@ -43,6 +44,22 @@ function computeInvoiceMonth(dateStr, closingDay, offset = 0) {
   while (month > 12) { month -= 12; year += 1 }
   while (month < 1) { month += 12; year -= 1 }
   return `${year}-${String(month).padStart(2, '0')}`
+}
+
+// Próximo mês de uma chave 'YYYY-MM'
+function nextMonthKey(ym) {
+  let [y, m] = ym.split('-').map(Number)
+  m += 1
+  if (m > 12) { m = 1; y += 1 }
+  return `${y}-${String(m).padStart(2, '0')}`
+}
+
+// Data 'YYYY-MM-DD' do mês `ym` com o dia ajustado ao último dia do mês (ex.: dia 31 em fev → 28/29)
+function clampedDateForMonth(ym, day) {
+  const [y, m] = ym.split('-').map(Number)
+  const lastDay = new Date(y, m, 0).getDate()
+  const d = Math.min(Math.max(1, Number(day) || 1), lastDay)
+  return `${ym}-${String(d).padStart(2, '0')}`
 }
 
 // Chave de data LOCAL (YYYY-MM-DD) — evita o bug de fuso (UTC adiantava o dia à noite no BR).
@@ -137,6 +154,7 @@ export function AppProvider({ children, userId }) {
   const [financeAccounts, setFinanceAccounts] = useState([])
   const [financeCards, setFinanceCards] = useState([])
   const [financeLimits, setFinanceLimits] = useState([])
+  const [financeRecurrences, setFinanceRecurrences] = useState([])
   const [studies, setStudies] = useState([])
   const [dreamMaps, setDreamMaps] = useState([])
   const [events, setEvents] = useState([])
@@ -158,6 +176,7 @@ export function AppProvider({ children, userId }) {
       setFinanceAccounts([])
       setFinanceCards([])
       setFinanceLimits([])
+      setFinanceRecurrences([])
       setStudies([])
       setDreamMaps([])
       setLoading(false)
@@ -184,6 +203,7 @@ export function AppProvider({ children, userId }) {
         financeAccountService.getAccounts(userId),
         financeCardService.getCards(userId),
         financeLimitService.getLimits(userId),
+        financeRecurrenceService.getRecurrences(userId),
       ])
 
       const safeArray = (res, label) => {
@@ -220,6 +240,18 @@ export function AppProvider({ children, userId }) {
       setFinanceCards(safeArray(results[12], 'financeCards'))
       setFinanceLimits(safeArray(results[13], 'financeLimits'))
 
+      // Recorrências: carrega e gera os lançamentos pendentes do(s) mês(es) novo(s)
+      const recurrences = safeArray(results[14], 'financeRecurrences')
+      setFinanceRecurrences(recurrences)
+      try {
+        const cards = safeArray(results[12], 'financeCards')
+        const { created, generatedIds, nowMonth } = await generateRecurringTransactions(recurrences, cards)
+        if (created.length) setFinances(prev => [...created, ...prev])
+        if (generatedIds.length) {
+          setFinanceRecurrences(prev => prev.map(r => generatedIds.includes(r.id) ? { ...r, lastGenerated: nowMonth } : r))
+        }
+      } catch (e) { console.error('geração de recorrências:', e) }
+
       // Re-hidrata o histórico de foco do banco (sobrevive a limpar cache/trocar device)
       focusLogService.hydrate(userId)
 
@@ -228,6 +260,55 @@ export function AppProvider({ children, userId }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Gera os lançamentos dos meses ainda não gerados de cada recorrência ativa.
+  // O "claim" atômico de last_generated no banco impede duplicação quando o
+  // load roda 2x (StrictMode/refresh simultâneo).
+  const generateRecurringTransactions = async (recurrences, cards) => {
+    const nowMonth = localDateKey().slice(0, 7)
+    const created = []
+    const generatedIds = []
+
+    for (const rec of recurrences || []) {
+      if (!rec.active) continue
+      const startMonth = rec.lastGenerated || String(rec.created_at || '').slice(0, 7) || nowMonth
+      if (startMonth >= nowMonth) continue
+
+      const claimed = await financeRecurrenceService.claimGeneration(rec.id, userId, rec.lastGenerated ?? null, nowMonth)
+      if (!claimed) continue
+      generatedIds.push(rec.id)
+
+      const card = rec.cardId ? (cards || []).find(c => c.id === rec.cardId) : null
+      const rows = []
+      let month = nextMonthKey(startMonth)
+      let guard = 0
+      while (month <= nowMonth && guard++ < 24) { // máx. 24 meses retroativos
+        const dateStr = clampedDateForMonth(month, rec.dayOfMonth)
+        rows.push({
+          description: rec.description,
+          amount: Number(rec.amount).toFixed(2),
+          type: rec.type || 'DESPESA',
+          category: rec.category || 'outros',
+          date: `${dateStr}T12:00:00.000Z`,
+          accountId: rec.accountId ?? null,
+          cardId: rec.cardId ?? null,
+          paymentMethod: rec.paymentMethod ?? null,
+          purchaseDate: rec.cardId ? dateStr : null,
+          invoiceMonth: rec.cardId ? computeInvoiceMonth(dateStr, card?.closingDay ?? 1, 0) : null,
+          paid: false, // entra como "a pagar" — aparece nos Próximos vencimentos
+          tags: [],
+        })
+        month = nextMonthKey(month)
+      }
+
+      if (rows.length) {
+        const inserted = await financeService.createTransactions(userId, rows)
+        created.push(...inserted)
+      }
+    }
+
+    return { created, generatedIds, nowMonth }
   }
 
   // Task Actions
@@ -642,8 +723,13 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     const existing = finances.find(f => f.id === id)
 
+    // Mudança só de status de pagamento vale apenas para ESTA parcela
+    // (marcar uma parcela como paga não pode marcar as irmãs).
+    const updateKeys = Object.keys(updates || {})
+    const isPaidOnlyUpdate = updateKeys.length === 1 && updateKeys[0] === 'paid'
+
     // Installment group: update all sibling parcelas together
-    if (existing?.installment_group_id) {
+    if (existing?.installment_group_id && !isPaidOnlyUpdate) {
       const N = existing.installment_count
       const confirmed = window.confirm(
         `Esta é uma compra parcelada (${N}x). Deseja atualizar todas as parcelas?`
@@ -813,6 +899,26 @@ export function AppProvider({ children, userId }) {
     if (!userId) return
     setFinanceLimits(prev => prev.filter(x => x.id !== id))
     await financeLimitService.deleteLimit(id, userId)
+  }
+
+  // Finance Recurrences (despesas/receitas fixas mensais)
+  const addFinanceRecurrence = async (r) => {
+    if (!userId) return
+    const created = await financeRecurrenceService.createRecurrence(userId, r)
+    setFinanceRecurrences(prev => [...prev, created])
+    return created
+  }
+  const updateFinanceRecurrence = async (id, updates) => {
+    if (!userId) return
+    setFinanceRecurrences(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x))
+    const updated = await financeRecurrenceService.updateRecurrence(id, userId, updates)
+    if (updated) setFinanceRecurrences(prev => prev.map(x => x.id === id ? updated : x))
+    return updated
+  }
+  const deleteFinanceRecurrence = async (id) => {
+    if (!userId) return
+    setFinanceRecurrences(prev => prev.filter(x => x.id !== id))
+    await financeRecurrenceService.deleteRecurrence(id, userId)
   }
 
   // Study & Dream Actions
@@ -1037,6 +1143,7 @@ export function AppProvider({ children, userId }) {
     financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
     financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
     financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
+    financeRecurrences, addFinanceRecurrence, updateFinanceRecurrence, deleteFinanceRecurrence,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,

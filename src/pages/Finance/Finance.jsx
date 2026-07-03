@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import {
   ResponsiveContainer,
@@ -24,8 +24,10 @@ import LimitsModal from '../../components/LimitsModal/LimitsModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import BankLogo from '../../components/BankLogo/BankLogo.jsx'
 import CategoryIcon from '../../components/CategoryIcon/CategoryIcon.jsx'
+import UpcomingBills from '../../components/UpcomingBills/UpcomingBills.jsx'
+import RecurrencesModal from '../../components/RecurrencesModal/RecurrencesModal.jsx'
 import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth, monthSpendByCategory, monthSpendByCard, limitStatus } from '../../utils/financeMetrics'
-import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge } from 'lucide-react'
+import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge, Search, ChevronDown } from 'lucide-react'
 
 import './Finance.css'
 
@@ -43,9 +45,6 @@ const MONTHS = [
   { value: '11', label: 'Novembro' },
   { value: '12', label: 'Dezembro' },
 ]
-
-// Expandido para incluir 2026
-const YEARS = ['2024', '2025', '2026']
 
 const CATEGORY_OPTIONS = [
   // Despesa
@@ -109,6 +108,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
     financeAccounts, addFinanceAccount, updateFinanceAccount, deleteFinanceAccount,
     financeCards, addFinanceCard, updateFinanceCard, deleteFinanceCard,
     financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
+    financeRecurrences, addFinanceRecurrence, updateFinanceRecurrence, deleteFinanceRecurrence,
     goals, addGoal, updateGoal, deleteGoal,
   } = useApp()
 
@@ -117,6 +117,13 @@ export default function Finance({ user, onNavigate, onLogout }) {
   const [invoiceCard, setInvoiceCard] = useState(null)
   const [goalModal, setGoalModal] = useState(null)     // { goal } | { } (nova) | null
   const [limitsModalOpen, setLimitsModalOpen] = useState(false)
+  const [recurrencesModalOpen, setRecurrencesModalOpen] = useState(false)
+
+  // Filtros da tabela de transações
+  const [txSearch, setTxSearch] = useState('')
+  const [txTypeFilter, setTxTypeFilter] = useState('all')
+  const [txCategoryFilter, setTxCategoryFilter] = useState('all')
+  const [txVisible, setTxVisible] = useState(20)
 
   // Metas com área Financeiro (acompanhadas pelas receitas da categoria no mês)
   const financeGoals = useMemo(
@@ -182,6 +189,20 @@ export default function Finance({ user, onNavigate, onLogout }) {
         .filter((transaction) => transaction.dateString.startsWith(periodKey))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [finances, periodKey])
+
+  // Tabela: busca + filtros de tipo/categoria sobre as transações do mês
+  const tableTransactions = useMemo(() => {
+    const q = txSearch.trim().toLowerCase()
+    return filteredTransactions.filter((t) => {
+      if (txTypeFilter !== 'all' && (t.type || '').toUpperCase() !== txTypeFilter) return false
+      if (txCategoryFilter !== 'all' && t.category !== txCategoryFilter) return false
+      if (q && !(t.description || '').toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [filteredTransactions, txSearch, txTypeFilter, txCategoryFilter])
+
+  // Mudou o período ou algum filtro → volta a paginação para o início
+  useEffect(() => { setTxVisible(20) }, [periodKey, txSearch, txTypeFilter, txCategoryFilter])
 
   // CORREÇÃO: Filtro robusto para Receita e Despesa (Case insensitive)
   const monthlyRevenue = useMemo(
@@ -312,12 +333,53 @@ export default function Finance({ user, onNavigate, onLogout }) {
         await updateFinance(editingTransaction.id, transactionData)
       } else {
         await addFinance(transactionData)
+        // "Repetir todo mês": cria a recorrência; os próximos meses são gerados no load
+        if (transactionData.isRecurring) {
+          await addFinanceRecurrence({
+            description: transactionData.description,
+            amount: transactionData.amount,
+            type: transactionData.type,
+            category: transactionData.category || null,
+            accountId: transactionData.accountId ?? null,
+            cardId: transactionData.cardId ?? null,
+            paymentMethod: transactionData.paymentMethod ?? null,
+            dayOfMonth: Number(String(transactionData.date).slice(8, 10)) || 1,
+            lastGenerated: String(transactionData.date).slice(0, 7),
+          })
+        }
       }
       closeTransactionModal()
     } catch (error) {
       console.error('Erro ao salvar transação:', error)
       alert('Erro ao salvar transação: ' + error.message)
     }
+  }
+
+  // Marca um lançamento pendente como pago (Próximos vencimentos)
+  const handleMarkPaid = async (tx) => {
+    try { await updateFinance(tx.id, { paid: true }) }
+    catch (error) { alert('Erro ao marcar como pago: ' + error.message) }
+  }
+
+  // Recorrência criada direto no modal: registra e já lança a cobrança do mês atual
+  const handleCreateRecurrence = async (data) => {
+    const now = new Date()
+    const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const day = Math.min(Math.max(1, Number(data.dayOfMonth) || 1), lastDay)
+    await addFinanceRecurrence({ ...data, lastGenerated: nowMonth })
+    await addFinance({
+      description: data.description,
+      amount: data.amount,
+      type: data.type,
+      category: data.category || 'outros',
+      date: `${nowMonth}-${String(day).padStart(2, '0')}T12:00:00.000Z`,
+      accountId: data.accountId ?? null,
+      cardId: data.cardId ?? null,
+      paymentMethod: data.paymentMethod ?? null,
+      tags: [],
+      paid: false,
+    })
   }
 
   const handleDeleteTransaction = async (transactionId) => {
@@ -406,6 +468,15 @@ export default function Finance({ user, onNavigate, onLogout }) {
             </div>
           </div>
         </section>
+
+      <UpcomingBills
+        transactions={finances}
+        cards={financeCards}
+        catMap={catMap}
+        onMarkPaid={handleMarkPaid}
+        onOpenInvoice={(card) => setInvoiceCard(card)}
+        onManageRecurrences={() => setRecurrencesModalOpen(true)}
+      />
 
       <FinanceGoalCard
         goals={financeGoals}
@@ -599,6 +670,34 @@ export default function Finance({ user, onNavigate, onLogout }) {
             Nova transação
           </button>
         </header>
+
+        <div className="txFilters">
+          <div className="txFilters__search">
+            <Search size={14} />
+            <input
+              type="text"
+              placeholder="Buscar por descrição..."
+              value={txSearch}
+              onChange={(e) => setTxSearch(e.target.value)}
+            />
+          </div>
+          <select className="txFilters__select" value={txTypeFilter} onChange={(e) => setTxTypeFilter(e.target.value)}>
+            <option value="all">Todos os tipos</option>
+            <option value="RECEITA">Receitas</option>
+            <option value="DESPESA">Despesas</option>
+            <option value="TRANSFERENCIA">Transferências</option>
+          </select>
+          <select className="txFilters__select" value={txCategoryFilter} onChange={(e) => setTxCategoryFilter(e.target.value)}>
+            <option value="all">Todas as categorias</option>
+            {(financeCategories || []).map((c) => (
+              <option key={c.slug} value={c.slug}>{c.name}</option>
+            ))}
+          </select>
+          <span className="txFilters__count">
+            {tableTransactions.length} {tableTransactions.length === 1 ? 'lançamento' : 'lançamentos'}
+          </span>
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -610,14 +709,16 @@ export default function Finance({ user, onNavigate, onLogout }) {
             </tr>
           </thead>
           <tbody>
-            {filteredTransactions.length === 0 && (
+            {tableTransactions.length === 0 && (
               <tr>
                 <td colSpan={5} style={{textAlign: 'center', padding: '40px', color: '#666'}}>
-                  Nenhuma transação encontrada em {currentMonthMeta?.label}/{selectedYear}.
+                  {filteredTransactions.length === 0
+                    ? `Nenhuma transação encontrada em ${currentMonthMeta?.label}/${selectedYear}.`
+                    : 'Nenhuma transação com os filtros aplicados.'}
                 </td>
               </tr>
             )}
-            {filteredTransactions.map((transaction) => {
+            {tableTransactions.slice(0, txVisible).map((transaction) => {
                const type = (transaction.type || '').toUpperCase()
                const isExpense = type === 'DESPESA'
                return (
@@ -627,6 +728,9 @@ export default function Finance({ user, onNavigate, onLogout }) {
                       <span className={`pill pill--${type.toLowerCase()}`}>{transaction.type}</span>
                       <div>
                         <strong>{transaction.description}</strong>
+                        {!transaction.paid && isExpense && (
+                          <span className="txPendingBadge">A pagar</span>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -665,6 +769,11 @@ export default function Finance({ user, onNavigate, onLogout }) {
             )})}
           </tbody>
         </table>
+        {tableTransactions.length > txVisible && (
+          <button type="button" className="txShowMore" onClick={() => setTxVisible((v) => v + 20)}>
+            <ChevronDown size={14} /> Mostrar mais ({tableTransactions.length - txVisible} restantes)
+          </button>
+        )}
       </section>
 
       {isTransactionModalOpen && (
@@ -707,6 +816,20 @@ export default function Finance({ user, onNavigate, onLogout }) {
           financeCategories={financeCategories}
           defaultArea="Financeiro"
           initialData={goalModal.goal || null}
+        />
+      )}
+
+      {recurrencesModalOpen && (
+        <RecurrencesModal
+          recurrences={financeRecurrences}
+          categories={financeCategories}
+          accounts={financeAccounts}
+          cards={financeCards}
+          catMap={catMap}
+          onCreate={handleCreateRecurrence}
+          onUpdate={updateFinanceRecurrence}
+          onDelete={deleteFinanceRecurrence}
+          onClose={() => setRecurrencesModalOpen(false)}
         />
       )}
 
