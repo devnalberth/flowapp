@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import JarvisSettingsModal from '../../components/JarvisSettingsModal/JarvisSettingsModal.jsx'
-import { useApp } from '../../context/AppContext.jsx'
+import { useJarvisToolCtx } from '../../hooks/useJarvisToolCtx.js'
 import { getJarvisConfig, isJarvisConfigured, providerMeta, effectiveModel } from '../../services/jarvisConfig.js'
 import { runJarvisTurn, loadJarvisChat, saveJarvisChat, clearJarvisChat } from '../../services/jarvisService.js'
 
@@ -39,8 +39,6 @@ const greeting = () => {
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
 export default function AIAssistant({ user, onNavigate, onLogout }) {
-  const app = useApp()
-
   const [config, setConfig] = useState(() => getJarvisConfig())
   const configured = isJarvisConfigured(config)
 
@@ -60,30 +58,8 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
     [user],
   )
 
-  // Contexto entregue às ferramentas — sempre com o estado mais recente
-  const toolCtx = useMemo(() => {
-    const catName = (slug) => app.financeCategories?.find((c) => c.slug === slug)?.name || slug || 'Outros'
-    return {
-      userName,
-      tasks: app.tasks || [],
-      projects: app.projects || [],
-      goals: app.goals || [],
-      habits: app.habits || [],
-      events: app.events || [],
-      finances: app.finances || [],
-      financeAccounts: app.financeAccounts || [],
-      financeCards: app.financeCards || [],
-      financeLimits: app.financeLimits || [],
-      financeCategories: app.financeCategories || [],
-      catName,
-      actions: {
-        addTask: app.addTask,
-        updateTask: app.updateTask,
-        addFinance: app.addFinance,
-        completeHabit: app.completeHabit,
-      },
-    }
-  }, [app, userName])
+  // Contexto entregue às ferramentas — compartilhado com o card do Dashboard
+  const toolCtx = useJarvisToolCtx(userName)
 
   useEffect(() => {
     if (!textareaRef.current) return

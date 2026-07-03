@@ -184,7 +184,11 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
             <main className="dash__grid">
               <ProjectOverviewCard className="bento bento--project" projects={projects || []} tasks={tasks || []} />
               <ProductivityCard className="bento bento--productivity" tasks={tasks || []} />
-              <ChatbotCard className="bento bento--chat" />
+              <ChatbotCard
+                className="bento bento--chat"
+                user={user}
+                onOpenFlowChat={() => onNavigate('FlowChat')}
+              />
               {/* Passamos safeHabits aqui para evitar o erro .includes dentro do card */}
               <GoalsHabitsCard className="bento bento--goals" goals={goals || []} habits={safeHabits} />
               <CalendarCard
