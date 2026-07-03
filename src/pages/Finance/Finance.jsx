@@ -677,17 +677,18 @@ export default function Finance({ user, onNavigate, onLogout }) {
             <input
               type="text"
               placeholder="Buscar por descrição..."
+              aria-label="Buscar transações por descrição"
               value={txSearch}
               onChange={(e) => setTxSearch(e.target.value)}
             />
           </div>
-          <select className="txFilters__select" value={txTypeFilter} onChange={(e) => setTxTypeFilter(e.target.value)}>
+          <select className="txFilters__select" aria-label="Filtrar por tipo" value={txTypeFilter} onChange={(e) => setTxTypeFilter(e.target.value)}>
             <option value="all">Todos os tipos</option>
             <option value="RECEITA">Receitas</option>
             <option value="DESPESA">Despesas</option>
             <option value="TRANSFERENCIA">Transferências</option>
           </select>
-          <select className="txFilters__select" value={txCategoryFilter} onChange={(e) => setTxCategoryFilter(e.target.value)}>
+          <select className="txFilters__select" aria-label="Filtrar por categoria" value={txCategoryFilter} onChange={(e) => setTxCategoryFilter(e.target.value)}>
             <option value="all">Todas as categorias</option>
             {(financeCategories || []).map((c) => (
               <option key={c.slug} value={c.slug}>{c.name}</option>

@@ -161,11 +161,12 @@ export default function RecurrencesModal({
                 </div>
                 <div className="recRow__actions">
                   <button type="button" onClick={() => onUpdate?.(rec.id, { active: !rec.active })}
-                    title={rec.active ? 'Pausar (para de lançar)' : 'Reativar'}>
+                    title={rec.active ? 'Pausar (para de lançar)' : 'Reativar'}
+                    aria-label={rec.active ? `Pausar recorrência ${rec.description}` : `Reativar recorrência ${rec.description}`}>
                     {rec.active ? <Pause size={14} /> : <Play size={14} />}
                   </button>
-                  <button type="button" onClick={() => startEdit(rec)} title="Editar"><Pencil size={14} /></button>
-                  <button type="button" className="recRow__delete" title="Excluir"
+                  <button type="button" onClick={() => startEdit(rec)} title="Editar" aria-label={`Editar recorrência ${rec.description}`}><Pencil size={14} /></button>
+                  <button type="button" className="recRow__delete" title="Excluir" aria-label={`Excluir recorrência ${rec.description}`}
                     onClick={() => { if (confirm(`Excluir a recorrência "${rec.description}"? Lançamentos já gerados são mantidos.`)) onDelete?.(rec.id) }}>
                     <Trash2 size={14} />
                   </button>

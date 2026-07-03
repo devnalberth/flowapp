@@ -490,6 +490,9 @@ export default function Habits({ user, onNavigate, onLogout }) {
           <article
             className={`habitsKpis__card ${kpis.topConsistent ? 'habitsKpis__card--clickable' : ''}`}
             onClick={() => kpis.topConsistent && setDetailHabitId(kpis.topConsistent.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && kpis.topConsistent) setDetailHabitId(kpis.topConsistent.id) }}
+            role={kpis.topConsistent ? 'button' : undefined}
+            tabIndex={kpis.topConsistent ? 0 : undefined}
             title={kpis.topConsistent ? 'Ver detalhes do hábito' : undefined}
           >
             <span className="habitsKpis__label"><Trophy size={14} /> Mais consistente · 30d</span>

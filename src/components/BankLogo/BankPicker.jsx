@@ -28,6 +28,7 @@ export default function BankPicker({ value, name = '', onSelect, includeNetworks
         <input
           type="text"
           placeholder="Buscar banco ou bandeira..."
+          aria-label="Buscar banco ou bandeira"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
