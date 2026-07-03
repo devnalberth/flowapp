@@ -1,27 +1,108 @@
 .projCard {
   --accent: #ff7a18;
   position: relative;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 22px 22px 18px;
   border-radius: 22px;
   background: linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%);
   border: 1px solid #ececf0;
   box-shadow: 0 6px 18px rgba(13, 13, 18, 0.05);
-  cursor: pointer;
   overflow: hidden;
-  font-family: inherit;
   transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 240ms ease, border-color 200ms ease;
   opacity: 0;
   animation: projCardIn 440ms ease forwards;
   animation-delay: calc(var(--i, 0) * 55ms);
 }
 
+/* Área clicável do card (o menu ⋯ fica fora dela) */
+.projCard__main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 22px 18px;
+  margin: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 @keyframes projCardIn {
   to { opacity: 1; }
 }
+
+/* ---------- Menu de ações (⋯) ---------- */
+.projCard__menuWrap {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+}
+
+.projCard__menuBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: #f6f6f8;
+  color: #b6b7c0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.projCard__menuBtn:hover,
+.projCard__menuBtn[aria-expanded='true'] {
+  background: #ececf0;
+  color: #0d0d12;
+}
+
+.projCard__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+
+.projCard__menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3f3f46;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.projCard__menu button:hover { background: #f5f5f7; }
+
+.projCard__menu .projCard__menuDanger { color: #dc2626; }
+.projCard__menu .projCard__menuDanger:hover { background: #fef2f2; }
+
+/* ---------- Estado arquivado ---------- */
+.projCard.is-archived {
+  background: #fafafb;
+}
+
+.projCard.is-archived .projCard__stripe { opacity: 0.35; }
+.projCard.is-archived .projCard__title { color: #6b6b75; }
+.projCard.is-archived .projCard__ring { filter: grayscale(0.8); opacity: 0.7; }
 
 .projCard__stripe {
   position: absolute;
@@ -43,6 +124,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding-right: 40px; /* espaço para o menu ⋯ no canto do card */
 }
 
 .projCard__titleWrap { display: flex; flex-direction: column; gap: 8px; }
@@ -69,6 +151,7 @@
 .projCard__status--doing { background: #e7f0ff; color: #2563eb; }
 .projCard__status--closing { background: #fff1dd; color: #c2410c; }
 .projCard__status--done { background: #dcfce7; color: #15803d; }
+.projCard__status--archived { background: #ececf0; color: #6b6b75; }
 
 .projCard__open {
   flex-shrink: 0;

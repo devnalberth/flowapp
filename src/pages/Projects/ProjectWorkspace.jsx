@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   ArrowLeft, LayoutGrid, List as ListIcon, CalendarDays, Gauge,
   Pencil, Trash2, Plus, CheckCircle2, ListChecks, Clock, Target,
-  Building2, Mail, Phone, ChevronLeft, ChevronRight, Flag
+  Building2, Mail, Phone, ChevronLeft, ChevronRight, Flag, Archive, ArchiveRestore
 } from 'lucide-react'
 import { computeProjectStats, tasksOfProject, PROJECT_STATUS_META } from '../../utils/projectMetrics'
 import { normalizeTaskStatus } from '../../utils/taskStatus'
@@ -38,11 +38,14 @@ const fmtShort = (value) => {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
 }
 
-export default function ProjectWorkspace({ project, tasks = [], client, goal, onBack, onEdit, onDelete, updateTask, onNewTask }) {
+export default function ProjectWorkspace({ project, tasks = [], client, goal, onBack, onEdit, onArchive, onRestore, onDelete, updateTask, onNewTask }) {
   const [tab, setTab] = useState('kanban')
   const stats = useMemo(() => computeProjectStats(project, tasks), [project, tasks])
   const color = `#${(project.color || 'ff9500').replace('#', '')}`
-  const statusMeta = PROJECT_STATUS_META[stats.autoStatus] || PROJECT_STATUS_META.todo
+  const archived = project.status === 'archived'
+  const statusMeta = archived
+    ? PROJECT_STATUS_META.archived
+    : PROJECT_STATUS_META[stats.autoStatus] || PROJECT_STATUS_META.todo
 
   // Tarefas do projeto (sem arquivadas) para board/lista/calendário
   const projectTasks = useMemo(
@@ -76,8 +79,15 @@ export default function ProjectWorkspace({ project, tasks = [], client, goal, on
           </div>
 
           <div className="pw__headActions">
-            <button className="pw__iconBtn" onClick={() => onEdit?.(project)} title="Editar projeto"><Pencil size={16} /></button>
-            <button className="pw__iconBtn pw__iconBtn--danger" onClick={() => onDelete?.(project)} title="Excluir projeto"><Trash2 size={16} /></button>
+            {!archived && (
+              <button className="pw__iconBtn" onClick={() => onEdit?.(project)} title="Editar projeto" aria-label="Editar projeto"><Pencil size={16} /></button>
+            )}
+            {archived ? (
+              <button className="pw__iconBtn" onClick={() => onRestore?.(project)} title="Restaurar projeto" aria-label="Restaurar projeto"><ArchiveRestore size={16} /></button>
+            ) : (
+              <button className="pw__iconBtn" onClick={() => onArchive?.(project)} title="Arquivar projeto" aria-label="Arquivar projeto"><Archive size={16} /></button>
+            )}
+            <button className="pw__iconBtn pw__iconBtn--danger" onClick={() => onDelete?.(project)} title="Excluir projeto" aria-label="Excluir projeto"><Trash2 size={16} /></button>
           </div>
         </div>
 

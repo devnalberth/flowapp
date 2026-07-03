@@ -21,8 +21,8 @@ export default function ProjectOverviewCard({ className = '', projects = [], tas
   }
 
   const stats = useMemo(() => {
-    // 1. Enriquecer projetos com progresso calculado dinamicamente
-    const projectsWithProgress = projects.map(p => {
+    // 1. Enriquecer projetos com progresso calculado dinamicamente (arquivados fora)
+    const projectsWithProgress = projects.filter(p => p.status !== 'archived').map(p => {
       const pTasks = tasks.filter(t => (t.projectId === p.id || t.project === p.title) && countsForProjectProgress(t))
       const total = pTasks.length
       const done = pTasks.filter(t => t.completed).length

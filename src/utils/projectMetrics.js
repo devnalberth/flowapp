@@ -29,4 +29,8 @@ export const PROJECT_STATUS_META = {
   in_progress: { label: 'Em Andamento', tone: 'doing' },
   review: { label: 'Em Finalização', tone: 'closing' },
   completed: { label: 'Concluído', tone: 'done' },
+  archived: { label: 'Arquivado', tone: 'archived' },
 }
+
+// Arquivado é um estado manual (coluna `status`), fora do ciclo derivado das tarefas
+export const isArchivedProject = (project) => project?.status === 'archived'

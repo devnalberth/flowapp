@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { Plus, FolderPlus } from 'lucide-react'
+import { Plus, FolderPlus, Archive } from 'lucide-react'
 
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateProjectModal from '../../components/CreateProjectModal/CreateProjectModal.jsx'
@@ -8,7 +8,8 @@ import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.js
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import ProjectCard from '../../components/ProjectCard/ProjectCard.jsx'
 import ProjectWorkspace from './ProjectWorkspace.jsx'
-import { computeProjectStats } from '../../utils/projectMetrics'
+import ProjectsDashboard from './ProjectsDashboard.jsx'
+import { computeProjectStats, isArchivedProject } from '../../utils/projectMetrics'
 
 import './Projects.css'
 
@@ -46,33 +47,46 @@ export default function Projects({ onNavigate, onLogout, user }) {
     [projects, activeProjectId],
   )
 
-  // Contagem por categoria + lista de chips do filtro
+  // Arquivados ficam fora da galeria, dos filtros e das métricas
+  const activeProjects = useMemo(() => projects.filter((p) => !isArchivedProject(p)), [projects])
+  const archivedProjects = useMemo(() => projects.filter(isArchivedProject), [projects])
+
+  // Contagem por categoria + lista de chips do filtro (só projetos ativos)
   const catCounts = useMemo(() => {
-    const counts = { all: projects.length, Outros: 0 }
+    const counts = { all: activeProjects.length, Outros: 0, archived: archivedProjects.length }
     AREAS.forEach((a) => { counts[a] = 0 })
-    projects.forEach((p) => {
+    activeProjects.forEach((p) => {
       if (AREAS.includes(p.area)) counts[p.area] += 1
       else counts.Outros += 1
     })
     return counts
-  }, [projects])
+  }, [activeProjects, archivedProjects])
 
   const categories = useMemo(() => {
     const base = [{ id: 'all', label: 'Todos' }, ...AREAS.map((a) => ({ id: a, label: a }))]
     if (catCounts.Outros > 0) base.push({ id: 'Outros', label: 'Outros' })
+    if (archivedProjects.length > 0) base.push({ id: 'archived', label: 'Arquivados' })
     return base
-  }, [catCounts])
+  }, [catCounts, archivedProjects.length])
 
   const visibleProjects = useMemo(() => {
-    if (activeCat === 'all') return projects
-    if (activeCat === 'Outros') return projects.filter((p) => !AREAS.includes(p.area))
-    return projects.filter((p) => p.area === activeCat)
-  }, [projects, activeCat])
+    if (activeCat === 'archived') return archivedProjects
+    if (activeCat === 'all') return activeProjects
+    if (activeCat === 'Outros') return activeProjects.filter((p) => !AREAS.includes(p.area))
+    return activeProjects.filter((p) => p.area === activeCat)
+  }, [activeProjects, archivedProjects, activeCat])
 
-  // Auto-atualiza o status persistido do projeto conforme o progresso das tarefas
+  // Se o último arquivado for restaurado/excluído, volta para "Todos"
+  useEffect(() => {
+    if (activeCat === 'archived' && archivedProjects.length === 0) setActiveCat('all')
+  }, [activeCat, archivedProjects.length])
+
+  // Auto-atualiza o status persistido do projeto conforme o progresso das tarefas.
+  // Arquivados ficam fora: o status 'archived' é manual e não pode ser sobrescrito.
   useEffect(() => {
     if (loading || autoSyncInFlightRef.current) return
     const mismatches = projects
+      .filter((p) => !isArchivedProject(p))
       .map((p) => ({ id: p.id, current: p.status, derived: computeProjectStats(p, tasks).autoStatus }))
       .filter(({ current, derived }) => !isSameStatus(current, derived))
 
@@ -133,13 +147,35 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const handleDeleteProject = async (project) => {
     const target = project || activeProject
     if (!target) return
-    if (window.confirm('Tem certeza que deseja excluir este projeto?')) {
+    if (window.confirm(`Excluir o projeto "${target.title}"? Essa ação não pode ser desfeita.`)) {
       try {
         await deleteProject(target.id)
         if (activeProjectId === target.id) setActiveProjectId(null)
       } catch (e) {
         alert('Erro ao excluir projeto')
       }
+    }
+  }
+
+  // Arquivar é reversível: some da galeria e das métricas, mas fica em "Arquivados"
+  const handleArchiveProject = async (project) => {
+    const target = project || activeProject
+    if (!target) return
+    try {
+      await updateProject(target.id, { status: 'archived' })
+      if (activeProjectId === target.id) setActiveProjectId(null)
+    } catch (e) {
+      alert('Erro ao arquivar projeto')
+    }
+  }
+
+  // Ao restaurar, o status correto é re-derivado das tarefas pelo auto-sync
+  const handleRestoreProject = async (project) => {
+    if (!project) return
+    try {
+      await updateProject(project.id, { status: 'todo' })
+    } catch (e) {
+      alert('Erro ao restaurar projeto')
     }
   }
 
@@ -167,6 +203,8 @@ export default function Projects({ onNavigate, onLogout, user }) {
             goal={goalFor(activeProject)}
             onBack={() => setActiveProjectId(null)}
             onEdit={handleEditProject}
+            onArchive={handleArchiveProject}
+            onRestore={handleRestoreProject}
             onDelete={handleDeleteProject}
             updateTask={updateTask}
             onNewTask={handleNewTask}
@@ -184,9 +222,10 @@ export default function Projects({ onNavigate, onLogout, user }) {
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        className={`projCat ${activeCat === cat.id ? 'is-active' : ''}`}
+                        className={`projCat ${cat.id === 'archived' ? 'projCat--archived' : ''} ${activeCat === cat.id ? 'is-active' : ''}`}
                         onClick={() => setActiveCat(cat.id)}
                       >
+                        {cat.id === 'archived' && <Archive size={13} />}
                         {cat.label}
                         <span className="projCat__count">{catCounts[cat.id] ?? 0}</span>
                       </button>
@@ -199,7 +238,22 @@ export default function Projects({ onNavigate, onLogout, user }) {
               </div>
             </header>
 
-            {projects.length === 0 ? (
+            {activeCat !== 'archived' && (
+              <ProjectsDashboard
+                projects={activeProjects}
+                tasks={tasks}
+                onOpenProject={setActiveProjectId}
+              />
+            )}
+
+            {activeCat === 'archived' && (
+              <p className="projGallery__archivedHint">
+                <Archive size={14} /> Projetos arquivados ficam fora do dashboard e dos filtros.
+                Restaure para voltar a acompanhá-los.
+              </p>
+            )}
+
+            {projects.length === 0 || (activeProjects.length === 0 && activeCat !== 'archived') ? (
               <div className="projGallery__empty">
                 <FolderPlus size={32} />
                 <h3>Nenhum projeto ainda</h3>
@@ -223,6 +277,10 @@ export default function Projects({ onNavigate, onLogout, user }) {
                     goal={goalFor(p)}
                     index={idx}
                     onOpen={() => setActiveProjectId(p.id)}
+                    onEdit={handleEditProject}
+                    onArchive={handleArchiveProject}
+                    onRestore={handleRestoreProject}
+                    onDelete={handleDeleteProject}
                   />
                 ))}
               </div>

@@ -88,6 +88,7 @@
 .pw__status--doing { background: #e7f0ff; color: #2563eb; }
 .pw__status--closing { background: #fff1dd; color: #c2410c; }
 .pw__status--done { background: #dcfce7; color: #15803d; }
+.pw__status--archived { background: #ececf0; color: #6b6b75; }
 
 .pw__headActions { display: flex; gap: 8px; }
 
