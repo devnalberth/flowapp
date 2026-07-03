@@ -14,7 +14,6 @@ import Login from './pages/Login/Login.jsx'
 import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import { getSupabaseClient, supabasePersistent, supabaseSession } from './lib/supabaseClient.js'
 import { userService } from './services/userService'
-import { getPrefs } from './services/prefsService'
 
 const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'FlowChat']
 const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
@@ -40,11 +39,7 @@ const loginWithTimeout = (promise, ms = 10000) => {
 
 function App() {
   const { userId } = useApp()
-  // Abre na página inicial escolhida em Preferências (fallback: Dashboard)
-  const [page, setPage] = useState(() => {
-    const preferred = getPrefs().startPage
-    return SUPPORTED_PAGES.includes(preferred) ? preferred : 'Dashboard'
-  })
+  const [page, setPage] = useState('Dashboard')
   // Novo estado para passar parâmetros entre páginas (ex: filtros)
   const [pageParams, setPageParams] = useState({})
 

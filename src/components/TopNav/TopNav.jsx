@@ -105,7 +105,7 @@ function ProfileModal({ user, onClose }) {
 
   return (
     <div className="topNavProfile" onClick={onClose} role="presentation">
-      <form className="topNavProfile__panel ui-card" onClick={(e) => e.stopPropagation()} onSubmit={handleSave}>
+      <form className="topNavProfile__panel" onClick={(e) => e.stopPropagation()} onSubmit={handleSave}>
         <div className="topNavProfile__head">
           <InitialsAvatar user={{ ...user, name }} size="lg" />
           <div>
@@ -184,21 +184,9 @@ function PreferencesModal({ onClose }) {
 
   return (
     <div className="topNavProfile" onClick={onClose} role="presentation">
-      <div className="topNavProfile__panel ui-card" onClick={(e) => e.stopPropagation()}>
+      <div className="topNavProfile__panel" onClick={(e) => e.stopPropagation()}>
         <h3>Preferências</h3>
         <p className="topNavProfile__hint">Salvas neste dispositivo.</p>
-
-        <label className="topNavProfile__field">
-          <span>Página inicial ao entrar</span>
-          <select
-            value={prefs.startPage}
-            onChange={(e) => updatePrefs({ startPage: e.target.value })}
-          >
-            {NAV.map((pageName) => (
-              <option key={pageName} value={pageName}>{pageName}</option>
-            ))}
-          </select>
-        </label>
 
         <label className="topNavProfile__toggle">
           <input

@@ -3,7 +3,6 @@
 const STORAGE_KEY = 'flowapp_prefs'
 
 export const DEFAULT_PREFS = {
-  startPage: 'Dashboard',      // página aberta após o login
   hideFinanceValues: false,    // mascara valores na aba Financeiro
 }
 

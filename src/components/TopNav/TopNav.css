@@ -220,6 +220,7 @@
   z-index: 60;
 }
 
+/* Painel próprio (sem .ui-card: o .topNav .ui-card força raio de pílula) */
 .topNavProfile__panel {
   width: 100%;
   max-width: 400px;
@@ -227,6 +228,10 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
 }
 
 .topNavProfile__panel h3 {
@@ -359,24 +364,6 @@
 
 .topNavProfile__head h3 { margin: 0; }
 .topNavProfile__head .topNavProfile__hint { margin: 3px 0 0; }
-
-.topNavProfile__field select {
-  padding: 11px 14px;
-  border: 1px solid #e6e6ea;
-  border-radius: 12px;
-  font: inherit;
-  font-size: 0.9rem;
-  color: #0d0d12;
-  background: #fff;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.topNavProfile__field select:focus {
-  border-color: #ffb27a;
-  box-shadow: 0 0 0 4px rgba(255, 72, 0, 0.08);
-}
 
 .topNavProfile__toggle {
   display: flex;
