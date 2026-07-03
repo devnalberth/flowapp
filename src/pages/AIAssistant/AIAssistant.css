@@ -477,3 +477,137 @@
     align-self: flex-end;
   }
 }
+
+/* ===== JARVIS (chat real) ===== */
+.jarvisBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 6px;
+}
+
+.jarvisBar__id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jarvisBar__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--grad-primary, linear-gradient(180deg, #ff4800 0%, #ff9500 100%));
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.jarvisBar__id h1 {
+  margin: 0;
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.jarvisBar__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8b8b95;
+}
+
+.jarvisBar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d0d0d8;
+  flex-shrink: 0;
+}
+
+.jarvisBar__dot.is-on {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.jarvisBar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.jarvisBar__actions button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid #e6e6ea;
+  background: #fff;
+  color: #5b5a64;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+}
+
+.jarvisBar__actions button:hover {
+  border-color: #d0d0d8;
+  color: #0d0d12;
+  transform: translateY(-1px);
+}
+
+.jarvisText {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.jarvisTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.jarvisTools__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #fff3e0;
+  color: #c2410c;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.flowChatMessage__bubble--error {
+  background: #fef2f2;
+  border: 1px solid #fbd5d5;
+}
+
+.jarvisSetupBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px auto 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 12px;
+  background: var(--grad-primary, linear-gradient(180deg, #ff4800 0%, #ff9500 100%));
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.jarvisSetupBtn:hover {
+  transform: translateY(-1px);
+}
+
+.flowChatComposer__send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
