@@ -140,7 +140,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
 
       <div className="dashWrapper">
         <header className="dash__welcome">
-          <div className="txt-h1">Bem-vindo de volta, {user?.name?.split(' ')[0] || 'Nalberth'} 👋</div>
+          <div className="txt-h1">Bem-vindo de volta{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋</div>
           <div className="txt-lead">
             {loading ? (
               'Sincronizando seus dados...'

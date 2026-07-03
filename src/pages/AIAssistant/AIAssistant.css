@@ -1,8 +1,10 @@
 /* ===== FlowChat — chat do FlowApp =====
-   Layout app-like: altura da viewport, scroll só na conversa,
-   composer fixo embaixo. Coluna central de leitura (~860px). */
+   Layout app-like: altura da viewport, scroll só na conversa, composer fixo
+   embaixo. A casca ocupa a largura da página (mesmo padrão das outras abas);
+   só o CONTEÚDO da conversa usa uma coluna central de leitura (--fc-col). */
 
 .fcPage {
+  --fc-col: 980px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -17,8 +19,6 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -229,7 +229,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  max-width: 640px;
+  max-width: 720px;
   margin-top: 18px;
 }
 
@@ -286,6 +286,9 @@
 
 /* ---------- Mensagens ---------- */
 .fcThread {
+  width: 100%;
+  max-width: var(--fc-col);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -392,6 +395,9 @@
 }
 
 .fcComposer__box {
+  width: 100%;
+  max-width: var(--fc-col);
+  margin: 0 auto;
   display: flex;
   align-items: flex-end;
   gap: 10px;

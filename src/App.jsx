@@ -50,21 +50,37 @@ function App() {
   // Se tiver userId, está autenticado. Simples assim.
   const isAuthenticated = !!userId
 
-  // Carrega dados visuais do usuário quando o ID muda
+  // Carrega dados visuais do usuário quando o ID muda.
+  // O nome vem do metadata do auth ou do perfil na tabela `users`; o perfil
+  // criado no cadastro é semeado com o prefixo do e-mail — isso é placeholder,
+  // não nome, então é descartado (o usuário define o nome real em "Ver perfil").
   useEffect(() => {
     if (userId) {
       const fetchUserData = async () => {
         try {
           const client = getSupabaseClient(true)
           const { data: { user } } = await client.auth.getUser()
-          if (user) {
-            setCurrentUser(prev => ({
-              ...prev,
-              id: user.id,
-              email: user.email ?? prev.email,
-              name: user.user_metadata?.name ?? prev.name,
-            }))
+          if (!user) return
+
+          let profileName = ''
+          try {
+            const profile = await userService.getUser(user.id)
+            profileName = (profile?.name || '').trim()
+          } catch {
+            // offline / perfil ainda não criado: segue só com o auth
           }
+
+          const emailPrefix = (user.email || '').split('@')[0].toLowerCase()
+          if (profileName.toLowerCase() === emailPrefix) profileName = ''
+
+          const metaName = (user.user_metadata?.name || '').trim()
+
+          setCurrentUser(prev => ({
+            ...prev,
+            id: user.id,
+            email: user.email ?? prev.email,
+            name: metaName || profileName || '',
+          }))
         } catch (error) {
           console.error('Erro user data:', error)
         }
@@ -74,6 +90,16 @@ function App() {
       setCurrentUser(INITIAL_USER)
     }
   }, [userId])
+
+  // Nome salvo em "Ver perfil" (TopNav) reflete na hora em todas as páginas
+  useEffect(() => {
+    const handleUserUpdated = (event) => {
+      const name = (event.detail?.name || '').trim()
+      if (name) setCurrentUser(prev => ({ ...prev, name }))
+    }
+    window.addEventListener('flowapp:user-updated', handleUserUpdated)
+    return () => window.removeEventListener('flowapp:user-updated', handleUserUpdated)
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined

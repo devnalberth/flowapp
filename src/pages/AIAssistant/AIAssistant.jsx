@@ -54,8 +54,9 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
   const historyElRef = useRef(null)
   const textareaRef = useRef(null)
 
+  // Mesmo nome exibido no Dashboard (perfil real) — nunca o prefixo do e-mail
   const userName = useMemo(
-    () => capitalize(user?.name?.split(' ')[0] || user?.email?.split('@')[0] || ''),
+    () => capitalize(user?.name?.trim()?.split(' ')[0] || ''),
     [user],
   )
 
