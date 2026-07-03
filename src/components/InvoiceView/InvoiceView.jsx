@@ -10,7 +10,9 @@ const monthLabel = (ym) => { const [y, m] = (ym || '').split('-').map(Number); r
 const shiftMonth = (ym, dir) => { let [y, m] = ym.split('-').map(Number); m += dir; if (m > 12) { m = 1; y++ } if (m < 1) { m = 12; y-- } return `${y}-${String(m).padStart(2, '0')}` }
 const fmtDay = (iso) => { const d = String(iso).slice(0, 10).split('-'); return `${d[2]}/${d[1]}` }
 
-export default function InvoiceView({ card, transactions = [], catMap = {}, onClose }) {
+export default function InvoiceView({ card, transactions = [], catMap = {}, hideValues = false, onClose }) {
+  // Preferência global "ocultar valores financeiros"
+  const money = (n) => (hideValues ? 'R$ ••••' : fmtMoney(n))
   const [invoiceMonth, setInvoiceMonth] = useState(() => currentInvoiceMonth(card))
   const total = useMemo(() => cardInvoiceTotal(card, transactions, invoiceMonth), [card, transactions, invoiceMonth])
   const items = useMemo(() => invoiceTransactions(card, transactions, invoiceMonth), [card, transactions, invoiceMonth])
@@ -38,7 +40,7 @@ export default function InvoiceView({ card, transactions = [], catMap = {}, onCl
         <div className="invoiceView__summary">
           <div className="invoiceView__sumCard">
             <span>Valor da fatura</span>
-            <strong>{fmtMoney(total)}</strong>
+            <strong>{money(total)}</strong>
           </div>
           <div className="invoiceView__sumCard">
             <span><CalendarClock size={12} /> Vencimento</span>
@@ -46,7 +48,7 @@ export default function InvoiceView({ card, transactions = [], catMap = {}, onCl
           </div>
           <div className="invoiceView__sumCard">
             <span>Limite disponível</span>
-            <strong style={{ color: available < 0 ? '#ef4444' : '#16a34a' }}>{fmtMoney(available)}</strong>
+            <strong style={{ color: available < 0 ? '#ef4444' : '#16a34a' }}>{money(available)}</strong>
           </div>
         </div>
 
@@ -65,7 +67,7 @@ export default function InvoiceView({ card, transactions = [], catMap = {}, onCl
                 <i style={{ background: catMap[t.category]?.color || '#9ca3af' }} />
                 {catMap[t.category]?.name || t.category}
               </span>
-              <span className="invoiceView__itemAmount">{fmtMoney(t.amount)}</span>
+              <span className="invoiceView__itemAmount">{money(t.amount)}</span>
             </div>
           ))}
         </div>

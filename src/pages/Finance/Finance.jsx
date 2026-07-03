@@ -27,7 +27,7 @@ import CategoryIcon from '../../components/CategoryIcon/CategoryIcon.jsx'
 import UpcomingBills from '../../components/UpcomingBills/UpcomingBills.jsx'
 import RecurrencesModal from '../../components/RecurrencesModal/RecurrencesModal.jsx'
 import { accountBalance, cardInvoiceTotal, cardAvailable, currentInvoiceMonth, monthSpendByCategory, monthSpendByCard, limitStatus } from '../../utils/financeMetrics'
-import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge, Search, ChevronDown } from 'lucide-react'
+import { Wallet, CreditCard, Plus, Pencil, AlertTriangle, Gauge, Search, ChevronDown, Eye, EyeOff } from 'lucide-react'
 
 import './Finance.css'
 
@@ -91,8 +91,10 @@ const CATEGORY_META = {
   investimentos:     { color: '#a855f7', label: 'Investimentos' },
 }
 
-const formatCurrency = (value) =>
+const formatBRL = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0)
+
+export const MASKED_VALUE = 'R$ ••••'
 
 const formatDate = (value) => {
   if (!value) return '--'
@@ -110,7 +112,12 @@ export default function Finance({ user, onNavigate, onLogout }) {
     financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
     financeRecurrences, addFinanceRecurrence, updateFinanceRecurrence, deleteFinanceRecurrence,
     goals, addGoal, updateGoal, deleteGoal,
+    prefs, updatePrefs,
   } = useApp()
+
+  // Preferência "ocultar valores": mascara todos os R$ da página (e cards filhos)
+  const hideValues = Boolean(prefs?.hideFinanceValues)
+  const formatCurrency = (value) => (hideValues ? MASKED_VALUE : formatBRL(value))
 
   const [cardModal, setCardModal] = useState(null)     // { card } | { } (novo)
   const [accountModal, setAccountModal] = useState(null)
@@ -466,6 +473,16 @@ export default function Finance({ user, onNavigate, onLogout }) {
                 </svg>
               </button>
             </div>
+            <button
+              type="button"
+              className="financeHeader__eye"
+              aria-label={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+              title={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+              aria-pressed={hideValues}
+              onClick={() => updatePrefs({ hideFinanceValues: !hideValues })}
+            >
+              {hideValues ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
           </div>
         </section>
 
@@ -473,6 +490,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
         transactions={finances}
         cards={financeCards}
         catMap={catMap}
+        hideValues={hideValues}
         onMarkPaid={handleMarkPaid}
         onOpenInvoice={(card) => setInvoiceCard(card)}
         onManageRecurrences={() => setRecurrencesModalOpen(true)}
@@ -482,6 +500,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
         goals={financeGoals}
         transactions={filteredTransactions}
         catMap={catMap}
+        hideValues={hideValues}
         monthLabel={`${currentMonthMeta?.label || ''} ${selectedYear}`}
         onCreate={() => setGoalModal({})}
         onEdit={(goal) => setGoalModal({ goal })}
@@ -804,7 +823,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
       )}
 
       {invoiceCard && (
-        <InvoiceView card={invoiceCard} transactions={finances} catMap={catMap} onClose={() => setInvoiceCard(null)} />
+        <InvoiceView card={invoiceCard} transactions={finances} catMap={catMap} hideValues={hideValues} onClose={() => setInvoiceCard(null)} />
       )}
 
       {goalModal && (

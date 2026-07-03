@@ -33,7 +33,9 @@ const dueLabel = (days) => {
 
 // Contas a pagar: lançamentos não pagos (recorrências, parcelas futuras, boletos)
 // + faturas dos cartões, ordenados por vencimento. Independe do mês selecionado.
-export default function UpcomingBills({ transactions, cards, catMap, onMarkPaid, onOpenInvoice, onManageRecurrences }) {
+export default function UpcomingBills({ transactions, cards, catMap, hideValues = false, onMarkPaid, onOpenInvoice, onManageRecurrences }) {
+  // Preferência global "ocultar valores financeiros"
+  const money = (n) => (hideValues ? 'R$ ••••' : fmtMoney(n))
   const [expanded, setExpanded] = useState(false)
 
   const items = useMemo(() => {
@@ -124,7 +126,7 @@ export default function UpcomingBills({ transactions, cards, catMap, onMarkPaid,
                     {dueLabel(item.days)} · {item.dateKey.slice(8, 10)}/{item.dateKey.slice(5, 7)}
                   </span>
                 </div>
-                <strong className="billRow__amount">{fmtMoney(item.amount)}</strong>
+                <strong className="billRow__amount">{money(item.amount)}</strong>
                 {item.kind === 'tx' ? (
                   <button type="button" className="billRow__action" onClick={() => onMarkPaid?.(item.tx)} title="Marcar como pago">
                     <Check size={14} /> Pagar

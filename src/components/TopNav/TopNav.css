@@ -326,3 +326,114 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ---------- Avatar com iniciais ---------- */
+.topNav__initials {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(150deg, #ff9500 0%, #ff4800 70%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  box-shadow: 0 4px 12px -3px rgba(255, 72, 0, 0.4);
+}
+
+.topNav__initials--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 19px;
+}
+
+/* ---------- Complementos dos modais de perfil/preferências ---------- */
+.topNavProfile__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topNavProfile__head h3 { margin: 0; }
+.topNavProfile__head .topNavProfile__hint { margin: 3px 0 0; }
+
+.topNavProfile__field select {
+  padding: 11px 14px;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #0d0d12;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.topNavProfile__field select:focus {
+  border-color: #ffb27a;
+  box-shadow: 0 0 0 4px rgba(255, 72, 0, 0.08);
+}
+
+.topNavProfile__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.topNavProfile__toggle:hover { border-color: #d0d0d8; background: #fafafb; }
+
+.topNavProfile__toggle input {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #ff4800;
+  cursor: pointer;
+}
+
+.topNavProfile__toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topNavProfile__toggle strong {
+  font-size: 0.87rem;
+  font-weight: 700;
+  color: #0d0d12;
+}
+
+.topNavProfile__toggle em {
+  font-style: normal;
+  font-size: 0.76rem;
+  color: #8b8b95;
+  line-height: 1.4;
+}
+
+.topNavProfile__link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #ff4800;
+  cursor: pointer;
+}
+
+.topNavProfile__link:hover { text-decoration: underline; }
+
+.topNavProfile__success {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #15803d;
+}

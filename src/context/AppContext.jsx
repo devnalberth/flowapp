@@ -15,6 +15,7 @@ import { studyService } from '../services/studyService'
 import { focusLogService } from '../services/focusLogService'
 import { dreamMapService } from '../services/dreamMapService'
 import { eventService } from '../services/eventService'
+import { getPrefs, savePrefs } from '../services/prefsService'
 import { computeStreaks } from '../utils/habitStats'
 
 /**
@@ -1129,8 +1130,15 @@ export function AppProvider({ children, userId }) {
     await eventService.deleteEvent(id, userId)
   }
 
+  // Preferências do app (localStorage) — reativas para todas as páginas
+  const [prefs, setPrefs] = useState(() => getPrefs())
+  const updatePrefs = (updates) => {
+    setPrefs((prev) => savePrefs({ ...prev, ...updates }))
+  }
+
   const value = {
     userId,
+    prefs, updatePrefs,
     tasks, projects, clients, goals, habits, finances, studies, dreamMaps, events, loading,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,

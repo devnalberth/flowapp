@@ -13,7 +13,9 @@ function categoryRevenue(transactions, slug) {
     .reduce((s, t) => s + (Number(t.amount) || 0), 0)
 }
 
-export default function FinanceGoalCard({ goals = [], transactions = [], catMap = {}, monthLabel = '', onCreate, onEdit }) {
+export default function FinanceGoalCard({ goals = [], transactions = [], catMap = {}, hideValues = false, monthLabel = '', onCreate, onEdit }) {
+  // Preferência global "ocultar valores financeiros"
+  const money = (n) => (hideValues ? 'R$ ••••' : fmtMoney(n))
   const items = useMemo(() => {
     return (goals || [])
       .filter((g) => g.financeCategory && (g.financeTarget || 0) > 0)
@@ -73,8 +75,8 @@ export default function FinanceGoalCard({ goals = [], transactions = [], catMap 
                 <strong className="financeGoalItem__name">{g.title}</strong>
 
                 <div className="financeGoalItem__values">
-                  <span className="financeGoalItem__current">{fmtMoney(g.current)}</span>
-                  <span className="financeGoalItem__target">de {fmtMoney(g.target)}</span>
+                  <span className="financeGoalItem__current">{money(g.current)}</span>
+                  <span className="financeGoalItem__target">de {money(g.target)}</span>
                 </div>
 
                 <div className="financeGoalItem__bar">
@@ -88,7 +90,7 @@ export default function FinanceGoalCard({ goals = [], transactions = [], catMap 
                     <span className="financeGoalItem__tag"><TrendingUp size={13} /> {g.pct}% do alvo</span>
                   )}
                   <span className="financeGoalItem__remain">
-                    {g.reached ? `+${fmtMoney(g.current - g.target)}` : `faltam ${fmtMoney(g.target - g.current)}`}
+                    {g.reached ? `+${money(g.current - g.target)}` : `faltam ${money(g.target - g.current)}`}
                   </span>
                 </footer>
               </article>
