@@ -1,4 +1,5 @@
-// Jarvis — orquestração do chat: persona, loop agêntico (modelo ↔ ferramentas)
+// FlowChat (arquivos internos mantêm o codinome "jarvis") — orquestração do
+// chat: persona, loop agêntico (modelo ↔ ferramentas)
 // e persistência da conversa. O loop é manual para funcionar igual em qualquer
 // provedor: envia mensagens, executa TODOS os tool_use retornados, devolve os
 // tool_results numa ÚNICA mensagem de usuário e repete até o modelo concluir.
@@ -28,7 +29,7 @@ export function buildSystemPrompt(ctx) {
     .map((c) => `${c.slug} (${c.name}, ${c.type})`)
     .join(', ')
 
-  return `Você é o Jarvis, o assistente pessoal do FlowApp — sistema de organização pessoal do ${ctx.userName || 'usuário'} com tarefas, projetos, metas, hábitos, estudos e finanças. Sua referência de personalidade é o Jarvis do Homem de Ferro: competente, direto, levemente espirituoso, sempre respeitoso. Responda SEMPRE em português do Brasil.
+  return `Você é o FlowChat, o assistente pessoal do FlowApp — sistema de organização pessoal do ${ctx.userName || 'usuário'} com tarefas, projetos, metas, hábitos, estudos e finanças. Sua personalidade é inspirada no Jarvis do Homem de Ferro (competente, direto, levemente espirituoso, sempre respeitoso), mas seu nome é FlowChat. Responda SEMPRE em português do Brasil.
 
 Data e hora atuais: ${now.toLocaleString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
 

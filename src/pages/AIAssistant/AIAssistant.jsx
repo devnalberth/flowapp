@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Settings, Trash2, Send, Sparkles, Wrench } from 'lucide-react'
+import {
+  Settings,
+  Trash2,
+  ArrowUp,
+  Sparkles,
+  Wrench,
+  CalendarCheck,
+  Wallet,
+  CalendarClock,
+  ListTodo,
+} from 'lucide-react'
 import TopNav from '../../components/TopNav/TopNav.jsx'
 import JarvisSettingsModal from '../../components/JarvisSettingsModal/JarvisSettingsModal.jsx'
 import { useApp } from '../../context/AppContext.jsx'
@@ -10,29 +20,23 @@ import { runJarvisTurn, loadJarvisChat, saveJarvisChat, clearJarvisChat } from '
 import './AIAssistant.css'
 
 const SUGGESTIONS = [
-  { id: 's-day', title: 'Resuma meu dia', detail: 'Tarefas, hábitos, eventos e foco de hoje' },
-  { id: 's-finance', title: 'Como estão minhas finanças este mês?', detail: 'Saldo, gastos por categoria e limites' },
-  { id: 's-bills', title: 'O que vence em breve?', detail: 'Contas a pagar e faturas dos cartões' },
-  { id: 's-tasks', title: 'Quais tarefas estão atrasadas?', detail: 'Pendências que passaram do prazo' },
+  { id: 's-day', icon: CalendarCheck, title: 'Resuma meu dia', detail: 'Tarefas, hábitos, eventos e foco de hoje' },
+  { id: 's-finance', icon: Wallet, title: 'Como estão minhas finanças este mês?', detail: 'Saldo, gastos por categoria e limites' },
+  { id: 's-bills', icon: CalendarClock, title: 'O que vence em breve?', detail: 'Contas a pagar e faturas dos cartões' },
+  { id: 's-tasks', icon: ListTodo, title: 'Quais tarefas estão atrasadas?', detail: 'Pendências que passaram do prazo' },
 ]
 
 const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
 
-function ThinkingBubble() {
-  return (
-    <motion.div
-      className="flowChatThinking"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-    >
-      <span />
-      <span />
-      <span />
-      <p>Jarvis está trabalhando...</p>
-    </motion.div>
-  )
+const greeting = () => {
+  const hour = new Date().getHours()
+  if (hour < 6) return 'Boa madrugada'
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
 }
+
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
 export default function AIAssistant({ user, onNavigate, onLogout }) {
   const app = useApp()
@@ -50,11 +54,16 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
   const historyElRef = useRef(null)
   const textareaRef = useRef(null)
 
+  const userName = useMemo(
+    () => capitalize(user?.name?.split(' ')[0] || user?.email?.split('@')[0] || ''),
+    [user],
+  )
+
   // Contexto entregue às ferramentas — sempre com o estado mais recente
   const toolCtx = useMemo(() => {
     const catName = (slug) => app.financeCategories?.find((c) => c.slug === slug)?.name || slug || 'Outros'
     return {
-      userName: user?.name || user?.email?.split('@')[0] || null,
+      userName,
       tasks: app.tasks || [],
       projects: app.projects || [],
       goals: app.goals || [],
@@ -73,13 +82,13 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
         completeHabit: app.completeHabit,
       },
     }
-  }, [app, user])
+  }, [app, userName])
 
   useEffect(() => {
     if (!textareaRef.current) return
     const el = textareaRef.current
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`
   }, [draft])
 
   useEffect(() => {
@@ -103,19 +112,14 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
 
     try {
       const result = await runJarvisTurn({ history: historyRef.current, userText: value, ctx: toolCtx })
-      const assistantMessage = {
-        id: uuid(),
-        role: 'assistant',
-        text: result.text,
-        tools: result.toolLabels,
-      }
+      const assistantMessage = { id: uuid(), role: 'assistant', text: result.text, tools: result.toolLabels }
       setMessages((prev) => {
         const next = [...prev, assistantMessage]
         saveJarvisChat(next, historyRef.current)
         return next
       })
     } catch (error) {
-      console.error('Jarvis:', error)
+      console.error('FlowChat:', error)
       setMessages((prev) => [
         ...prev,
         { id: uuid(), role: 'assistant', text: error?.message || 'Algo deu errado. Tente novamente.', error: true },
@@ -138,16 +142,16 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
   }
 
   const handleClear = () => {
-    if (!confirm('Limpar toda a conversa com o Jarvis?')) return
+    if (!confirm('Limpar toda a conversa?')) return
     clearJarvisChat()
     historyRef.current = []
     setMessages([])
   }
 
-  const showEmptyState = messages.length === 0
+  const showEmptyState = messages.length === 0 && !isThinking
 
   return (
-    <div className="flowChatPage">
+    <div className="fcPage">
       <TopNav user={user} active="FlowChat" onNavigate={onNavigate} onLogout={onLogout} />
 
       {showSettings && (
@@ -158,122 +162,129 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
         />
       )}
 
-      <div className="flowChatWrapper">
-        <section className="flowChatShell">
-          <header className="jarvisBar">
-            <div className="jarvisBar__id">
-              <span className="jarvisBar__avatar"><Sparkles size={18} /></span>
-              <div>
-                <h1>Jarvis</h1>
-                <p className="jarvisBar__status">
-                  <span className={`jarvisBar__dot ${configured ? 'is-on' : ''}`} />
-                  {configured
-                    ? `${providerMeta(config.provider).label} · ${effectiveModel(config)}`
-                    : 'Não configurado — clique na engrenagem'}
-                </p>
-              </div>
+      <div className="fcShell">
+        <header className="fcHeader">
+          <div className="fcHeader__brand">
+            <span className="fcOrb fcOrb--sm" aria-hidden="true"><Sparkles size={17} /></span>
+            <div>
+              <h1>FlowChat</h1>
+              <p className="fcHeader__status">
+                <span className={`fcHeader__dot ${configured ? 'is-on' : ''}`} />
+                {configured
+                  ? `${providerMeta(config.provider).label} · ${effectiveModel(config)}`
+                  : 'Aguardando configuração'}
+              </p>
             </div>
-            <div className="jarvisBar__actions">
-              {messages.length > 0 && (
-                <button type="button" onClick={handleClear} title="Limpar conversa" aria-label="Limpar conversa">
-                  <Trash2 size={16} />
-                </button>
-              )}
-              <button type="button" onClick={() => setShowSettings(true)} title="Configurações do Jarvis" aria-label="Configurações do Jarvis">
-                <Settings size={16} />
+          </div>
+          <div className="fcHeader__actions">
+            {messages.length > 0 && (
+              <button type="button" onClick={handleClear} title="Limpar conversa" aria-label="Limpar conversa">
+                <Trash2 size={16} />
               </button>
-            </div>
-          </header>
+            )}
+            <button type="button" onClick={() => setShowSettings(true)} title="Configurações" aria-label="Configurações do FlowChat">
+              <Settings size={16} />
+            </button>
+          </div>
+        </header>
 
-          <section className="flowChatConversation ui-card">
-            <div className="flowChatHistory" ref={historyElRef} role="log" aria-live="polite">
-              <AnimatePresence initial={false}>
-                {showEmptyState && !isThinking ? (
-                  <motion.div
-                    key="empty-state"
-                    className="flowChatEmpty ui-card"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -30 }}
-                  >
-                    <p className="txt-pill">{configured ? 'Jarvis online' : 'Jarvis aguardando configuração'}</p>
-                    <h2>Às ordens{toolCtx.userName ? `, ${toolCtx.userName}` : ''}.</h2>
-                    <p>
-                      Posso consultar e criar tarefas, registrar lançamentos, resumir seu dia e analisar
-                      suas finanças — tudo dentro do FlowApp.
-                    </p>
-                    {!configured && (
-                      <button type="button" className="jarvisSetupBtn" onClick={() => setShowSettings(true)}>
-                        <Settings size={15} /> Configurar provedor de IA
-                      </button>
-                    )}
-                    <div className="flowChatEmpty__prompts">
-                      {SUGGESTIONS.map((prompt) => (
-                        <button key={prompt.id} type="button" onClick={() => sendMessage(prompt.title)}>
+        <div className="fcBody">
+          <div className="fcHistory" ref={historyElRef} role="log" aria-live="polite">
+            {showEmptyState ? (
+              <div className="fcHero">
+                <span className="fcOrb fcOrb--lg" aria-hidden="true"><Sparkles size={26} /></span>
+                <h2>
+                  {greeting()}{userName ? `, ${userName}` : ''}.
+                </h2>
+                <p className="fcHero__sub">
+                  Sou o assistente do seu FlowApp. Pergunte sobre tarefas, finanças e hábitos —
+                  ou peça para eu criar algo por você.
+                </p>
+                {!configured && (
+                  <button type="button" className="fcSetupBtn" onClick={() => setShowSettings(true)}>
+                    <Settings size={15} /> Conectar provedor de IA
+                  </button>
+                )}
+                <div className="fcSuggestions">
+                  {SUGGESTIONS.map((prompt) => {
+                    const Icon = prompt.icon
+                    return (
+                      <button key={prompt.id} type="button" className="fcSuggestion" onClick={() => sendMessage(prompt.title)}>
+                        <span className="fcSuggestion__icon"><Icon size={17} /></span>
+                        <span className="fcSuggestion__text">
                           <strong>{prompt.title}</strong>
                           <span>{prompt.detail}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                ) : (
-                  messages.map((message) => (
-                    <motion.article
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="fcThread">
+                <AnimatePresence initial={false}>
+                  {messages.map((message) => (
+                    <motion.div
                       key={message.id}
-                      className={`flowChatMessage flowChatMessage--${message.role}`}
-                      initial={{ opacity: 0, y: 16 }}
+                      className={`fcMsg fcMsg--${message.role}`}
+                      initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -16 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
                     >
-                      {message.role === 'assistant' ? (
-                        <div className="flowChatMessage__avatar" aria-hidden="true">
-                          <Sparkles size={16} />
-                        </div>
-                      ) : null}
-                      <div className={`flowChatMessage__bubble ${message.error ? 'flowChatMessage__bubble--error' : ''}`}>
-                        <p className="jarvisText">{message.text}</p>
+                      {message.role === 'assistant' && (
+                        <span className="fcOrb fcOrb--msg" aria-hidden="true"><Sparkles size={13} /></span>
+                      )}
+                      <div className={`fcMsg__bubble ${message.error ? 'fcMsg__bubble--error' : ''}`}>
+                        <p>{message.text}</p>
                         {message.tools?.length ? (
-                          <div className="jarvisTools">
+                          <div className="fcMsg__tools">
                             {[...new Set(message.tools)].map((label) => (
-                              <span key={label} className="jarvisTools__chip">
-                                <Wrench size={11} /> {label}
-                              </span>
+                              <span key={label}><Wrench size={10} /> {label}</span>
                             ))}
                           </div>
                         ) : null}
                       </div>
-                    </motion.article>
-                  ))
-                )}
-                {isThinking ? <ThinkingBubble key="thinking" /> : null}
-              </AnimatePresence>
-            </div>
-          </section>
+                    </motion.div>
+                  ))}
+                  {isThinking && (
+                    <motion.div
+                      key="thinking"
+                      className="fcMsg fcMsg--assistant"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <span className="fcOrb fcOrb--msg fcOrb--pulse" aria-hidden="true"><Sparkles size={13} /></span>
+                      <div className="fcMsg__bubble fcMsg__bubble--thinking">
+                        <span className="fcDots"><i /><i /><i /></span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
 
-          <form className="flowChatComposer ui-card" onSubmit={handleSend}>
-            <div className="flowChatComposer__field">
+          <form className="fcComposer" onSubmit={handleSend}>
+            <div className="fcComposer__box">
               <textarea
                 ref={textareaRef}
-                placeholder={configured
-                  ? 'Ex: registre R$ 45 de almoço em alimentação e me diga quanto já gastei no mês'
-                  : 'Configure o provedor de IA na engrenagem acima para começar'}
+                placeholder={configured ? 'Pergunte ou peça algo ao FlowChat...' : 'Conecte um provedor de IA para começar'}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={1}
-                aria-label="Mensagem para o Jarvis"
+                aria-label="Mensagem para o FlowChat"
               />
-              <div className="flowChatComposer__tools">
-                <button type="submit" className="flowChatComposer__send" aria-label="Enviar mensagem" disabled={isThinking || !draft.trim()}>
-                  <Send size={16} />
-                </button>
-              </div>
+              <button type="submit" className="fcComposer__send" aria-label="Enviar mensagem" disabled={isThinking || !draft.trim()}>
+                <ArrowUp size={17} strokeWidth={2.5} />
+              </button>
             </div>
-            <div className="flowChatComposer__tips">
-              <span>O Jarvis consulta seus dados reais antes de responder e pede confirmação antes de ações ambíguas.</span>
-            </div>
+            <p className="fcComposer__hint">
+              O FlowChat consulta seus dados reais antes de responder · Enter envia, Shift+Enter quebra linha
+            </p>
           </form>
-        </section>
+        </div>
       </div>
     </div>
   )

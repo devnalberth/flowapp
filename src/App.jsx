@@ -15,7 +15,7 @@ import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import { getSupabaseClient, supabasePersistent, supabaseSession } from './lib/supabaseClient.js'
 import { userService } from './services/userService'
 
-const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'AI Assistant']
+const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'FlowChat']
 const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
 
 const getPathname = () => (typeof window === 'undefined' ? '/' : window.location.pathname)
@@ -159,7 +159,7 @@ function App() {
       {page === 'Estudos' && <Studies {...pageProps} {...pageParams} />}
       {page === 'Hábitos' && <Habits {...pageProps} {...pageParams} />}
       {page === 'Financeiro' && <Finance {...pageProps} {...pageParams} />}
-      {page === 'AI Assistant' && <AIAssistant {...pageProps} {...pageParams} />}
+      {page === 'FlowChat' && <AIAssistant {...pageProps} {...pageParams} />}
       {page === 'Dashboard' && <Dashboard {...pageProps} {...pageParams} />}
     </ErrorBoundary>
   )

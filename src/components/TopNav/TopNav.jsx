@@ -10,7 +10,7 @@ const NAV = [
   'Estudos',
   'Hábitos',
   'Financeiro',
-  'AI Assistant',
+  'FlowChat',
 ]
 
 export default function TopNav({ user, active = 'Dashboard', onNavigate, onLogout }) {

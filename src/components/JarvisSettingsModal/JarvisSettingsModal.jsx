@@ -4,7 +4,7 @@ import { PROVIDERS, providerMeta, setJarvisConfig } from '../../services/jarvisC
 import { sendChat } from '../../services/jarvisProviders.js'
 import './JarvisSettingsModal.css'
 
-// Configuração do provedor de IA do Jarvis. A chave fica só no localStorage
+// Configuração do provedor de IA do FlowChat. A chave fica só no localStorage
 // deste dispositivo — nunca é enviada ao banco do FlowApp.
 export default function JarvisSettingsModal({ config, onSaved, onClose }) {
   const [form, setForm] = useState({
@@ -48,7 +48,7 @@ export default function JarvisSettingsModal({ config, onSaved, onClose }) {
           <div className="jarvisSettings__avatar"><Bot size={20} /></div>
           <div>
             <p className="jarvisSettings__eyebrow">Provedor de IA</p>
-            <h3>Configurar Jarvis</h3>
+            <h3>Configurar FlowChat</h3>
           </div>
           <button className="jarvisSettings__close" onClick={onClose} aria-label="Fechar">
             <X size={18} />
@@ -116,7 +116,7 @@ export default function JarvisSettingsModal({ config, onSaved, onClose }) {
         </div>
 
         <footer className="jarvisSettings__footer">
-          <button
+            <button
             type="button"
             className="jarvisSettings__btn jarvisSettings__btn--ghost"
             onClick={handleTest}
