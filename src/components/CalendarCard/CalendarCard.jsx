@@ -7,6 +7,36 @@ const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+// Chaves locais YYYY-MM-DD — nunca toISOString direto, que em UTC-3 desloca o dia.
+const localDayKey = (d) =>
+  new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+
+// Campos de CALENDÁRIO (due_date, event.date, finance.date): a data literal é a intenção
+const toDayKey = (value) => {
+  if (!value) return null
+  const s = String(value)
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? null : localDayKey(d)
+}
+
+// Campos de TIMESTAMP (created_at/updated_at): sempre o dia LOCAL do instante
+const tsKey = (value) => {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : localDayKey(d)
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+const keyOf = (year, monthIdx, day) => `${year}-${pad2(monthIdx + 1)}-${pad2(day)}`
+
+// Extrai { day } se a chave pertence ao mês/ano em exibição
+const dayInView = (key, viewYear, viewMonth) => {
+  if (!key) return null
+  const [y, m, d] = key.split('-').map(Number)
+  return y === viewYear && m - 1 === viewMonth ? d : null
+}
+
 export default function CalendarCard({
   className = '',
   tasks = [],
@@ -41,13 +71,11 @@ export default function CalendarCard({
     const withTasks = new Set()
 
     tasks.forEach(t => {
-      if (t.due_date) {
-        const date = new Date(t.due_date)
-        if (date.getMonth() === viewMonth && date.getFullYear() === viewYear) {
-          withTasks.add(date.getDate())
-          if (t.status === 'done' || t.completed) {
-            completed.add(date.getDate())
-          }
+      const day = dayInView(toDayKey(t.due_date), viewYear, viewMonth)
+      if (day != null) {
+        withTasks.add(day)
+        if (t.status === 'done' || t.completed) {
+          completed.add(day)
         }
       }
     })
@@ -55,35 +83,23 @@ export default function CalendarCard({
     // Dias com tarefas importantes (prioridade alta)
     const important = new Set()
     tasks.filter(t => t.priority === 'high' || t.priority === 'Alta' || t.priority === 'Urgente').forEach(t => {
-      if (!t.due_date) return
-      const date = new Date(t.due_date)
-      if (date.getMonth() === viewMonth && date.getFullYear() === viewYear) {
-        important.add(date.getDate())
-      }
+      const day = dayInView(toDayKey(t.due_date), viewYear, viewMonth)
+      if (day != null) important.add(day)
     })
 
     // Dias com eventos
     const withEvents = new Set()
     events.forEach(e => {
-      if (e.date) {
-        // Fix: Parse YYYY-MM-DD as local date by appending T00:00:00
-        const date = new Date(e.date + 'T00:00:00')
-        if (date.getMonth() === viewMonth && date.getFullYear() === viewYear) {
-          withEvents.add(date.getDate())
-        }
-      }
+      const day = dayInView(toDayKey(e.date), viewYear, viewMonth)
+      if (day != null) withEvents.add(day)
     })
 
     // Dias com movimentações financeiras
     const withFinances = new Set()
     finances.forEach(f => {
-      const dateStr = f.date || f.created_at
-      if (dateStr) {
-        const date = new Date(dateStr)
-        if (date.getMonth() === viewMonth && date.getFullYear() === viewYear) {
-          withFinances.add(date.getDate())
-        }
-      }
+      const key = f.date ? toDayKey(f.date) : tsKey(f.created_at)
+      const day = dayInView(key, viewYear, viewMonth)
+      if (day != null) withFinances.add(day)
     })
 
     const isCurrentMonth = now.getMonth() === viewMonth && now.getFullYear() === viewYear
@@ -141,17 +157,11 @@ export default function CalendarCard({
 
     const viewMonth = currentDate.getMonth()
     const viewYear = currentDate.getFullYear()
-    const selectedDate = new Date(viewYear, viewMonth, selectedDay)
-    const dateStr = selectedDate.toISOString().split('T')[0]
+    // Chave LOCAL do dia clicado (toISOString aqui deslocava para o dia anterior)
+    const dateStr = keyOf(viewYear, viewMonth, selectedDay)
 
     // Tarefas do dia
-    const dayTasks = tasks.filter(t => {
-      if (!t.due_date) return false
-      const taskDate = new Date(t.due_date)
-      return taskDate.getDate() === selectedDay &&
-        taskDate.getMonth() === viewMonth &&
-        taskDate.getFullYear() === viewYear
-    })
+    const dayTasks = tasks.filter(t => toDayKey(t.due_date) === dateStr)
 
     // Hábitos concluídos nesse dia
     const dayHabits = habits.filter(h => {
@@ -160,35 +170,19 @@ export default function CalendarCard({
     })
 
     // Eventos do dia
-    const dayEvents = events.filter(e => {
-      if (!e.date) return false
-      // Fix: Parse YYYY-MM-DD as local date
-      const eventDate = new Date(e.date + 'T00:00:00')
-      return eventDate.getDate() === selectedDay &&
-        eventDate.getMonth() === viewMonth &&
-        eventDate.getFullYear() === viewYear
-    })
+    const dayEvents = events.filter(e => toDayKey(e.date) === dateStr)
 
     // Finanças do dia
-    const dayFinances = finances.filter(f => {
-      const financeDate = new Date(f.date || f.created_at)
-      return financeDate.getDate() === selectedDay &&
-        financeDate.getMonth() === viewMonth &&
-        financeDate.getFullYear() === viewYear
-    })
+    const dayFinances = finances.filter(f => (f.date ? toDayKey(f.date) : tsKey(f.created_at)) === dateStr)
 
     // Produtividade do dia - usa focusLogService (localStorage) como fonte primária
-    const dateStrForFocus = selectedDate.toISOString().split('T')[0]
-    let focusMinutes = focusLogService.getTimeForDate(dateStrForFocus)
+    let focusMinutes = focusLogService.getTimeForDate(dateStr)
 
     // Fallback: se não tiver log, tenta calcular a partir das tasks (dados antigos)
     if (focusMinutes === 0) {
       focusMinutes = tasks.reduce((acc, t) => {
         if (!t.updated_at) return acc
-        const updateDate = new Date(t.updated_at)
-        if (updateDate.getDate() === selectedDay &&
-          updateDate.getMonth() === viewMonth &&
-          updateDate.getFullYear() === viewYear) {
+        if (tsKey(t.updated_at) === dateStr) {
           return acc + (Number(t.time_spent) || 0)
         }
         return acc
@@ -200,6 +194,8 @@ export default function CalendarCard({
     // Balanço financeiro
     const income = dayFinances.filter(f => f.type === 'income').reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
     const expense = dayFinances.filter(f => f.type === 'expense').reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
+
+    const selectedDate = new Date(viewYear, viewMonth, selectedDay)
 
     return {
       date: selectedDate,

@@ -111,3 +111,29 @@
     linear-gradient(to top, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.08) 100%, transparent 100%) 85% 70% / 6% 30%;
   background-repeat: no-repeat;
 }
+
+/* Mini-gráfico REAL (últimos 7 dias) — substitui o grafismo decorativo */
+.statCard__trend {
+  width: 120px;
+  height: 32px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.statCard__trend i {
+  flex: 1;
+  border-radius: 3px 3px 1px 1px;
+  min-height: 2px;
+  background: rgba(0, 0, 0, 0.55);
+  transition: height 300ms ease;
+}
+
+.statCard__trend i[data-empty] { background: rgba(0, 0, 0, 0.08); }
+
+.statCard[data-variant='pending'] .statCard__trend i { background: rgba(255, 106, 0, 0.75); }
+.statCard[data-variant='pending'] .statCard__trend i[data-empty] { background: rgba(255, 106, 0, 0.15); }
+
+.statCard[data-variant='done'] .statCard__trend i { background: #16a34a; }
+.statCard[data-variant='done'] .statCard__trend i[data-empty] { background: rgba(22, 163, 74, 0.15); }

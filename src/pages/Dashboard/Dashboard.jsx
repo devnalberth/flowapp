@@ -50,53 +50,80 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
   }, [habits])
 
   const kpis = useMemo(() => {
-    // Definindo "Hoje" (meia-noite local)
     const now = new Date()
-    const today = new Date(now)
-    today.setHours(0, 0, 0, 0)
 
-    // Definindo "Início da Semana" (Domingo à 00:00)
-    const dayOfWeek = now.getDay()
+    const dayKeyOf = (date) => {
+      const off = date.getTimezoneOffset()
+      return new Date(date.getTime() - off * 60000).toISOString().split('T')[0]
+    }
+
+    // Campos de CALENDÁRIO (due_date): a data literal da string é a intenção
+    const toDayKey = (value) => {
+      if (!value) return null
+      const s = String(value)
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+      const d = new Date(s)
+      return Number.isNaN(d.getTime()) ? null : dayKeyOf(d)
+    }
+
+    // Campos de TIMESTAMP (completed_at/updated_at): sempre o dia LOCAL do instante
+    const tsKey = (value) => {
+      if (!value) return null
+      const d = new Date(value)
+      return Number.isNaN(d.getTime()) ? null : dayKeyOf(d)
+    }
+
+    const todayKey = dayKeyOf(now)
+
+    // Últimos 7 dias (para os mini-gráficos dos KPIs)
+    const last7 = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      last7.push({
+        key: dayKeyOf(d),
+        label: d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' }),
+      })
+    }
+
+    // Início da semana (domingo)
     const weekStart = new Date(now)
-    weekStart.setDate(now.getDate() - dayOfWeek)
+    weekStart.setDate(now.getDate() - now.getDay())
     weekStart.setHours(0, 0, 0, 0)
+    const weekStartKey = dayKeyOf(weekStart)
 
-    const safeTasks = Array.isArray(tasks) ? tasks : []
+    const safeTasks = (Array.isArray(tasks) ? tasks : []).filter(t => t.status !== 'archived')
+    const isDone = (t) => t.completed || t.status === 'done'
+    // Data de conclusão real quando existe; updated_at só como fallback legado
+    const doneKey = (t) => tsKey(t.completed_at || t.updated_at || t.created_at)
 
-    // 1. TAREFAS DE HOJE (TOTAL AGENDADO PARA HOJE)
-    // Filtra tarefas com data = hoje (inclui feitas e não feitas)
-    const tasksTodayAll = safeTasks.filter(task => {
-      if (task.status === 'archived' || !task.due_date) return false
-
-      let dueDate = new Date(task.due_date)
-      dueDate.setHours(0, 0, 0, 0)
-
-      // Correção de fuso horário
-      const timezoneOffset = dueDate.getTimezoneOffset() * 60000
-      if (task.due_date.includes('T00:00:00') && timezoneOffset > 0) {
-        dueDate = new Date(dueDate.getTime() + timezoneOffset)
-        dueDate.setHours(0, 0, 0, 0)
-      }
-
-      return dueDate.getTime() === today.getTime()
-    })
-
-    // KPI 1: Total Hoje
+    // 1. TAREFAS DE HOJE (agendadas para hoje, feitas ou não)
+    const tasksTodayAll = safeTasks.filter(t => toDayKey(t.due_date) === todayKey)
     const totalToday = tasksTodayAll.length
 
-    // KPI 2: Pendentes Hoje (Subset de tasksTodayAll)
-    const pendingToday = tasksTodayAll.filter(t => !t.completed && t.status !== 'done').length
+    // 2. PENDENTES HOJE
+    const pendingToday = tasksTodayAll.filter(t => !isDone(t)).length
 
-    // KPI 3: Finalizadas na Semana (Qualquer tarefa feita >= Domingo)
-    const doneWeek = safeTasks.filter(task => {
-      // Arquivadas não contam como finalizadas
-      if (task.status === 'archived') return false
-      // Deve estar completa
-      if (!task.completed && task.status !== 'done') return false
-      // Deve ter data de conclusão recente
-      const dateRef = task.updated_at ? new Date(task.updated_at) : new Date(task.created_at)
-      return dateRef >= weekStart
+    // 3. FINALIZADAS NA SEMANA (desde domingo)
+    const doneWeek = safeTasks.filter(t => {
+      if (!isDone(t)) return false
+      const k = doneKey(t)
+      return k && k >= weekStartKey
     }).length
+
+    // Mini-gráficos: últimos 7 dias
+    const trendToday = last7.map(({ key, label }) => ({
+      label,
+      value: safeTasks.filter(t => toDayKey(t.due_date) === key).length,
+    }))
+    const trendPending = last7.map(({ key, label }) => ({
+      label,
+      value: safeTasks.filter(t => toDayKey(t.due_date) === key && !isDone(t)).length,
+    }))
+    const trendDone = last7.map(({ key, label }) => ({
+      label,
+      value: safeTasks.filter(t => isDone(t) && doneKey(t) === key).length,
+    }))
 
     // Streak dos hábitos
     const streakDays = safeHabits.reduce((max, habit) => {
@@ -108,6 +135,9 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
       pendingToday,
       doneWeek,
       streakDays,
+      trendToday,
+      trendPending,
+      trendDone,
     }
   }, [tasks, safeHabits])
 
@@ -164,18 +194,21 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
                 title="Tarefas de Hoje"
                 value={kpis.totalToday}
                 variant="total"
+                trend={kpis.trendToday}
                 onClick={() => onNavigate('Tarefas', { initialFilter: 'today' })}
               />
               <StatCard
-                title="Tarefas Pendentes"
+                title="Pendentes Hoje"
                 value={kpis.pendingToday}
                 variant="pending"
+                trend={kpis.trendPending}
                 onClick={() => onNavigate('Tarefas', { initialFilter: 'today' })}
               />
               <StatCard
-                title="Tarefas Finalizadas"
+                title="Finalizadas na Semana"
                 value={kpis.doneWeek}
                 variant="done"
+                trend={kpis.trendDone}
                 onClick={() => onNavigate('Tarefas', { initialFilter: 'done' })}
               />
               <NextMeetingCard events={events || []} onEditEvent={handleEditEvent} />

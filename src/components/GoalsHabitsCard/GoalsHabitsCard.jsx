@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { getDayStats } from '../../utils/habitStats'
 import './GoalsHabitsCard.css'
 
 const GOAL_FILTERS = ['Mensal', 'Trimestral', 'Semestral', 'Anual']
@@ -9,36 +10,24 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
   const habitData = useMemo(() => {
     // Proteção: se habits não for array, retorna dados zerados
     if (!Array.isArray(habits)) {
-      return { current: 0, total: 100, change: 0, improved: false }
+      return { current: 0, change: null, improved: false }
     }
 
-    const totalHabits = habits.length
-    const today = new Date().toISOString().split('T')[0]
+    // getDayStats usa data LOCAL (não UTC) e só conta hábitos agendados
+    // para o dia (respeita hábitos custom como seg/qua/sex)
+    const today = getDayStats(habits, new Date())
+    const yesterday = getDayStats(habits, new Date(Date.now() - 86400000))
 
-    const completedToday = habits.filter(h => {
-      // CORREÇÃO DE SEGURANÇA:
-      // O Dashboard já entrega os dados sanitizados. 
-      // Verificamos 'completions' (novo) ou 'completed_dates' (antigo) e garantimos que seja array.
-      // NUNCA usamos JSON.parse aqui para evitar crashes.
-      const completedDates = Array.isArray(h.completions)
-        ? h.completions
-        : (Array.isArray(h.completed_dates) ? h.completed_dates : [])
+    const current = today.rate != null ? Math.round(today.rate * 100) : 0
+    const previous = yesterday.rate != null ? Math.round(yesterday.rate * 100) : null
 
-      return completedDates.includes(today)
-    }).length
-
-    const current = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
-
-    // Cálculo seguro de streak
-    const avgStreak = totalHabits > 0
-      ? habits.reduce((sum, h) => sum + (Number(h.current_streak) || 0), 0) / totalHabits
-      : 0
+    // Variação real em pontos percentuais vs ontem (null = sem base de comparação)
+    const change = previous == null ? null : current - previous
 
     return {
-      current, // Percentual de conclusão hoje (0 a 100)
-      total: totalHabits, // Quantidade de hábitos
-      change: avgStreak > 5 ? 6.2 : avgStreak > 2 ? 3.8 : -2.4, // Dado decorativo baseado no streak
-      improved: avgStreak > 2,
+      current,
+      change,
+      improved: change != null && change >= 0,
     }
   }, [habits])
 
@@ -92,31 +81,12 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
       (g.progress || 0) >= 100 || g.status === 'completed' || g.status === 'done'
     ).length
 
-    // Grid de 4x4 representando progresso das metas
+    // Grid de 4x4 representando o progresso médio das metas do período
     const grid = Array(16).fill(false).map((_, i) => {
       return i < Math.round((avgProgress / 100) * 16)
     })
 
-    let labels = ['Jan', 'Fev', 'Mar', 'Abr']
-    if (goalFilter === 'Mensal') {
-      // Mostra as 4 semanas do mês
-      labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']
-    } else if (goalFilter === 'Trimestral') {
-      const quarterMonths = [
-        ['Jan', 'Fev', 'Mar'],
-        ['Abr', 'Mai', 'Jun'],
-        ['Jul', 'Ago', 'Set'],
-        ['Out', 'Nov', 'Dez']
-      ]
-      const q = Math.floor(currentMonth / 3)
-      labels = [...quarterMonths[q], '']
-    } else if (goalFilter === 'Semestral') {
-      labels = currentMonth < 6 ? ['Jan-Mar', 'Abr-Jun', '', ''] : ['Jul-Set', 'Out-Dez', '', '']
-    } else if (goalFilter === 'Anual') {
-      labels = ['T1', 'T2', 'T3', 'T4']
-    }
-
-    return { labels, grid, progress: avgProgress, totalGoals, completedGoals }
+    return { grid, progress: avgProgress, totalGoals, completedGoals }
   }, [goals, goalFilter])
 
   // Cálculo da rotação do ponteiro (Gauge)
@@ -199,10 +169,16 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
           <span className="gh__habitsLabel">Hábitos Hoje</span>
           {/* Mostra percentual de conclusão do dia */}
           <span className="gh__habitsValue">{habitData.current}%</span>
-          <span className="gh__pill" data-improved={habitData.improved || undefined}>
-            {Math.abs(habitData.change)}%
-            <span className="gh__arrow" aria-hidden="true" style={{ transform: habitData.improved ? 'none' : 'rotate(180deg)' }} />
-          </span>
+          {habitData.change != null && (
+            <span
+              className="gh__pill"
+              data-improved={habitData.improved || undefined}
+              title="Variação vs ontem (pontos percentuais)"
+            >
+              {Math.abs(habitData.change)}pp
+              <span className="gh__arrow" aria-hidden="true" style={{ transform: habitData.improved ? 'none' : 'rotate(180deg)' }} />
+            </span>
+          )}
         </div>
       </div>
 
@@ -234,11 +210,11 @@ export default function GoalsHabitsCard({ className = '', goals = [], habits = [
         </div>
 
         <div className="gh__months">
-          {goalData.labels.map((label, index) => (
-            <span key={index} className="gh__month">
-              {label}
-            </span>
-          ))}
+          <span className="gh__month">
+            {goalData.totalGoals === 0
+              ? 'Nenhuma meta no período'
+              : `${goalData.totalGoals} meta${goalData.totalGoals > 1 ? 's' : ''} · ${goalData.completedGoals} concluída${goalData.completedGoals !== 1 ? 's' : ''}`}
+          </span>
         </div>
       </div>
     </section>

@@ -167,17 +167,19 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     const hours = Math.floor(weekMinutes / 60)
     const minutes = Math.round(weekMinutes % 60)
 
-    const progressPercent = (todayMinutes / dailyGoal) * 100
+    // Nível calculado sobre a janela de 7 dias vs meta semanal (7× a meta diária).
+    // Usar só o dia atual fazia o card mostrar "Baixa" toda manhã.
+    const weekPercent = (weekMinutes / (dailyGoal * 7)) * 100
 
     let productivity = 'Baixa'
-    if (progressPercent >= 75) productivity = 'Alta'
-    else if (progressPercent >= 25) productivity = 'Média'
+    if (weekPercent >= 75) productivity = 'Alta'
+    else if (weekPercent >= 25) productivity = 'Média'
 
     return {
       totalHours: `${hours}h ${minutes}m`,
       productivity,
       todayMinutes,
-      progressPercent: Math.min(progressPercent, 100),
+      progressPercent: Math.min(weekPercent, 100),
     }
   }, [focusLog, focusTimeByDateFromTasks, dailyGoal])
 

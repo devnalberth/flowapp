@@ -1,6 +1,10 @@
 import './StatCard.css'
 
-export default function StatCard({ title, value, variant = 'total', onClick }) {
+// `trend`: últimos 7 dias, [{ label, value }] — vira um mini-gráfico real.
+// Sem trend, mantém o grafismo decorativo antigo.
+export default function StatCard({ title, value, variant = 'total', onClick, trend }) {
+  const max = trend ? Math.max(...trend.map((t) => t.value), 1) : 0
+
   return (
     <article
       className="statCard ui-card"
@@ -21,7 +25,20 @@ export default function StatCard({ title, value, variant = 'total', onClick }) {
 
       <div className="statCard__valueRow">
         <span className="statCard__value">{value}</span>
-        <span className="statCard__spark" aria-hidden="true" />
+        {trend ? (
+          <span className="statCard__trend" aria-hidden="true">
+            {trend.map((t, i) => (
+              <i
+                key={i}
+                style={{ height: `${Math.max((t.value / max) * 100, 8)}%` }}
+                data-empty={t.value === 0 || undefined}
+                title={`${t.label}: ${t.value}`}
+              />
+            ))}
+          </span>
+        ) : (
+          <span className="statCard__spark" aria-hidden="true" />
+        )}
       </div>
     </article>
   )
