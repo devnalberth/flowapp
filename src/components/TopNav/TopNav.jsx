@@ -39,100 +39,149 @@ function InitialsAvatar({ user, size = 'md' }) {
   )
 }
 
-// Modal de perfil: nome (auth user_metadata + tabela `users`) e troca de senha.
+// Configurações da conta: perfil e segurança usam operações independentes.
 // O evento flowapp:user-updated faz o novo nome refletir na hora em todo o app.
 function ProfileModal({ user, onClose }) {
+  const [activeTab, setActiveTab] = useState('profile')
   const [name, setName] = useState(user?.name || '')
-  const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const wantsPasswordChange = showPassword && (password || passwordConfirm)
-
-  const validate = () => {
-    if (!name.trim()) return 'Informe um nome.'
-    if (wantsPasswordChange) {
-      if (password.length < 8) return 'A nova senha precisa de pelo menos 8 caracteres.'
-      if (password !== passwordConfirm) return 'As senhas não coincidem.'
-    }
-    return ''
-  }
-
-  const handleSave = async (event) => {
-    event.preventDefault()
-    if (saving) return
-    const validation = validate()
-    if (validation) { setError(validation); return }
-
-    setSaving(true)
+  const changeTab = (tab) => {
+    setActiveTab(tab)
     setError('')
     setSuccess('')
+  }
+
+  const handleProfileSave = async (event) => {
+    event.preventDefault()
+    if (savingProfile) return
+
     const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Informe um nome.')
+      return
+    }
+
+    setSavingProfile(true)
+    setError('')
+    setSuccess('')
 
     try {
       const client = await getAuthedClient()
-      const payload = { data: { name: trimmed } }
-      if (wantsPasswordChange) payload.password = password
-
-      const { error: authError } = await client.auth.updateUser(payload)
+      const { error: authError } = await client.auth.updateUser({ data: { name: trimmed } })
       if (authError) throw authError
 
       if (user?.id) {
-        try {
-          await client.from('users').update({ name: trimmed }).eq('id', user.id)
-        } catch { /* metadata já salvo; tabela converge no próximo login */ }
+        const { error: profileError } = await client.from('users').update({ name: trimmed }).eq('id', user.id)
+        if (profileError) console.warn('Nome salvo no Auth, mas não foi atualizado na tabela users:', profileError)
       }
 
       window.dispatchEvent(new CustomEvent('flowapp:user-updated', { detail: { name: trimmed } }))
-
-      if (wantsPasswordChange) {
-        setSuccess('Perfil e senha atualizados.')
-        setPassword('')
-        setPasswordConfirm('')
-        setShowPassword(false)
-        setSaving(false)
-      } else {
-        onClose()
-      }
+      setSuccess('Perfil atualizado com sucesso.')
     } catch (err) {
-      setError(err?.message || 'Não foi possível salvar. Tente novamente.')
-      setSaving(false)
+      setError(err?.message || 'Não foi possível atualizar o perfil. Tente novamente.')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handlePasswordSave = async (event) => {
+    event.preventDefault()
+    if (savingPassword) return
+
+    if (!password || !passwordConfirm) {
+      setError('Preencha e confirme a nova senha.')
+      return
+    }
+    if (password.length < 8) {
+      setError('A nova senha precisa de pelo menos 8 caracteres.')
+      return
+    }
+    if (password !== passwordConfirm) {
+      setError('As senhas não coincidem.')
+      return
+    }
+
+    setSavingPassword(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const client = await getAuthedClient()
+      const { data, error: updateError } = await client.auth.updateUser({ password })
+      if (updateError) throw updateError
+      if (!data?.user) throw new Error('O Supabase não confirmou a atualização da senha.')
+
+      setPassword('')
+      setPasswordConfirm('')
+      setSuccess('Senha alterada com sucesso. A nova senha já está ativa no Supabase.')
+    } catch (err) {
+      setError(err?.message || 'Não foi possível alterar a senha. Tente novamente.')
+    } finally {
+      setSavingPassword(false)
     }
   }
 
   return (
     <div className="topNavProfile" onClick={onClose} role="presentation">
-      <form className="topNavProfile__panel" onClick={(e) => e.stopPropagation()} onSubmit={handleSave}>
+      <section className="topNavProfile__panel" onClick={(e) => e.stopPropagation()} aria-label="Configurações da conta">
         <div className="topNavProfile__head">
           <InitialsAvatar user={{ ...user, name }} size="lg" />
           <div>
-            <h3>Seu perfil</h3>
-            <p className="topNavProfile__hint">Esse nome aparece no Dashboard e no FlowChat.</p>
+            <h3>Configurações da conta</h3>
+            <p className="topNavProfile__hint">Gerencie seu perfil e sua segurança.</p>
           </div>
         </div>
 
-        <label className="topNavProfile__field">
-          <span>Nome</span>
-          <input
-            type="text"
-            value={name}
-            placeholder="Como você quer ser chamado?"
-            onChange={(e) => setName(e.target.value)}
-            maxLength={60}
-            autoFocus
-          />
-        </label>
+        <div className="topNavProfile__tabs" role="tablist" aria-label="Configurações">
+          <button type="button" role="tab" aria-selected={activeTab === 'profile'} className={activeTab === 'profile' ? 'is-active' : ''} onClick={() => changeTab('profile')}>
+            Editar perfil
+          </button>
+          <button type="button" role="tab" aria-selected={activeTab === 'security'} className={activeTab === 'security' ? 'is-active' : ''} onClick={() => changeTab('security')}>
+            Segurança
+          </button>
+        </div>
 
-        <label className="topNavProfile__field">
-          <span>E-mail</span>
-          <input type="text" value={user?.email || ''} disabled />
-        </label>
+        {activeTab === 'profile' ? (
+          <form className="topNavProfile__content" onSubmit={handleProfileSave}>
+            <label className="topNavProfile__field">
+              <span>Nome</span>
+              <input
+                type="text"
+                value={name}
+                placeholder="Como você quer ser chamado?"
+                onChange={(e) => setName(e.target.value)}
+                maxLength={60}
+                autoFocus
+              />
+            </label>
+            <label className="topNavProfile__field">
+              <span>E-mail</span>
+              <input type="email" value={user?.email || ''} disabled />
+            </label>
 
-        {showPassword ? (
-          <>
+            {error && <p className="topNavProfile__error" role="alert">{error}</p>}
+            {success && <p className="topNavProfile__success" role="status">{success}</p>}
+
+            <div className="topNavProfile__actions">
+              <button type="button" className="topNavProfile__btn" onClick={onClose}>Fechar</button>
+              <button type="submit" className="topNavProfile__btn topNavProfile__btn--primary" disabled={!name.trim() || savingProfile}>
+                {savingProfile ? 'Salvando...' : 'Salvar perfil'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="topNavProfile__content" onSubmit={handlePasswordSave}>
+            <div className="topNavProfile__securityIntro">
+              <strong>Alterar senha</strong>
+              <span>A nova senha será salva diretamente na sua conta do Supabase.</span>
+            </div>
+
             <label className="topNavProfile__field">
               <span>Nova senha</span>
               <input
@@ -141,6 +190,7 @@ function ProfileModal({ user, onClose }) {
                 placeholder="Mínimo de 8 caracteres"
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
+                autoFocus
               />
             </label>
             <label className="topNavProfile__field">
@@ -153,27 +203,19 @@ function ProfileModal({ user, onClose }) {
                 autoComplete="new-password"
               />
             </label>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="topNavProfile__link"
-            onClick={() => { setShowPassword(true); setSuccess('') }}
-          >
-            Alterar senha
-          </button>
+
+            {error && <p className="topNavProfile__error" role="alert">{error}</p>}
+            {success && <p className="topNavProfile__success" role="status">{success}</p>}
+
+            <div className="topNavProfile__actions">
+              <button type="button" className="topNavProfile__btn" onClick={onClose}>Fechar</button>
+              <button type="submit" className="topNavProfile__btn topNavProfile__btn--primary" disabled={savingPassword || !password || !passwordConfirm}>
+                {savingPassword ? 'Alterando...' : 'Alterar senha'}
+              </button>
+            </div>
+          </form>
         )}
-
-        {error && <p className="topNavProfile__error">{error}</p>}
-        {success && <p className="topNavProfile__success">{success}</p>}
-
-        <div className="topNavProfile__actions">
-          <button type="button" className="topNavProfile__btn" onClick={onClose}>Fechar</button>
-          <button type="submit" className="topNavProfile__btn topNavProfile__btn--primary" disabled={!name.trim() || saving}>
-            {saving ? 'Salvando...' : 'Salvar'}
-          </button>
-        </div>
-      </form>
+      </section>
     </div>
   )
 }
@@ -300,7 +342,7 @@ export default function TopNav({ user, active = 'Dashboard', onNavigate, onLogou
                 role="menuitem"
                 onClick={() => menuAction(() => setShowProfile(true))}
               >
-                Ver perfil
+                Configurações da conta
               </button>
               <button
                 type="button"
