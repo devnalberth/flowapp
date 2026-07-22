@@ -17,6 +17,15 @@ const FEATURES = [
   },
 ]
 
+const getPasswordResetRedirectUrl = () => {
+  const configuredAppUrl = import.meta.env.VITE_APP_URL?.trim()
+  const appUrl = configuredAppUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+
+  if (!appUrl) return undefined
+
+  return `${appUrl.replace(/\/$/, '')}/recuperar-senha`
+}
+
 export default function Login({ onLogin, infoMessage = '' }) {
   const [form, setForm] = useState({ email: '', password: '', remember: true })
   const [error, setError] = useState('')
@@ -73,7 +82,7 @@ export default function Login({ onLogin, infoMessage = '' }) {
 
     setIsResetting(true)
     try {
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/recuperar-senha` : undefined
+      const redirectTo = getPasswordResetRedirectUrl()
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(form.email, { redirectTo })
       if (resetError) {
         throw resetError
