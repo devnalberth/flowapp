@@ -71,7 +71,7 @@ function localDateKey(date = new Date()) {
 }
 
 // Quebra um due_date (ISO/timestamp) em data LOCAL (YYYY-MM-DD) + horário (HH:MM) local.
-// Usado para espelhar a reprogramação da tarefa de volta na aula de estudo vinculada.
+// Usado para espelhar a reprogramação da tarefa de volta no bloco de estudo vinculado.
 function localDateAndTime(value) {
   if (!value) return { dateKey: null, time: null }
   const raw = String(value)
@@ -84,41 +84,35 @@ function localDateAndTime(value) {
   return { dateKey, time }
 }
 
-// Busca uma aula (lesson) dentro da árvore de estudos (study → módulos → matérias → aulas).
-// Retorna a aula normalizada (com taskId, scheduledDate) ou null.
-function findLessonInStudies(studies, lessonId) {
-  const searchModules = (modules) => {
-    for (const mod of modules || []) {
-      const found = (mod.lessons || []).find((l) => l.id === lessonId)
-      if (found) return found
-      const nested = searchModules(mod.submodules || [])
-      if (nested) return nested
-    }
-    return null
-  }
+// Busca um bloco (módulo ou sub-módulo) na árvore de estudos.
+// Retorna o bloco normalizado (com taskId, scheduledDate, contador) ou null.
+function findBlockInStudies(studies, blockId) {
   for (const study of studies || []) {
-    const found = searchModules(study.modules || [])
-    if (found) return found
+    for (const mod of study.modules || []) {
+      if (mod.id === blockId) return mod
+      const child = (mod.submodules || []).find((c) => c.id === blockId)
+      if (child) return child
+    }
   }
   return null
 }
 
-// Aplica um patch a uma aula dentro da árvore de estudos, de forma imutável.
+// Aplica um patch a um bloco dentro da árvore de estudos, de forma imutável.
 // Usado para updates otimistas (UI instantânea) sem recarregar tudo do banco.
-function mapLessonInStudies(studies, lessonId, patch) {
-  const mapModules = (modules) =>
-    (modules || []).map((mod) => ({
-      ...mod,
-      lessons: (mod.lessons || []).map((l) => (l.id === lessonId ? { ...l, ...patch } : l)),
-      submodules: mapModules(mod.submodules || []),
-    }))
-  return (studies || []).map((s) => ({ ...s, modules: mapModules(s.modules || []) }))
+function mapBlockInStudies(studies, blockId, patch) {
+  const mapBlock = (block) => (block.id === blockId ? { ...block, ...patch } : block)
+  return (studies || []).map((s) => ({
+    ...s,
+    modules: (s.modules || []).map((mod) =>
+      mapBlock({ ...mod, submodules: (mod.submodules || []).map(mapBlock) }),
+    ),
+  }))
 }
 
-// Monta os campos da tarefa-espelho de uma aula agendada.
+// Monta os campos da tarefa-espelho de um bloco agendado.
 // - Combina data + horário no due_date; sem horário, usa só a data.
 // - Prioridade Alta/Urgente entra no Flow (tag 'flow'), além da tag 'Estudos'.
-function buildLessonTaskFields({ date, time, priority, title, completed }) {
+function buildBlockTaskFields({ date, time, priority, title, completed }) {
   const prio = priority || 'Normal'
   const isFlow = prio === 'Alta' || prio === 'Urgente'
   const due = date ? (time ? `${date}T${time}:00` : date) : null
@@ -324,10 +318,10 @@ export function AppProvider({ children, userId }) {
   const updateTask = async (id, updates) => {
     if (!userId) return
 
-    // Sync reverso: se a tarefa veio de uma aula (study_lesson_id) e o usuário
-    // alterou a conclusão na aba de Tarefas, espelha a conclusão na aula.
+    // Sync reverso: se a tarefa veio de um bloco de estudo (study_module_id) e o
+    // usuário mexeu nela na aba de Tarefas, espelha a mudança no bloco.
     const existingTask = tasks.find(t => t.id === id)
-    const linkedLessonId = existingTask?.studyLessonId || existingTask?.study_lesson_id || null
+    const linkedBlockId = existingTask?.studyModuleId || existingTask?.study_module_id || null
 
     // CORREÇÃO: Normaliza os campos para snake_case para que o filtro funcione corretamente
     const normalizedUpdates = {
@@ -371,43 +365,53 @@ export function AppProvider({ children, userId }) {
       // Se der erro de rede, aí sim poderíamos reverter, mas manter assim é melhor para UX
     }
 
-    // Espelha a conclusão na aula vinculada (otimista + service direto p/ não re-disparar o sync).
-    if (linkedLessonId && updates.completed !== undefined) {
-      const done = !!updates.completed
-      setStudies(prev => mapLessonInStudies(prev, linkedLessonId, { isCompleted: done, is_completed: done }))
+    // Espelha a conclusão no bloco vinculado. O checkbox da tarefa significa
+    // "bloco inteiro estudado": concluir fecha o contador, desmarcar tira uma
+    // aula do fim (em vez de zerar e apagar o progresso já registrado).
+    if (linkedBlockId && updates.completed !== undefined) {
+      const block = findBlockInStudies(studies, linkedBlockId)
+      const total = Math.max(Number(block?.lessonsTotal) || 0, 1)
+      const nextDone = updates.completed ? total : Math.max(0, total - 1)
+      const counterPatch = { lessonsTotal: total, lessonsDone: nextDone }
+      const prevPatch = {
+        lessonsTotal: Number(block?.lessonsTotal) || 0,
+        lessonsDone: Number(block?.lessonsDone) || 0,
+      }
+
+      setStudies(prev => mapBlockInStudies(prev, linkedBlockId, counterPatch))
       try {
-        await studyService.toggleLessonComplete(linkedLessonId, done)
+        await studyService.setBlockCounter(linkedBlockId, counterPatch)
       } catch (error) {
-        console.error('Erro ao espelhar conclusão na aula:', error)
-        setStudies(prev => mapLessonInStudies(prev, linkedLessonId, { isCompleted: !done, is_completed: !done }))
+        console.error('Erro ao espelhar conclusão no bloco:', error)
+        setStudies(prev => mapBlockInStudies(prev, linkedBlockId, prevPatch))
       }
     }
 
-    // Espelha a REPROGRAMAÇÃO (data/horário/prioridade/título) de volta na aula vinculada.
-    // Sem isso, ao editar a data de uma tarefa-espelho de aula, a aula continuava com a
-    // data antiga e a tarefa voltava a parecer "atrasada" / divergia da agenda de Estudos.
-    if (linkedLessonId) {
-      const lessonPatch = {}
+    // Espelha a REPROGRAMAÇÃO (data/horário/prioridade/título) de volta no bloco.
+    // Sem isso, ao editar a data da tarefa-espelho, o bloco continuava com a data
+    // antiga e a tarefa voltava a parecer "atrasada" / divergia da agenda de Estudos.
+    if (linkedBlockId) {
+      const blockPatch = {}
       const newDue = normalizedUpdates.due_date
       if (newDue !== undefined) {
         if (newDue === null) {
-          lessonPatch.scheduledDate = null
-          lessonPatch.scheduled_date = null
+          blockPatch.scheduledDate = null
+          blockPatch.scheduledTime = null
         } else {
           const { dateKey, time } = localDateAndTime(newDue)
-          if (dateKey) { lessonPatch.scheduledDate = dateKey; lessonPatch.scheduled_date = dateKey }
-          if (time) { lessonPatch.scheduledTime = time; lessonPatch.scheduled_time = time }
+          if (dateKey) blockPatch.scheduledDate = dateKey
+          if (time) blockPatch.scheduledTime = time
         }
       }
-      if (updates.priority !== undefined) lessonPatch.priority = updates.priority
-      if (updates.title !== undefined) lessonPatch.title = updates.title
+      if (updates.priority !== undefined) blockPatch.priority = updates.priority
+      if (updates.title !== undefined) blockPatch.title = updates.title
 
-      if (Object.keys(lessonPatch).length > 0) {
-        setStudies(prev => mapLessonInStudies(prev, linkedLessonId, lessonPatch))
+      if (Object.keys(blockPatch).length > 0) {
+        setStudies(prev => mapBlockInStudies(prev, linkedBlockId, blockPatch))
         try {
-          await studyService.updateLesson(linkedLessonId, lessonPatch)
+          await studyService.updateModule(linkedBlockId, blockPatch)
         } catch (error) {
-          console.error('Erro ao espelhar reprogramação na aula:', error)
+          console.error('Erro ao espelhar reprogramação no bloco:', error)
         }
       }
     }
@@ -415,19 +419,19 @@ export function AppProvider({ children, userId }) {
 
   const deleteTask = async (id) => {
     if (!userId) return
-    // Se a tarefa veio de uma aula, desvincula a aula (limpa task_id) para não
-    // deixar referência órfã.
+    // Se a tarefa veio de um bloco de estudo, desagenda o bloco (limpa task_id e
+    // a data) para não deixar referência órfã apontando para uma tarefa que sumiu.
     const existing = tasks.find(t => t.id === id)
-    const linkedLessonId = existing?.studyLessonId || existing?.study_lesson_id || null
+    const linkedBlockId = existing?.studyModuleId || existing?.study_module_id || null
     setTasks(prev => prev.filter(t => t.id !== id))
     await taskService.deleteTask(id, userId)
-    if (linkedLessonId) {
+    if (linkedBlockId) {
+      const cleared = { taskId: null, scheduledDate: null, scheduledTime: null }
+      setStudies(prev => mapBlockInStudies(prev, linkedBlockId, cleared))
       try {
-        await studyService.updateLesson(linkedLessonId, { taskId: null })
-        const allStudies = await studyService.getStudies(userId)
-        setStudies(allStudies)
+        await studyService.updateModule(linkedBlockId, cleared)
       } catch (error) {
-        console.error('Erro ao desvincular aula da tarefa removida:', error)
+        console.error('Erro ao desvincular bloco da tarefa removida:', error)
       }
     }
   }
@@ -945,139 +949,170 @@ export function AppProvider({ children, userId }) {
     await studyService.deleteStudy(id)
   }
 
-  const addStudyModule = async (studyItemId, moduleData) => {
-    if (!userId) return
-    await studyService.createModule(studyItemId, moduleData)
+  // --- Blocos de estudo (módulo e sub-módulo) --------------------------------
+  // A regra de agendamento: um bloco só vira tarefa se tiver data. Módulo com
+  // sub-módulos não agenda — quem agenda são os sub-módulos.
+
+  const refreshStudies = async () => {
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+    return allStudies
   }
 
-  const updateStudyModule = async (moduleId, updates) => {
-    if (!userId) return
-    await studyService.updateModule(moduleId, updates)
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
-  }
-
-  const deleteStudyModule = async (moduleId) => {
-    if (!userId) return
-    await studyService.deleteModule(moduleId)
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
-  }
-
-  // Cria uma tarefa espelho de uma aula agendada (aparece na aba de Tarefas).
-  const createLessonTask = async (lesson) => {
+  // Cria a tarefa-espelho de um bloco agendado (aparece na aba de Tarefas).
+  const createBlockTask = async (block) => {
     const newTask = await taskService.createTask(userId, {
-      ...buildLessonTaskFields({
-        date: lesson.scheduledDate,
-        time: lesson.scheduledTime,
-        priority: lesson.priority,
-        title: lesson.title,
-        completed: lesson.isCompleted,
+      ...buildBlockTaskFields({
+        date: block.scheduledDate,
+        time: block.scheduledTime,
+        priority: block.priority,
+        title: block.title,
+        completed: false,
       }),
       status: 'todo',
-      studyLessonId: lesson.id,
+      studyModuleId: block.id,
     })
     setTasks(prev => [newTask, ...prev])
     return newTask
   }
 
-  const addStudyLesson = async (moduleId, lessonData) => {
+  const addStudyModule = async (studyItemId, moduleData) => {
     if (!userId) return
-    const lesson = await studyService.createLesson(moduleId, lessonData)
-    // Só aulas COM data agendada viram tarefa (aparecem na aba de Tarefas).
-    if (lesson?.id && lessonData.scheduledDate) {
-      const task = await createLessonTask(lesson)
-      await studyService.updateLesson(lesson.id, { taskId: task.id })
+    const block = await studyService.createModule(studyItemId, moduleData)
+
+    // Bloco criado já com data entra nas Tarefas na hora.
+    if (block?.id && block.scheduledDate) {
+      try {
+        const task = await createBlockTask(block)
+        await studyService.updateModule(block.id, { taskId: task.id })
+      } catch (error) {
+        console.error('Erro ao criar tarefa do bloco:', error)
+      }
     }
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
-    return lesson
+
+    // Se o novo bloco é o primeiro sub-módulo de um módulo agendado, o módulo
+    // deixa de ser agendável: a tarefa dele é removida para não duplicar com as
+    // dos sub-módulos.
+    const parentId = moduleData.parentModuleId || null
+    if (parentId) {
+      const parent = findBlockInStudies(studies, parentId)
+      if (parent?.taskId) {
+        try {
+          await taskService.deleteTask(parent.taskId, userId)
+          setTasks(prev => prev.filter(t => t.id !== parent.taskId))
+          await studyService.updateModule(parentId, { taskId: null, scheduledDate: null, scheduledTime: null })
+        } catch (error) {
+          console.error('Erro ao desagendar módulo que ganhou sub-módulos:', error)
+        }
+      }
+    }
+
+    await refreshStudies()
+    return block
   }
 
-  const updateStudyLesson = async (lessonId, updates) => {
+  const updateStudyModule = async (blockId, updates) => {
     if (!userId) return
-    const current = findLessonInStudies(studies, lessonId)
+    const current = findBlockInStudies(studies, blockId)
     const hadTask = current?.taskId || null
+    // Módulo com sub-módulos não agenda: quem vai para as Tarefas são os filhos.
+    // Se ele tinha data de antes da divisão, este update também limpa a sobra.
+    const canSchedule = !(current?.submodules?.length > 0)
+
     // Valores resultantes após o update (mantém os atuais se não vierem)
-    const nextDate = updates.scheduledDate !== undefined ? updates.scheduledDate : current?.scheduledDate
+    const nextDate = !canSchedule
+      ? null
+      : updates.scheduledDate !== undefined ? updates.scheduledDate : current?.scheduledDate
     const nextTime = updates.scheduledTime !== undefined ? updates.scheduledTime : current?.scheduledTime
     const nextPriority = updates.priority !== undefined ? updates.priority : current?.priority
     const nextTitle = updates.title !== undefined ? updates.title : current?.title
 
-    const saved = await studyService.updateLesson(lessonId, updates)
+    const saved = await studyService.updateModule(blockId, updates)
 
-    // Sincroniza a tarefa-espelho conforme data/horário/prioridade
+    // Sincroniza a tarefa-espelho conforme data/horário/prioridade/título.
     try {
       if (nextDate) {
-        const fields = buildLessonTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: nextTitle })
+        const fields = buildBlockTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: nextTitle })
         if (hadTask) {
           const updatedTask = await taskService.updateTask(hadTask, userId, fields)
-          setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
+          if (updatedTask?.id) setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
         } else {
           // Acabou de ganhar uma data → cria a tarefa e vincula
-          const task = await createLessonTask(saved)
-          await studyService.updateLesson(lessonId, { taskId: task.id })
+          const task = await createBlockTask({ ...saved, scheduledDate: nextDate, scheduledTime: nextTime, priority: nextPriority, title: nextTitle })
+          await studyService.updateModule(blockId, { taskId: task.id })
         }
       } else if (hadTask) {
         // Removeu a data → remove a tarefa-espelho
         await taskService.deleteTask(hadTask, userId)
         setTasks(prev => prev.filter(t => t.id !== hadTask))
-        await studyService.updateLesson(lessonId, { taskId: null })
+        await studyService.updateModule(blockId, { taskId: null })
       }
     } catch (error) {
-      console.error('Erro ao sincronizar aula↔tarefa:', error)
+      console.error('Erro ao sincronizar bloco↔tarefa:', error)
     }
 
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
+    await refreshStudies()
     return saved
   }
 
-  const deleteStudyLesson = async (lessonId) => {
+  const deleteStudyModule = async (blockId) => {
     if (!userId) return
-    const current = findLessonInStudies(studies, lessonId)
-    await studyService.deleteLesson(lessonId)
-    // Remove a tarefa-espelho vinculada, se houver
-    if (current?.taskId) {
+    const current = findBlockInStudies(studies, blockId)
+    // Recolhe as tarefas do bloco e dos sub-módulos que somem junto com ele.
+    const taskIds = [current?.taskId, ...(current?.submodules || []).map(c => c.taskId)].filter(Boolean)
+
+    await studyService.deleteModule(blockId)
+
+    for (const taskId of taskIds) {
       try {
-        await taskService.deleteTask(current.taskId, userId)
-        setTasks(prev => prev.filter(t => t.id !== current.taskId))
+        await taskService.deleteTask(taskId, userId)
+        setTasks(prev => prev.filter(t => t.id !== taskId))
       } catch (error) {
-        console.error('Erro ao remover tarefa da aula:', error)
+        console.error('Erro ao remover tarefa do bloco excluído:', error)
       }
     }
-    const allStudies = await studyService.getStudies(userId)
-    setStudies(allStudies)
+
+    await refreshStudies()
   }
 
-  const toggleStudyLesson = async (lessonId, isCompleted) => {
+  // Contador de aulas do bloco — a interação principal da tela de estudos.
+  // Otimista: o anel e a barra recalculam antes da ida ao banco.
+  const setStudyBlockCounter = async (blockId, { lessonsDone, lessonsTotal }) => {
     if (!userId) return
-    const current = findLessonInStudies(studies, lessonId)
-    // 1. OTIMISTA: atualiza a UI na hora (progresso/anéis recalculam ao vivo)
-    setStudies(prev => mapLessonInStudies(prev, lessonId, { isCompleted, is_completed: isCompleted }))
-    if (current?.taskId) {
-      const completedAt = isCompleted ? new Date().toISOString() : null
-      setTasks(prev => prev.map(t => t.id === current.taskId
-        ? { ...t, completed: isCompleted, completed_at: completedAt, status: isCompleted ? 'done' : 'todo' }
-        : t))
+    const current = findBlockInStudies(studies, blockId)
+    if (!current) return
+
+    const total = lessonsTotal !== undefined ? Math.max(0, Math.floor(lessonsTotal)) : (current.lessonsTotal || 0)
+    const done = Math.min(
+      Math.max(0, Math.floor(lessonsDone !== undefined ? lessonsDone : (current.lessonsDone || 0))),
+      total,
+    )
+    const prev = { lessonsTotal: current.lessonsTotal || 0, lessonsDone: current.lessonsDone || 0 }
+    if (prev.lessonsTotal === total && prev.lessonsDone === done) return
+
+    setStudies(s => mapBlockInStudies(s, blockId, { lessonsTotal: total, lessonsDone: done }))
+
+    // A tarefa-espelho acompanha: fechar o contador conclui a tarefa do bloco.
+    const isDone = total > 0 && done >= total
+    if (current.taskId) {
+      const completedAt = isDone ? new Date().toISOString() : null
+      setTasks(t => t.map(x => x.id === current.taskId
+        ? { ...x, completed: isDone, completed_at: completedAt, status: isDone ? 'done' : 'todo' }
+        : x))
     }
-    // 2. Persiste em background (não bloqueia a UI já atualizada)
+
     try {
-      await studyService.toggleLessonComplete(lessonId, isCompleted)
-      if (current?.taskId) {
-        const completedAt = isCompleted ? new Date().toISOString() : null
+      await studyService.setBlockCounter(blockId, { lessonsTotal: total, lessonsDone: done })
+      if (current.taskId) {
         await taskService.updateTask(current.taskId, userId, {
-          completed: isCompleted,
-          status: isCompleted ? 'done' : 'todo',
-          completed_at: completedAt,
+          completed: isDone,
+          status: isDone ? 'done' : 'todo',
+          completed_at: isDone ? new Date().toISOString() : null,
         })
       }
     } catch (error) {
-      console.error('Erro ao concluir aula:', error)
-      // Reverte em caso de falha
-      setStudies(prev => mapLessonInStudies(prev, lessonId, { isCompleted: !isCompleted, is_completed: !isCompleted }))
+      console.error('Erro ao salvar o contador do bloco:', error)
+      setStudies(s => mapBlockInStudies(s, blockId, prev))
     }
   }
 
@@ -1154,8 +1189,7 @@ export function AppProvider({ children, userId }) {
     financeRecurrences, addFinanceRecurrence, updateFinanceRecurrence, deleteFinanceRecurrence,
     addStudy, updateStudy, deleteStudy,
     addStudyModule, updateStudyModule, deleteStudyModule,
-    addStudyLesson, updateStudyLesson, deleteStudyLesson,
-    toggleStudyLesson,
+    setStudyBlockCounter,
     addDreamMap, updateDreamMap, deleteDreamMap,
     addEvent, updateEvent, deleteEvent,
   }

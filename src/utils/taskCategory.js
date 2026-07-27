@@ -1,9 +1,9 @@
 // Categoriza uma tarefa para o Flow:
-// - 'study'  → veio de uma aula (curso/faculdade/mentoria/livro)
+// - 'study'  → veio de um bloco de estudo (curso/faculdade/mentoria/livro)
 // - 'work'   → projeto ou tarefa avulsa (produtividade)
 export function categorizeTask(task) {
   if (!task) return 'work'
-  if (task.studyLessonId || task.study_lesson_id) return 'study'
+  if (task.studyModuleId || task.study_module_id) return 'study'
   return 'work'
 }
 

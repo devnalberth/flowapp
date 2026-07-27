@@ -8,11 +8,11 @@ import FloatingCreateButton from '../../components/FloatingCreateButton/Floating
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw, BarChart3, Briefcase, BookOpen } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
-import { buildLessonContextMap } from '../../utils/studyMetrics'
+import { buildBlockContextMap } from '../../utils/studyMetrics'
 import { categorizeTask, CATEGORY_META } from '../../utils/taskCategory'
 import FlowDashboardModal from '../../components/FlowDashboardModal/FlowDashboardModal.jsx'
 
-const STUDY_KIND_LABEL = { module: 'Módulo', submodule: 'Sub-módulo', subject: 'Matéria' }
+const STUDY_KIND_LABEL = { module: 'Curso', submodule: 'Módulo' }
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
 
 import './Tasks.css'
@@ -90,7 +90,7 @@ const getWeekStart = () => {
 export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
   const currentUser = user ?? DEFAULT_USER
   const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent, syncTimerHabits, userId } = useApp()
-  const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
+  const blockCtxMap = useMemo(() => buildBlockContextMap(studies), [studies])
   const projectCtxMap = useMemo(() => {
     const map = {}
     for (const p of projects || []) map[p.id] = { title: p.title, area: p.area || null }
@@ -212,8 +212,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     const todayStr = localDate.toISOString().split('T')[0]
 
     // Registra com categoria (Produtividade/Estudos) e a tarefa, para o dashboard
-    const lid = currentTask.studyLessonId || currentTask.study_lesson_id
-    const displayTitle = (lid && lessonCtxMap[lid]?.lessonTitle) || currentTask.title
+    const bid = currentTask.studyModuleId || currentTask.study_module_id
+    const displayTitle = (bid && blockCtxMap[bid]?.blockTitle) || currentTask.title
     focusLogService.addTime(todayStr, minutesToAdd, {
       category: categorizeTask(currentTask),
       taskId: currentTask.id,
@@ -739,8 +739,8 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                   <div className="taskCard__header">
                     <div>
                       {(() => {
-                        const sId = task.studyLessonId || task.study_lesson_id
-                        const sctx = sId ? lessonCtxMap[sId] : null
+                        const sId = task.studyModuleId || task.study_module_id
+                        const sctx = sId ? blockCtxMap[sId] : null
                         if (sctx) {
                           return (
                             <>
@@ -748,11 +748,13 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                                 <span className="taskCtxChip taskCtxChip--course">
                                   <em>Curso</em> {sctx.studyTitle}
                                 </span>
-                                <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
-                                  <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
-                                </span>
+                                {sctx.containerTitle && (
+                                  <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
+                                    <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
+                                  </span>
+                                )}
                               </div>
-                              <p className="taskCard__title">{sctx.lessonTitle}</p>
+                              <p className="taskCard__title">{sctx.blockTitle}</p>
                             </>
                           )
                         }

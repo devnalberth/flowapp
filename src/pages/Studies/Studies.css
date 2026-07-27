@@ -340,14 +340,23 @@
   box-shadow: 0 8px 20px rgba(255, 72, 0, 0.28);
 }
 
+
+/* =========================================================
+   Árvore de conteúdo: módulo → sub-módulo
+   ---------------------------------------------------------
+   Só existem dois níveis, então a profundidade não precisa de um card dentro
+   do outro. O módulo é o único card; os sub-módulos penduram num trilho
+   vertical. Uma cor de acento (laranja = progresso) e uma semântica
+   (índigo = agendado, foi para as Tarefas).
+   ========================================================= */
+
 .stModules {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+
 .stModules__empty {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -358,6 +367,7 @@
   color: #9a9aa2;
   text-align: center;
 }
+.stModules__empty p { max-width: 46ch; margin: 0; line-height: 1.55; }
 .stModules__empty svg { color: #ff9500; }
 .stModules__empty button {
   display: inline-flex; align-items: center; gap: 6px;
@@ -366,329 +376,460 @@
   color: #fff; font: inherit; font-weight: 600; cursor: pointer;
 }
 
-/* =========================================================
-   Module / Matéria / Lesson tree
-   ========================================================= */
+/* ---------------- Módulo ---------------- */
 .stModule {
   background: #fff;
+  border: 1px solid #efeff3;
   border-radius: 18px;
-  border: 1px solid #f0f0f2;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.03);
-  transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
-.stModule:not(.is-expanded):hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(0, 0, 0, 0.09); border-color: #ffd8c2; }
-.stModule.is-expanded { grid-column: 1 / -1; box-shadow: 0 16px 38px rgba(0, 0, 0, 0.08); border-color: rgba(255, 72, 0, 0.25); }
 
-/* Cards colapsados: mesma altura (stretch por linha) + rodapé ancorado embaixo */
-.stModule:not(.is-expanded) { display: flex; flex-direction: column; min-height: 168px; }
-.stModule:not(.is-expanded) .stModule__head { flex: 1; }
-.stModule:not(.is-expanded) .stModule__tail { margin-top: auto; }
+.stModule:hover { border-color: #e2e2e9; }
 
-/* --- collapsed: compact vertical card --- */
+.stModule.is-expanded {
+  border-color: rgba(255, 72, 0, 0.22);
+  box-shadow: 0 14px 34px rgba(13, 13, 18, 0.07);
+}
+
 .stModule__head {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  cursor: pointer;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 12px 16px;
 }
-.stModule__lead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.stModule__index {
-  flex-shrink: 0;
-  width: 40px; height: 40px;
-  display: grid; place-items: center;
-  border-radius: 12px;
-  font-family: var(--font-brand, 'Outfit', sans-serif);
-  font-weight: 700;
-  font-size: 1.02rem;
-  color: #ff4800;
-  background: rgba(255, 72, 0, 0.09);
-}
-.stModule__ring { flex-shrink: 0; }
-.stModule__meta { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.stModule__eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.64rem; font-weight: 700; color: #b0b0b8; }
-.stModule__meta h3 {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.25;
-  font-family: var(--font-brand, 'Outfit', sans-serif);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.stModule__stat { font-size: 0.78rem; color: #8b8b93; }
-.stModule__tail { display: flex; align-items: center; justify-content: space-between; }
-.stModule__tail .stRowActions { opacity: 0; transition: opacity 150ms ease; }
-.stModule:hover .stModule__tail .stRowActions,
-.stModule.is-expanded .stModule__tail .stRowActions { opacity: 1; }
-.stModule__chevron { color: #c0c0c8; flex-shrink: 0; margin-left: auto; }
 
-/* --- expanded: full-width horizontal header --- */
-.stModule.is-expanded .stModule__head { flex-direction: row; align-items: center; gap: 16px; padding: 18px 20px; }
-.stModule.is-expanded .stModule__lead { justify-content: flex-start; gap: 12px; }
-.stModule.is-expanded .stModule__meta { flex: 1; }
-.stModule.is-expanded .stModule__meta h3 { font-size: 1.14rem; -webkit-line-clamp: unset; }
-.stModule.is-expanded .stModule__tail { flex-shrink: 0; gap: 8px; }
-
-.stChevron { transition: transform 220ms ease; }
-.stChevron.is-open { transform: rotate(180deg); }
-
-.stCollapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 280ms ease; }
-.stCollapse.is-open { grid-template-rows: 1fr; }
-.stCollapse > * { overflow: hidden; min-height: 0; }
-
-.stModule__body {
-  padding: 4px 20px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: stBodyIn 260ms ease;
-}
-@keyframes stBodyIn { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
-
-/* Filhos do módulo intercalados (sub-módulos + matérias) em ordem de criação */
-.stNodes { display: flex; flex-direction: column; gap: 10px; }
-.stMaterias { display: flex; flex-direction: column; gap: 10px; }
-.stMateria {
-  background: #faf9fb;
-  border: 1px solid #f0eef3;
-  border-radius: 15px;
-  border-left: 3px solid #d9c9f5;
-  overflow: hidden;
-}
-.stMateria__head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
-.stMateria__toggle {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; gap: 10px;
-  border: none; background: transparent; cursor: pointer;
-  font: inherit; text-align: left;
-}
-.stMateria__tag {
-  flex-shrink: 0;
-  font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  color: #7c5cff; background: rgba(124, 92, 255, 0.12);
-  padding: 3px 8px; border-radius: 7px;
-}
-.stMateria__toggle h4 { margin: 0; font-size: 0.95rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stMateria__stat { font-size: 0.76rem; color: #9a9aa2; white-space: nowrap; }
-.stMateria__bar { height: 5px; margin: 0 14px; background: #ececf0; border-radius: 99px; overflow: hidden; }
-.stMateria__bar span { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #a78bfa); border-radius: 99px; }
-
-/* Sub-módulo (cyan) — destaca dentro do módulo, agrupa matérias */
-.stSubs { display: flex; flex-direction: column; gap: 10px; }
-.stSub {
-  background: #f2fafd;
-  border: 1px solid #d8eef9;
-  border-radius: 15px;
-  border-left: 3px solid #0ea5e9;
-  overflow: hidden;
-}
-.stSub__head { display: flex; align-items: center; gap: 10px; padding: 13px 14px; }
-.stSub__toggle {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; gap: 10px;
-  border: none; background: transparent; cursor: pointer;
-  font: inherit; text-align: left;
-}
-.stSub__tag {
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-  color: #0ea5e9; background: rgba(14, 165, 233, 0.14);
-  padding: 3px 8px; border-radius: 7px;
-}
-.stSub__toggle h4 { margin: 0; font-size: 0.98rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-brand, 'Outfit', sans-serif); }
-.stSub__stat { font-size: 0.76rem; color: #6f93a3; white-space: nowrap; }
-.stSub__bar { height: 5px; margin: 0 14px; background: #dceef6; border-radius: 99px; overflow: hidden; }
-.stSub__bar span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #38bdf8); border-radius: 99px; }
-.stSub__body { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
-.stSub__body > .stLessons { padding: 10px 14px 0; }
-.stSub__body > .stMaterias { padding: 0 14px; }
-.stSub__body > .stAddLesson { padding: 0 14px; }
-.stSub__body > .stAddMateria { margin: 0 14px; }
-
-/* Descrição opcional de um nó (módulo/sub/matéria) */
-.stNodeDesc { margin: 0; padding: 0 2px; font-size: 0.84rem; color: #6b6b73; line-height: 1.4; }
-.stMateria .stNodeDesc, .stSub__body .stNodeDesc { padding: 0 14px; }
-
-/* Lessons */
-.stLessons { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
-.stMateria .stLessons { padding: 10px 14px; }
-.stLesson {
+.stModule__toggle {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: #f8f8fa;
-  border: 1px solid transparent;
-  transition: border-color 150ms ease, background 150ms ease;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
 }
-.stLesson:hover { background: #fff; border-color: #ececf0; }
-.stLesson.is-done { opacity: 0.66; }
-.stLesson__check {
-  flex-shrink: 0;
-  width: 22px; height: 22px;
-  display: grid; place-items: center;
-  border-radius: 7px;
-  border: 2px solid #d2d2da;
+
+/* A numeração só aparece quando há mais de um módulo: aí a ordem é
+   informação do curso, não enfeite. */
+.stModule__index {
+  flex: none;
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: #c6c6d0;
+}
+
+.stModule.is-expanded .stModule__index { color: #ff8a3d; }
+
+.stModule__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stModule__title {
+  font-family: var(--font-brand, 'Outfit', sans-serif);
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: #0d0d12;
+  overflow-wrap: anywhere;
+}
+
+.stModule__stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #8b8b96;
+  font-variant-numeric: tabular-nums;
+}
+
+.stModule__pct { font-weight: 700; color: #ff4800; }
+
+.stModule__chips,
+.stBlock__chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.stModule__chips:empty,
+.stBlock__chips:empty { display: none; }
+
+.stModule__body {
+  padding: 4px 16px 16px 16px;
+  border-top: 1px solid #f2f2f6;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: stBodyIn 220ms ease;
+}
+
+@keyframes stBodyIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+
+.stModule__split {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px dashed #d8d8e2;
+  border-radius: 11px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #5b5a64;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.stModule__split:hover { border-color: #ff4800; color: #ff4800; }
+
+/* ---------------- Trilho de sub-módulos ---------------- */
+/* A linha vertical substitui o card aninhado: um nível de indentação,
+   uma borda, nenhum segundo fundo. */
+.stTrack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 26px;
+}
+
+/* O trilho: a única marca de hierarquia. Vai do primeiro ao último nó. */
+.stTrack::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 22px;
+  bottom: 60px;
+  width: 2px;
+  border-radius: 2px;
+  background: #e2e2ea;
+}
+
+.stTrack__add {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 1px dashed #d8d8e2;
+  border-radius: 11px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #5b5a64;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.stTrack__add:hover { border-color: #ff4800; color: #ff4800; }
+
+/* ---------------- Sub-módulo ---------------- */
+.stBlock {
+  position: relative;
+  border-radius: 12px;
+  transition: background 150ms ease;
+}
+
+.stBlock:hover { background: #fafafc; }
+.stBlock.is-open { background: #fafafc; }
+
+.stBlock__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 10px 0;
+}
+
+.stBlock__toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* O nó que ancora a linha no trilho. Vira marca de concluído quando fecha. */
+.stBlock__node {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: -25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #d5d5df;
   background: #fff;
   color: #fff;
-  cursor: pointer;
-  transition: all 160ms ease;
+  box-shadow: 0 0 0 4px #fff;
+  transition: background 180ms ease, border-color 180ms ease;
 }
-.stLesson__check.is-done {
-  border-color: transparent;
-  background: linear-gradient(135deg, #16a34a, #22c55e);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.32);
-}
-.stLesson__title {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 4px;
-  border: none; background: transparent; cursor: pointer;
-  font: inherit; text-align: left; padding: 0;
-}
-.stLesson__name { font-size: 0.92rem; font-weight: 600; color: #0d0d12; }
-.stLesson.is-done .stLesson__name { text-decoration: line-through; color: #8b8b93; }
-.stLesson__badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.stLesson__badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 0.68rem; font-weight: 600;
-  color: #8b8b93; background: #ececf0;
-  padding: 2px 7px; border-radius: 6px;
-}
-.stLesson__badge--date { color: #ff4800; background: rgba(255, 72, 0, 0.1); }
-.stLesson__badge--task { color: #0ea5e9; background: rgba(14, 165, 233, 0.12); }
-.stLesson__badge--flow { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
-.stLesson__rating { font-size: 0.72rem; color: #ff7a00; letter-spacing: 1px; }
-.stLesson__actions { display: flex; gap: 4px; opacity: 0; transition: opacity 150ms ease; }
-.stLesson:hover .stLesson__actions { opacity: 1; }
-.stLesson__act {
-  width: 28px; height: 28px;
-  display: grid; place-items: center;
-  border-radius: 8px; border: none;
-  background: #ececf0; color: #6b6b73; cursor: pointer;
-  transition: background 150ms ease, color 150ms ease;
-}
-.stLesson__act:hover { background: #e0e0e6; color: #0d0d12; }
-.stLesson__act--danger:hover { background: #fee2e2; color: #ef4444; }
 
-/* Add lesson inline */
-.stAddLesson { display: flex; gap: 8px; align-items: center; }
-.stMateria .stAddLesson { padding: 0 14px 14px; }
-.stAddLesson__title { flex: 1; min-width: 0; }
-.stAddLesson__title, .stAddLesson__date {
-  font: inherit; font-size: 0.86rem;
-  background: #fff; border: 1px solid #e6e6ea; border-radius: 10px;
-  padding: 9px 12px; color: #0d0d12;
-}
-.stAddLesson__date { flex-shrink: 0; color: #6b6b73; }
-.stAddLesson__title:focus, .stAddLesson__date:focus { outline: none; border-color: #ff4800; }
-.stAddLesson__btn {
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 9px 14px; border-radius: 10px; border: none;
-  background: #0d0d12; color: #fff; font: inherit; font-weight: 600; font-size: 0.84rem;
-  cursor: pointer; transition: background 150ms ease;
-}
-.stAddLesson__btn:hover { background: #2e2e2e; }
+.stBlock:hover .stBlock__node,
+.stBlock.is-open .stBlock__node { box-shadow: 0 0 0 4px #fafafc; }
 
-.stAddMateria {
+.stBlock.is-open .stBlock__node { border-color: #ff8a3d; }
+
+.stBlock.is-done .stBlock__node {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.stBlock__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #22222a;
+  overflow-wrap: anywhere;
+}
+
+.stBlock.is-done .stBlock__title { color: #7f7f8a; }
+
+.stBlock__stat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #9a9aa4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sem barra na linha fechada: o percentual já é o medidor nesta escala, e o
+   medidor de verdade — o que se opera — mora no bloco aberto. */
+.stBlock__count { color: #7a7a86; }
+.stBlock__count b { color: #22222a; font-weight: 700; }
+.stBlock__count--empty { font-size: 0.74rem; color: #b4b4be; }
+
+.stBlock__pct { min-width: 34px; text-align: right; font-weight: 700; color: #ff4800; }
+.stBlock.is-done .stBlock__pct { color: #16a34a; }
+
+.stBlock__body {
+  padding: 6px 10px 14px 0;
+  animation: stBodyIn 200ms ease;
+}
+
+/* ---------------- Detalhe do bloco ---------------- */
+.stBlockDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 14px 0;
+}
+
+/* Dentro do trilho o detalhe não ganha caixa própria: já está indentado e
+   ancorado pelo nó. Card dentro de card foi o problema do desenho antigo. */
+.stBlock__body .stBlockDetail { padding-left: 0; }
+
+.stModule__body > .stBlockDetail { padding: 10px 0 0; }
+
+.stBlockDetail__desc,
+.stNodeDesc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #6b6b73;
+}
+
+.stBlockDetail__edit {
   align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 10px;
-  border: 1px dashed #cfc4ec; background: transparent;
-  color: #7c5cff; font: inherit; font-weight: 600; font-size: 0.84rem;
-  cursor: pointer; transition: all 150ms ease;
+  padding: 7px 12px;
+  border: 1px solid #e9e9ef;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5b5a64;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
 }
-.stAddMateria:hover { border-color: #7c5cff; background: rgba(124, 92, 255, 0.06); }
 
-.stEmpty { margin: 0; padding: 6px 0; color: #a0a0a8; font-size: 0.84rem; }
+.stBlockDetail__edit:hover { border-color: #ff4800; color: #ff4800; }
 
-/* Inline rename inputs */
-.stInlineEdit {
-  font: inherit; font-weight: 600; font-size: 0.95rem;
-  border: none; border-bottom: 2px solid #ff4800;
-  background: transparent; color: #0d0d12; padding: 2px 0;
-  outline: none; flex: 1; min-width: 0;
+.stNotes {
+  border: 1px solid #eeeef3;
+  border-radius: 11px;
+  background: #fbfbfd;
+  padding: 9px 12px;
 }
-.stInlineEdit--lg { font-size: 1.1rem; font-family: var(--font-brand, 'Outfit', sans-serif); }
 
-.stRowActions { display: flex; gap: 4px; flex-shrink: 0; }
+.stNotes summary {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5b5a64;
+  cursor: pointer;
+}
+
+.stNotes p {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #4a4a55;
+  white-space: pre-wrap;
+}
+
+.stLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 32ch;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #f4f4f7;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a4a55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stLinks a:hover { background: #ececf1; color: #ff4800; }
+
+/* ---------------- Chips de agendamento ---------------- */
+.stChipDate,
+.stChipTask,
+.stChipFlow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.stChipDate { background: rgba(255, 72, 0, 0.09); color: #c73a00; }
+.stChipTask { background: rgba(79, 70, 229, 0.1); color: #4338ca; }
+.stChipFlow { background: rgba(239, 68, 68, 0.11); color: #dc2626; }
+
+/* ---------------- Utilitários compartilhados ---------------- */
+.stChevron { flex: none; color: #c0c0c8; transition: transform 220ms ease; }
+.stChevron.is-open { transform: rotate(180deg); }
+
+.stRowActions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 150ms ease; }
+
+.stModule__head:hover .stRowActions,
+.stModule.is-expanded .stModule__head .stRowActions,
+.stBlock:hover .stRowActions,
+.stBlock.is-open .stRowActions,
+.stRowActions:focus-within { opacity: 1; }
+
 .stRowActions__btn {
-  width: 30px; height: 30px;
-  display: grid; place-items: center;
-  border-radius: 9px; border: none;
-  background: #f3f3f5; color: #6b6b73; cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: #f2f2f5;
+  color: #6b6b73;
+  cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
 }
+
 .stRowActions__btn:hover { background: #e6e6ea; color: #0d0d12; }
 .stRowActions__btn--danger:hover { background: #fee2e2; color: #ef4444; }
 
-/* =========================================================
-   Quick modal (módulo/matéria name)
-   ========================================================= */
-.stQuick {
-  position: fixed; inset: 0; z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+/* Foco visível em tudo que é clicável nesta árvore. */
+.stModule__toggle:focus-visible,
+.stBlock__toggle:focus-visible,
+.stRowActions__btn:focus-visible,
+.stTrack__add:focus-visible,
+.stModule__split:focus-visible,
+.stBlockDetail__edit:focus-visible,
+.stNotes summary:focus-visible,
+.stLinks a:focus-visible,
+.stCard:focus-visible {
+  outline: 2px solid #ff4800;
+  outline-offset: 2px;
+  border-radius: 8px;
 }
-.stQuick__backdrop { position: absolute; inset: 0; background: rgba(16, 16, 22, 0.5); backdrop-filter: blur(6px); }
-.stQuick__panel {
-  position: relative;
-  width: min(420px, 100%);
-  background: #fff; border-radius: 20px; padding: 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
-  display: flex; flex-direction: column; gap: 18px;
-  animation: lessonPop 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes lessonPop { from { opacity: 0; transform: translateY(12px) scale(.98) } to { opacity: 1; transform: none } }
-.stQuick__head { display: flex; align-items: center; justify-content: space-between; }
-.stQuick__head h3 { margin: 0; font-family: var(--font-brand, 'Outfit', sans-serif); font-size: 1.25rem; }
-.stQuick__close {
-  width: 34px; height: 34px; display: grid; place-items: center;
-  border-radius: 50%; border: 1px solid #ececf0; background: #fafafa; color: #6b6b73; cursor: pointer;
-}
-.stQuick__close:hover { background: #f0f0f2; }
-.stQuick__input {
-  font: inherit; background: #f8f8fa; border: 1px solid #ececf0; border-radius: 12px;
-  padding: 13px 15px; color: #0d0d12;
-}
-.stQuick__input:focus { outline: none; border-color: #ff4800; background: #fff; }
-.stQuick__foot { display: flex; justify-content: flex-end; gap: 10px; }
-.stQuick__btn { padding: 11px 18px; border-radius: 12px; font: inherit; font-weight: 600; border: none; cursor: pointer; }
-.stQuick__btn--ghost { background: #f4f4f6; color: #5b5a64; }
-.stQuick__btn--ghost:hover { background: #ececf0; }
-.stQuick__btn--primary {
-  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%); color: #fff;
-  box-shadow: 0 10px 24px rgba(255, 72, 0, 0.3);
+
+@media (prefers-reduced-motion: reduce) {
+  .stModule__body,
+  .stBlock__body { animation: none; }
+  .stChevron { transition: none; }
 }
 
 /* =========================================================
-   Responsive
+   Responsivo
    ========================================================= */
-@media (max-width: 1280px) {
-  .stModules { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
 @media (max-width: 1024px) {
   .studiesPage { padding: var(--pad-page-y) 24px; }
 }
+
 @media (max-width: 860px) {
   .stDash { grid-template-columns: 1fr; grid-template-areas: 'hero' 'kpis' 'cols'; }
   .stDash__cols { grid-template-columns: 1fr; }
   .stOverview { flex-direction: column; align-items: stretch; }
   .stOverview__ring { flex-direction: row; justify-content: center; }
-  .stModules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+@media (max-width: 720px) {
+  /* Em telas estreitas os números descem para baixo do título, em vez de
+     espremerem tudo numa linha só. */
+  .stBlock__toggle { flex-wrap: wrap; row-gap: 5px; }
+  .stBlock__title { flex: 1 1 100%; order: 1; }
+  .stBlock__node { order: 0; }
+  .stBlock__chips { order: 3; flex: 1 1 100%; }
+  .stBlock__stat { order: 2; margin-left: auto; }
+  .stChevron { order: 2; }
+
+  .stModule__toggle { gap: 10px; }
+  .stRowActions { opacity: 1; }
+}
+
 @media (max-width: 560px) {
   .studiesWrapper { border-radius: 24px; padding: 16px; }
   .stDash { padding: 18px; }
   .stDash__kpis { grid-template-columns: 1fr 1fr; }
   .stOverview__kpis { grid-template-columns: 1fr 1fr; }
   .stDetail__header { flex-wrap: wrap; }
-  .stAddLesson { flex-wrap: wrap; }
-  .stAddLesson__title { flex: 1 1 100%; }
-  .stModules { grid-template-columns: 1fr; }
+  .stTrack { padding-left: 22px; }
+  .stBlock__node { margin-left: -21px; }
+  .stModule__head { padding: 12px; }
+  .stModule__body { padding: 4px 12px 14px; }
 }

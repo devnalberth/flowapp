@@ -1,0 +1,250 @@
+/* Medidor de bloco: o range input é o controle real; segmentos e barra são a
+   pintura por cima. Os números usam tabular-nums para não dançarem ao contar. */
+
+.blockMeter {
+  --meter-accent: #ff4800;
+  --meter-rail: #e6e6ec;
+  display: grid;
+  gap: 10px;
+}
+
+.blockMeter__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blockMeter__top label,
+.blockMeter--empty label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b8b96;
+}
+
+.blockMeter__readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: #5b5a64;
+}
+
+.blockMeter__readout strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0d0d12;
+  line-height: 1;
+}
+
+.blockMeter__of { color: #a0a0aa; }
+
+.blockMeter__pct {
+  font-weight: 700;
+  color: var(--meter-accent);
+  margin-left: 2px;
+}
+
+.blockMeter__control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.blockMeter__step {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid #e6e6ec;
+  background: #fff;
+  color: #4a4a55;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.blockMeter__step:hover:not(:disabled) {
+  border-color: var(--meter-accent);
+  color: var(--meter-accent);
+}
+
+.blockMeter__step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- trilho ---- */
+.blockMeter__track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  display: flex;
+  align-items: center;
+}
+
+.blockMeter__ticks {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+
+.blockMeter__tick {
+  flex: 1 1 0;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--meter-rail);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.blockMeter__tick.is-done {
+  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+}
+
+.blockMeter__bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--meter-rail);
+  overflow: hidden;
+}
+
+.blockMeter__bar span {
+  display: block;
+  height: 100%;
+  width: var(--fill);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff4800 0%, #ff9500 100%);
+  transition: width 0.25s ease;
+}
+
+/* O range fica invisível por cima do trilho: ele é quem recebe clique,
+   arraste, foco e setas do teclado. */
+.blockMeter__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.blockMeter__range:disabled { cursor: not-allowed; }
+
+.blockMeter__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 26px;
+}
+
+.blockMeter__range::-moz-range-thumb {
+  width: 24px;
+  height: 26px;
+  border: 0;
+}
+
+/* Foco visível: o anel vai no trilho, já que o input é transparente. */
+.blockMeter__range:focus-visible + *,
+.blockMeter__track:has(.blockMeter__range:focus-visible) {
+  outline: 2px solid var(--meter-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.blockMeter__track:hover .blockMeter__tick:not(.is-done) {
+  background: #d8d8e2;
+}
+
+/* ---- ações ---- */
+.blockMeter__finish {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid #e6e6ec;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a4a55;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.blockMeter__finish:hover:not(:disabled) {
+  border-color: var(--meter-accent);
+  color: var(--meter-accent);
+}
+
+.blockMeter__finish.is-done {
+  background: #f4f4f7;
+  color: #7a7a86;
+}
+
+/* ---- estado sem contador ---- */
+.blockMeter--empty {
+  gap: 8px;
+}
+
+.blockMeter__totalRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.blockMeter__totalInput {
+  width: 72px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid #e6e6ec;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: #0d0d12;
+}
+
+.blockMeter__totalInput--inline {
+  width: 52px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.blockMeter__totalInput:focus-visible {
+  outline: 2px solid var(--meter-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.blockMeter__hint {
+  font-size: 12px;
+  color: #8b8b96;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blockMeter__tick,
+  .blockMeter__bar span {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .blockMeter__control { flex-wrap: wrap; }
+  .blockMeter__track { order: -1; flex-basis: 100%; }
+  .blockMeter__finish { margin-left: auto; }
+}
