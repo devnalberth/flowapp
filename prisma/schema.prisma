@@ -50,42 +50,25 @@ model StudyItem {
   updatedAt DateTime      @updatedAt
 }
 
-// Um bloco de estudo: módulo (raiz) ou sub-módulo (filho de um módulo).
-// Só existem esses dois níveis — um sub-módulo nunca tem filhos.
-//
-// O progresso vem do contador (lessonsDone/lessonsTotal), não de linhas de aula.
-// Módulo com sub-módulos ignora o próprio contador: o dele é a soma dos filhos.
-//
-// O agendamento mora no bloco que se estuda de uma vez: no módulo quando ele não
-// tem sub-módulos, nos sub-módulos quando tem. Com data, o bloco espelha uma
-// Task (taskId) e aparece na aba Tarefas com o pomodoro.
 model StudyModule {
-  id             String        @id @default(cuid())
-  title          String
-  description    String?
-  kind           String        @default("module") // 'module' | 'submodule'
-  studyItemId    String
-  studyItem      StudyItem     @relation(fields: [studyItemId], references: [id], onDelete: Cascade)
-  parentModuleId String?
-  parentModule   StudyModule?  @relation("ModuleChildren", fields: [parentModuleId], references: [id], onDelete: Cascade)
-  submodules     StudyModule[] @relation("ModuleChildren")
+  id          String        @id @default(cuid())
+  title       String
+  studyItemId String
+  studyItem   StudyItem     @relation(fields: [studyItemId], references: [id], onDelete: Cascade)
+  lessons     StudyLesson[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
 
-  lessonsTotal   Int           @default(0)
-  lessonsDone    Int           @default(0)
-
-  scheduledDate  DateTime?     @db.Date
-  scheduledTime  String?
-  priority       String?
-  taskId         String?
-  task           Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
-
-  notes          String?
-  rating         Int?
-  resources      Json          @default("[]")
-
-  tasks          Task[]        @relation("TaskStudyModule")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model StudyLesson {
+  id        String      @id @default(cuid())
+  title     String
+  videoUrl  String?
+  isCompleted Boolean   @default(false)
+  moduleId  String
+  module    StudyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 enum FinanceTransactionType {
@@ -117,10 +100,6 @@ model Task {
   projectId   String?
   project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   clarifyItems Json?
-  // Preenchido quando a tarefa é o espelho de um bloco de estudo agendado.
-  studyModuleId String?
-  studyModule   StudyModule? @relation("TaskStudyModule", fields: [studyModuleId], references: [id], onDelete: Cascade)
-  scheduledBlocks StudyModule[]
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())

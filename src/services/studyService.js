@@ -33,67 +33,54 @@ const normalizeResources = (input) => {
     .filter((r) => r && (r.url || r.label))
 }
 
-const toInt = (value) => {
-  const n = Number(value)
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
-}
+const normalizeLesson = (lesson) => ({
+  ...lesson,
+  isCompleted: Boolean(lesson?.is_completed ?? lesson?.isCompleted),
+  videoUrl: lesson?.video_url ?? lesson?.videoUrl ?? null,
+  accessUrl: lesson?.video_url ?? lesson?.videoUrl ?? lesson?.access_url ?? lesson?.accessUrl ?? null,
+  scheduledDate: lesson?.scheduled_date ?? lesson?.scheduledDate ?? null,
+  scheduledTime: lesson?.scheduled_time ?? lesson?.scheduledTime ?? null,
+  priority: lesson?.priority ?? null,
+  taskId: lesson?.task_id ?? lesson?.taskId ?? null,
+  resources: normalizeResources(lesson?.resources),
+})
 
-// Um bloco = módulo ou sub-módulo. Ambos guardam o mesmo contador de aulas.
-const normalizeBlock = (module) => {
-  const total = toInt(module?.lessons_total ?? module?.lessonsTotal)
-  const parentModuleId = module?.parent_module_id ?? module?.parentModuleId ?? null
-  return {
-    ...module,
-    parentModuleId,
-    kind: parentModuleId ? 'submodule' : 'module',
-    description: module?.description ?? null,
-    lessonsTotal: total,
-    lessonsDone: Math.min(toInt(module?.lessons_done ?? module?.lessonsDone), total),
-    scheduledDate: module?.scheduled_date ?? module?.scheduledDate ?? null,
-    scheduledTime: module?.scheduled_time ?? module?.scheduledTime ?? null,
-    priority: module?.priority ?? null,
-    taskId: module?.task_id ?? module?.taskId ?? null,
-    notes: module?.notes ?? null,
-    rating: module?.rating ?? null,
-    resources: normalizeResources(module?.resources),
-    submodules: [],
-  }
-}
+const normalizeModule = (module) => ({
+  ...module,
+  parentModuleId: module?.parent_module_id ?? module?.parentModuleId ?? null,
+  kind: module?.kind ?? (module?.parent_module_id ? 'subject' : 'module'),
+  description: module?.description ?? null,
+  lessons: Array.isArray(module?.lessons)
+    ? module.lessons.map(normalizeLesson).sort(compareByVisualOrder)
+    : [],
+  submodules: [],
+})
 
-// Monta a árvore com no máximo 2 níveis: módulo → sub-módulo.
-// Qualquer linha mais funda que isso (resquício do modelo antigo de matérias)
-// é reancorada no módulo raiz mais próximo em vez de sumir da tela.
 const buildModuleTree = (modules) => {
-  const blocks = (Array.isArray(modules) ? modules : []).map(normalizeBlock)
-  const byId = new Map(blocks.map((block) => [block.id, block]))
-
-  const rootModuleOf = (block, guard = 0) => {
-    if (!block?.parentModuleId || guard > 10) return block
-    const parent = byId.get(block.parentModuleId)
-    if (!parent) return block
-    return rootModuleOf(parent, guard + 1)
-  }
-
+  const normalizedModules = (Array.isArray(modules) ? modules : []).map(normalizeModule)
+  const modulesById = new Map(normalizedModules.map((module) => [module.id, module]))
   const roots = []
-  blocks.forEach((block) => {
-    if (!block.parentModuleId || !byId.has(block.parentModuleId)) {
-      block.parentModuleId = null
-      block.kind = 'module'
-      roots.push(block)
+
+  normalizedModules.forEach((module) => {
+    if (module.parentModuleId && modulesById.has(module.parentModuleId)) {
+      modulesById.get(module.parentModuleId).submodules.push(module)
       return
     }
-    const anchor = rootModuleOf(block)
-    if (anchor === block) {
-      roots.push(block)
-      return
-    }
-    block.parentModuleId = anchor.id
-    block.kind = 'submodule'
-    anchor.submodules.push(block)
+    roots.push(module)
   })
 
-  roots.sort(compareByVisualOrder)
-  roots.forEach((root) => root.submodules.sort(compareByVisualOrder))
+  const sortTree = (moduleList) => {
+    moduleList.sort(compareByVisualOrder)
+    moduleList.forEach((module) => {
+      module.submodules.sort(compareByVisualOrder)
+      module.lessons.sort(compareByVisualOrder)
+      if (module.submodules.length > 0) {
+        sortTree(module.submodules)
+      }
+    })
+  }
+
+  sortTree(roots)
 
   return roots
 }
@@ -139,7 +126,10 @@ export const studyService = {
       .select(
         `
         *,
-        modules:study_modules(*)
+        modules:study_modules(
+          *,
+          lessons:study_lessons(*)
+        )
       `,
       )
       .eq('user_id', userId)
@@ -220,22 +210,15 @@ export const studyService = {
   },
 
   async createModule(studyItemId, moduleData) {
-    const parentModuleId = moduleData.parentModuleId || null
-    const total = toInt(moduleData.lessonsTotal)
     const { data, error } = await supabase
       .from('study_modules')
       .insert([
         {
           study_item_id: studyItemId,
           title: moduleData.title,
-          parent_module_id: parentModuleId,
-          kind: parentModuleId ? 'submodule' : 'module',
+          parent_module_id: moduleData.parentModuleId || null,
+          kind: moduleData.kind || (moduleData.parentModuleId ? 'subject' : 'module'),
           description: moduleData.description || null,
-          lessons_total: total,
-          lessons_done: Math.min(toInt(moduleData.lessonsDone), total),
-          scheduled_date: moduleData.scheduledDate || null,
-          scheduled_time: moduleData.scheduledTime || null,
-          priority: moduleData.priority || null,
         },
       ])
       .select()
@@ -246,32 +229,17 @@ export const studyService = {
       throw error
     }
 
-    return normalizeBlock(data)
+    return data
   },
 
   async updateModule(moduleId, updates) {
-    const parentModuleId = updates.parentModuleId ?? updates.parent_module_id
     const payload = {
       title: updates.title,
       description: updates.description,
-      notes: updates.notes,
-      rating: updates.rating,
-      resources: updates.resources,
-      lessons_total: updates.lessonsTotal ?? updates.lessons_total,
-      lessons_done: updates.lessonsDone ?? updates.lessons_done,
-      scheduled_date: updates.scheduledDate ?? updates.scheduled_date,
-      scheduled_time: updates.scheduledTime ?? updates.scheduled_time,
-      priority: updates.priority,
-      task_id: updates.taskId ?? updates.task_id,
-      parent_module_id: parentModuleId,
+      kind: updates.kind,
+      parent_module_id: updates.parentModuleId ?? updates.parent_module_id,
     }
-    // Mover um bloco muda o que ele é: sem pai vira módulo, com pai vira sub-módulo.
-    if (parentModuleId !== undefined) payload.kind = parentModuleId ? 'submodule' : 'module'
-    if (payload.lessons_total !== undefined) payload.lessons_total = toInt(payload.lessons_total)
-    if (payload.lessons_done !== undefined) payload.lessons_done = toInt(payload.lessons_done)
-
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k])
-
     const { data, error } = await supabase
       .from('study_modules')
       .update(payload)
@@ -284,31 +252,7 @@ export const studyService = {
       throw error
     }
 
-    return normalizeBlock(data)
-  },
-
-  // Grava o contador de aulas do bloco (o medidor da tela de estudos).
-  async setBlockCounter(moduleId, { lessonsDone, lessonsTotal }) {
-    const payload = {}
-    if (lessonsTotal !== undefined) payload.lessons_total = toInt(lessonsTotal)
-    if (lessonsDone !== undefined) payload.lessons_done = toInt(lessonsDone)
-    if (payload.lessons_total !== undefined && payload.lessons_done !== undefined) {
-      payload.lessons_done = Math.min(payload.lessons_done, payload.lessons_total)
-    }
-
-    const { data, error } = await supabase
-      .from('study_modules')
-      .update(payload)
-      .eq('id', moduleId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating block counter:', error)
-      throw error
-    }
-
-    return normalizeBlock(data)
+    return data
   },
 
   async deleteModule(moduleId) {
@@ -321,5 +265,94 @@ export const studyService = {
       console.error('Error deleting module:', error)
       throw error
     }
-  }
+  },
+
+  async createLesson(moduleId, lessonData) {
+    const { data, error } = await supabase
+      .from('study_lessons')
+      .insert([
+        {
+          module_id: moduleId,
+          title: lessonData.title,
+          video_url: lessonData.videoUrl,
+          is_completed: lessonData.isCompleted || false,
+          scheduled_date: lessonData.scheduledDate || null,
+          scheduled_time: lessonData.scheduledTime || null,
+          priority: lessonData.priority || null,
+          resources: lessonData.resources || [],
+          description: lessonData.description || null,
+          notes: lessonData.notes || null,
+          rating: lessonData.rating ?? null,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating lesson:', error)
+      throw error
+    }
+
+    return normalizeLesson(data)
+  },
+
+  async updateLesson(lessonId, updates) {
+    const payload = {
+      title: updates.title,
+      video_url: updates.videoUrl,
+      notes: updates.notes,
+      description: updates.description,
+      rating: updates.rating,
+      scheduled_date: updates.scheduledDate ?? updates.scheduled_date,
+      scheduled_time: updates.scheduledTime ?? updates.scheduled_time,
+      priority: updates.priority,
+      resources: updates.resources,
+      task_id: updates.taskId ?? updates.task_id,
+      is_completed: updates.isCompleted ?? updates.is_completed,
+    }
+    // Remove undefined keys
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key])
+
+    const { data, error } = await supabase
+      .from('study_lessons')
+      .update(payload)
+      .eq('id', lessonId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating lesson:', error)
+      throw error
+    }
+
+    return normalizeLesson(data)
+  },
+
+  async deleteLesson(lessonId) {
+    const { error } = await supabase
+      .from('study_lessons')
+      .delete()
+      .eq('id', lessonId)
+
+    if (error) {
+      console.error('Error deleting lesson:', error)
+      throw error
+    }
+  },
+
+  async toggleLessonComplete(lessonId, isCompleted) {
+    const { data, error } = await supabase
+      .from('study_lessons')
+      .update({ is_completed: isCompleted })
+      .eq('id', lessonId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling lesson:', error)
+      throw error
+    }
+
+    return normalizeLesson(data)
+  },
 }
