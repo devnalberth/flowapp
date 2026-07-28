@@ -6,16 +6,37 @@ const getOrderValue = (item) => {
   return Number.MAX_SAFE_INTEGER
 }
 
+const getCreatedAt = (item) =>
+  item?.created_at ? new Date(item.created_at).getTime() : Number.MAX_SAFE_INTEGER
+
 const compareByVisualOrder = (a, b) => {
   const orderA = getOrderValue(a)
   const orderB = getOrderValue(b)
   if (orderA !== orderB) return orderA - orderB
 
-  const dateA = a?.created_at ? new Date(a.created_at).getTime() : Number.MAX_SAFE_INTEGER
-  const dateB = b?.created_at ? new Date(b.created_at).getTime() : Number.MAX_SAFE_INTEGER
+  const dateA = getCreatedAt(a)
+  const dateB = getCreatedAt(b)
   if (dateA !== dateB) return dateA - dateB
 
   return String(a?.title || '').localeCompare(String(b?.title || ''), 'pt-BR')
+}
+
+/**
+ * Ordena itens de TIPOS DIFERENTES lado a lado — aulas (study_lessons) junto de
+ * sub-módulos e matérias (study_modules).
+ *
+ * Aqui a data de criação vem primeiro, e não o order_index: cada tabela numera
+ * o próprio order_index do zero, então comparar aula #0 com sub-módulo #0 entre
+ * tabelas não diz nada. Dentro de um mesmo tipo, compareByVisualOrder continua
+ * valendo e o order_index segue mandando.
+ */
+export const compareMixedNodes = (a, b) => {
+  const dateA = getCreatedAt(a)
+  const dateB = getCreatedAt(b)
+  if (dateA !== dateB) return dateA - dateB
+  // Empate (ou created_at ausente nos dois): mantém a ordem de entrada. Ordenar
+  // por título aqui reorganizaria a lista inteira caso a data faltasse.
+  return 0
 }
 
 const normalizeResources = (input) => {

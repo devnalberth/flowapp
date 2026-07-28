@@ -13,6 +13,7 @@ import {
   STUDY_TYPE_META, STUDY_STATUS_META, studyProgress, moduleProgress,
   countLessonsRecursively, studyOverview, aggregateStudies, deriveStudyStatus,
 } from '../../utils/studyMetrics'
+import { compareMixedNodes } from '../../services/studyService'
 
 import './Studies.css'
 
@@ -413,6 +414,14 @@ export default function Studies({ user, onNavigate, onLogout }) {
     )
   }
 
+  /* ---------- Despacha um nó da lista intercalada ---------- */
+  // Aulas vêm de study_lessons e sub-módulos/matérias de study_modules. Só os
+  // segundos passam por normalizeModule, que sempre cria o array `submodules`.
+  const renderMixedNode = (node) => {
+    if (!Array.isArray(node.submodules)) return renderLessonRow(node)
+    return node.kind === 'submodule' ? renderSubmodule(node) : renderMateria(node)
+  }
+
   /* ---------- Sub-módulo (kind=submodule) ---------- */
   const renderSubmodule = (sub) => {
     const progress = moduleProgress(sub)
@@ -420,6 +429,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
     const counts = countLessonsRecursively([sub])
     const directLessons = Array.isArray(sub.lessons) ? sub.lessons : []
     const materias = (sub.submodules || []).filter((c) => c.kind !== 'submodule')
+    // Aulas e matérias na ordem em que foram criadas, intercaladas.
+    const mixed = [...directLessons, ...materias].sort(compareMixedNodes)
     return (
       <article key={sub.id} className="stSub">
         <header className="stSub__head">
@@ -438,8 +449,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <div className="stSub__body">
             <div className="stSub__bar"><span style={{ width: `${progress}%` }} /></div>
             {sub.description && <p className="stNodeDesc">{sub.description}</p>}
-            {directLessons.length > 0 && <div className="stLessons">{directLessons.map(renderLessonRow)}</div>}
-            {materias.length > 0 && <div className="stMaterias">{materias.map(renderMateria)}</div>}
+            {mixed.length > 0 && <div className="stMixed">{mixed.map(renderMixedNode)}</div>}
             <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['subject', 'lesson'], parentId: sub.id, parentLabel: sub.title })}>
               <Plus size={14} /> Adicionar matéria ou aula
             </button>
@@ -455,9 +465,11 @@ export default function Studies({ user, onNavigate, onLogout }) {
     const progress = moduleProgress(mod)
     const counts = countLessonsRecursively([mod])
     const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
-    // Filhos (sub-módulos + matérias) já vêm ordenados por data de criação;
-    // renderizamos na mesma ordem, intercalando os tipos como foram cadastrados.
     const children = mod.submodules || []
+    // Aulas soltas, sub-módulos e matérias numa lista só, na ordem em que foram
+    // criados. Renderizar em containers separados fazia toda aula subir para o
+    // topo, independentemente de quando foi cadastrada.
+    const mixed = [...directLessons, ...children].sort(compareMixedNodes)
     return (
       <section key={mod.id} className={`stModule ${isOpen ? 'is-expanded' : ''}`}>
         <header className="stModule__head" onClick={() => setExpandedModules((p) => ({ ...p, [mod.id]: !p[mod.id] }))}>
@@ -485,15 +497,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <div className="stModule__body">
             {mod.description && <p className="stNodeDesc">{mod.description}</p>}
 
-            {directLessons.length > 0 && (
-              <div className="stLessons">{directLessons.map(renderLessonRow)}</div>
-            )}
-
-            {children.length > 0 && (
-              <div className="stNodes">
-                {children.map((c) => (c.kind === 'submodule' ? renderSubmodule(c) : renderMateria(c)))}
-              </div>
-            )}
+            {mixed.length > 0 && <div className="stMixed">{mixed.map(renderMixedNode)}</div>}
 
             <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject', 'lesson'], parentId: mod.id, parentLabel: mod.title })}>
               <Plus size={14} /> Adicionar sub-módulo, matéria ou aula

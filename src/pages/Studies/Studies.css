@@ -448,7 +448,11 @@
 }
 @keyframes stBodyIn { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
 
-/* Filhos do módulo intercalados (sub-módulos + matérias) em ordem de criação */
+/* Filhos de um nó (aulas soltas + sub-módulos + matérias) numa lista só, na
+   ordem em que foram criados. Antes eram dois containers, o que empurrava toda
+   aula para cima dos sub-módulos independentemente da data de cadastro. */
+.stMixed { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 0; }
+
 .stNodes { display: flex; flex-direction: column; gap: 10px; }
 .stMaterias { display: flex; flex-direction: column; gap: 10px; }
 .stMateria {
@@ -506,6 +510,7 @@
 .stSub__body { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
 .stSub__body > .stLessons { padding: 10px 14px 0; }
 .stSub__body > .stMaterias { padding: 0 14px; }
+.stSub__body > .stMixed { padding: 10px 14px 0; }
 .stSub__body > .stAddLesson { padding: 0 14px; }
 .stSub__body > .stAddMateria { margin: 0 14px; }
 
