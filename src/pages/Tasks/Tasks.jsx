@@ -111,6 +111,9 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
 
   const [sortBy, setSortBy] = useState('time') // 'time' ou 'priority'
   const [flowCategory, setFlowCategory] = useState('all') // 'all' | 'work' | 'study'
+  // Categoria de um ciclo iniciado sem tarefa vinculada. Define em qual meta
+  // (Produtividade ou Estudos) o tempo do ciclo livre é creditado.
+  const [freeFocusCategory, setFreeFocusCategory] = useState('work') // 'work' | 'study'
   const [showFlowDash, setShowFlowDash] = useState(false)
 
   // --- Estados de Dados ---
@@ -191,34 +194,42 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     return () => clearInterval(timerIntervalRef.current)
   }, [isRunning])
 
-  // Função para salvar o tempo focado na tarefa
+  // Salva o tempo focado. Funciona em dois modos:
+  // - com tarefa: acumula em task.time_spent e credita a categoria da tarefa;
+  // - ciclo livre: sem tarefa nenhuma, credita a categoria escolhida no timer.
+  // Nos dois casos o tempo entra no log do dia, que é o que alimenta a meta
+  // diária dos hábitos e os totais do painel de produtividade.
   const saveFocusTime = async (secondsElapsed) => {
-    if (!focusedTaskId || !secondsElapsed || secondsElapsed <= 0) return
+    if (!secondsElapsed || secondsElapsed <= 0) return
     if (pomodoroMode !== 'focus') return // Só salva tempo de foco, não de pausa
 
     const minutesToAdd = secondsElapsed / 60
+    const currentTask = focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
 
-    // Busca a tarefa atualizada
-    const currentTask = tasks.find(t => t.id === focusedTaskId)
-    if (!currentTask) return
-
-    const newTimeSpent = (currentTask.time_spent || 0) + minutesToAdd
-
-    // NOVO: Registra no log diário de foco (localStorage)
-    // Usa data local para evitar problemas de fuso horário
+    // Data local, para não jogar o foco da noite no dia seguinte (UTC)
     const now = new Date()
     const offset = now.getTimezoneOffset()
     const localDate = new Date(now.getTime() - (offset * 60 * 1000))
     const todayStr = localDate.toISOString().split('T')[0]
 
-    // Registra com categoria (Produtividade/Estudos) e a tarefa, para o dashboard
-    const lid = currentTask.studyLessonId || currentTask.study_lesson_id
-    const displayTitle = (lid && lessonCtxMap[lid]?.lessonTitle) || currentTask.title
-    focusLogService.addTime(todayStr, minutesToAdd, {
-      category: categorizeTask(currentTask),
-      taskId: currentTask.id,
-      taskTitle: displayTitle,
-    })
+    if (currentTask) {
+      const lid = currentTask.studyLessonId || currentTask.study_lesson_id
+      const displayTitle = (lid && lessonCtxMap[lid]?.lessonTitle) || currentTask.title
+      focusLogService.addTime(todayStr, minutesToAdd, {
+        category: categorizeTask(currentTask),
+        taskId: currentTask.id,
+        taskTitle: displayTitle,
+      })
+    } else {
+      // Ciclo livre: agrupa por categoria numa linha própria, para o painel de
+      // produtividade não mostrar um total maior que a soma das tarefas.
+      const cat = CATEGORY_META[freeFocusCategory] || CATEGORY_META.work
+      focusLogService.addTime(todayStr, minutesToAdd, {
+        category: freeFocusCategory,
+        taskId: `free:${freeFocusCategory}`,
+        taskTitle: `Ciclo livre · ${cat.label}`,
+      })
+    }
 
     // Persiste o dia de foco no banco (histórico durável, sobrevive a limpar cache)
     focusLogService.persistDay(userId, todayStr)
@@ -226,11 +237,12 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     // Conclui automaticamente hábitos vinculados ao timer cuja meta do dia foi atingida
     syncTimerHabits?.()
 
-    // Atualiza otimista e no banco
-    await updateTask(focusedTaskId, {
-      time_spent: newTimeSpent,
-      updated_at: new Date().toISOString()
-    })
+    if (currentTask) {
+      await updateTask(currentTask.id, {
+        time_spent: (currentTask.time_spent || 0) + minutesToAdd,
+        updated_at: new Date().toISOString()
+      })
+    }
   }
 
   const handleTimerComplete = () => {
@@ -630,7 +642,30 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                   )}
                 </div>
               ) : (
-                <p className="pomodoroCard__message">Selecione uma tarefa para focar ou inicie um ciclo livre.</p>
+                <div className="pomodoroCard__free">
+                  <span className="freeMode__eyebrow">Ciclo livre</span>
+                  <div className="freeMode__toggle" role="group" aria-label="Onde contar este ciclo">
+                    {['work', 'study'].map((id) => {
+                      const cat = CATEGORY_META[id]
+                      const active = freeFocusCategory === id
+                      return (
+                        <button
+                          type="button"
+                          key={id}
+                          className={`freeMode__btn ${active ? 'is-active' : ''}`}
+                          style={{ '--c': cat.color }}
+                          aria-pressed={active}
+                          onClick={() => setFreeFocusCategory(id)}
+                        >
+                          {cat.emoji} {cat.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="pomodoroCard__message">
+                    Conta na meta de {(CATEGORY_META[freeFocusCategory] || CATEGORY_META.work).label.toLowerCase()} do dia. Selecione uma tarefa para vincular o tempo a ela.
+                  </p>
+                </div>
               )}
 
               <div className="pomodoroCard__timer">

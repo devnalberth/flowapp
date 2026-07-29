@@ -143,6 +143,75 @@
   margin-bottom: 16px;
 }
 
+/* Ciclo livre: escolhe em qual meta o tempo é creditado quando não há tarefa
+   vinculada. Mesma linguagem visual do seletor de técnica logo acima. */
+.pomodoroCard__free {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.pomodoroCard__free .pomodoroCard__message {
+  margin-bottom: 12px;
+  max-width: 44ch;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.freeMode__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.freeMode__toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.freeMode__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.freeMode__btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.freeMode__btn.is-active {
+  color: #fff;
+  background: var(--c);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+.freeMode__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .freeMode__btn { transition: none; }
+}
+
 .pomodoroCard__timer {
   font-size: 96px;
   font-weight: 200;
