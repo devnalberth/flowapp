@@ -39,6 +39,28 @@ export const compareMixedNodes = (a, b) => {
   return 0
 }
 
+// O PostgREST devolve PGRST204 quando o app manda uma coluna que ele não conhece
+// — quase sempre porque uma migração ainda não foi aplicada (ou o cache de schema
+// dele está velho). A mensagem crua não diz o que fazer, então traduzimos.
+const MIGRATION_COLUMNS = ['priority', 'scheduled_date', 'scheduled_time', 'is_completed', 'task_id', 'study_module_id']
+
+const explainSchemaError = (error) => {
+  const msg = String(error?.message || '')
+  const isSchemaCacheMiss =
+    error?.code === 'PGRST204' || /schema cache/i.test(msg)
+  if (!isSchemaCacheMiss) return error
+  if (!MIGRATION_COLUMNS.some((col) => msg.includes(`'${col}'`))) return error
+
+  const friendly = new Error(
+    'O banco ainda não tem as colunas de agendamento dos módulos. ' +
+    'Rode a migração prisma/migrations/20260810_study_blocks_schedulable.sql no SQL Editor do Supabase. ' +
+    "Se já rodou, recarregue o cache com: NOTIFY pgrst, 'reload schema';",
+  )
+  friendly.cause = error
+  friendly.code = error?.code
+  return friendly
+}
+
 const normalizeResources = (input) => {
   if (!Array.isArray(input)) return []
   return input
@@ -238,26 +260,31 @@ export const studyService = {
   },
 
   async createModule(studyItemId, moduleData) {
+    const payload = {
+      study_item_id: studyItemId,
+      title: moduleData.title,
+      parent_module_id: moduleData.parentModuleId || null,
+      kind: moduleData.kind || (moduleData.parentModuleId ? 'subject' : 'module'),
+      description: moduleData.description || null,
+    }
+
+    // Campos de agendamento só entram quando há agendamento de verdade: criar um
+    // módulo simples não deve depender das colunas novas existirem.
+    if (moduleData.scheduledDate) {
+      payload.scheduled_date = moduleData.scheduledDate
+      payload.scheduled_time = moduleData.scheduledTime || null
+      payload.priority = moduleData.priority || null
+    }
+
     const { data, error } = await supabase
       .from('study_modules')
-      .insert([
-        {
-          study_item_id: studyItemId,
-          title: moduleData.title,
-          parent_module_id: moduleData.parentModuleId || null,
-          kind: moduleData.kind || (moduleData.parentModuleId ? 'subject' : 'module'),
-          description: moduleData.description || null,
-          scheduled_date: moduleData.scheduledDate || null,
-          scheduled_time: moduleData.scheduledTime || null,
-          priority: moduleData.priority || null,
-        },
-      ])
+      .insert([payload])
       .select()
       .single()
 
     if (error) {
       console.error('Error creating module:', error)
-      throw error
+      throw explainSchemaError(error)
     }
 
     return normalizeModule(data)
@@ -279,7 +306,7 @@ export const studyService = {
 
     if (error) {
       console.error('Error creating modules in bulk:', error)
-      throw error
+      throw explainSchemaError(error)
     }
 
     return (data || []).map(normalizeModule)
@@ -307,7 +334,7 @@ export const studyService = {
 
     if (error) {
       console.error('Error updating module:', error)
-      throw error
+      throw explainSchemaError(error)
     }
 
     return normalizeModule(data)
@@ -323,7 +350,7 @@ export const studyService = {
 
     if (error) {
       console.error('Error toggling module:', error)
-      throw error
+      throw explainSchemaError(error)
     }
 
     return normalizeModule(data)

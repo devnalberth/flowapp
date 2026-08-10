@@ -58,23 +58,31 @@ export const taskService = {
 
   async createTask(userId, task) {
     const supabase = getSupabaseClient(true);
+
+    const payload = {
+      title: task.title,
+      description: task.description,
+      status: task.status || 'todo',
+      priority: task.priority || 'medium',
+      start_date: task.startDate || null,
+      due_date: task.dueDate || null,
+      project_id: task.projectId || null,
+      study_lesson_id: task.studyLessonId || task.study_lesson_id || null,
+      clarify_items: task.subtasks || task.clarifyItems || [],
+      // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
+      tags: task.tags || [],
+      user_id: userId,
+    };
+
+    // Só manda o vínculo com o bloco de estudo quando ele existe de fato.
+    // Enviar a chave com null obrigaria a coluna a existir em toda criação de
+    // tarefa — e derrubaria a aba inteira num banco sem a migração aplicada.
+    const studyModuleId = task.studyModuleId || task.study_module_id || null;
+    if (studyModuleId) payload.study_module_id = studyModuleId;
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert({
-        title: task.title,
-        description: task.description,
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        start_date: task.startDate || null,
-        due_date: task.dueDate || null,
-        project_id: task.projectId || null,
-        study_lesson_id: task.studyLessonId || task.study_lesson_id || null,
-        study_module_id: task.studyModuleId || task.study_module_id || null,
-        clarify_items: task.subtasks || task.clarifyItems || [],
-        // CORREÇÃO 2: Envia o array de tags para o banco (evita erro 400 se o campo existir no form)
-        tags: task.tags || [],
-        user_id: userId,
-      })
+      .insert(payload)
       .select()
       .single();
 
