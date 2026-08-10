@@ -8,7 +8,7 @@ import FloatingCreateButton from '../../components/FloatingCreateButton/Floating
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw, BarChart3, Briefcase, BookOpen } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
-import { buildLessonContextMap } from '../../utils/studyMetrics'
+import { buildLessonContextMap, buildBlockContextMap } from '../../utils/studyMetrics'
 import { categorizeTask, CATEGORY_META } from '../../utils/taskCategory'
 import FlowDashboardModal from '../../components/FlowDashboardModal/FlowDashboardModal.jsx'
 
@@ -87,10 +87,11 @@ const getWeekStart = () => {
 
 // Status e Prioridades agora são definidos dentro do CreateTaskModal
 
-export default function Tasks({ onNavigate, onLogout, user, initialFilter = null }) {
+export default function Tasks({ onNavigate, onLogout, user, initialFilter = null, studyTarget = null }) {
   const currentUser = user ?? DEFAULT_USER
   const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent, syncTimerHabits, userId } = useApp()
   const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
+  const blockCtxMap = useMemo(() => buildBlockContextMap(studies), [studies])
   const projectCtxMap = useMemo(() => {
     const map = {}
     for (const p of projects || []) map[p.id] = { title: p.title, area: p.area || null }
@@ -114,6 +115,9 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   // Categoria de um ciclo iniciado sem tarefa vinculada. Define em qual meta
   // (Produtividade ou Estudos) o tempo do ciclo livre é creditado.
   const [freeFocusCategory, setFreeFocusCategory] = useState('work') // 'work' | 'study'
+  // Bloco de estudo trazido pelo botão "Estudar" da aba Estudos. Foca o
+  // pomodoro nele sem exigir tarefa: o tempo é creditado em Estudos.
+  const [focusedBlock, setFocusedBlock] = useState(studyTarget || null)
   const [showFlowDash, setShowFlowDash] = useState(false)
 
   // --- Estados de Dados ---
@@ -161,6 +165,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       }
     }
   }, [initialFilter])
+
+  useEffect(() => {
+    if (!studyTarget?.id) return
+    setFocusedBlock(studyTarget)
+    setFreeFocusCategory('study')
+    setFocusedTaskId(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [studyTarget?.id])
 
   const focusedTaskData = useMemo(() =>
     focusedTaskId ? tasks.find(t => t.id === focusedTaskId) : null
@@ -219,6 +231,13 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         category: categorizeTask(currentTask),
         taskId: currentTask.id,
         taskTitle: displayTitle,
+      })
+    } else if (focusedBlock?.id) {
+      // Bloco de estudo em foco: o tempo fica no nome do bloco, sem tarefa.
+      focusLogService.addTime(todayStr, minutesToAdd, {
+        category: 'study',
+        taskId: `block:${focusedBlock.id}`,
+        taskTitle: focusedBlock.title,
       })
     } else {
       // Ciclo livre: agrupa por categoria numa linha própria, para o painel de
@@ -294,6 +313,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   }
 
   const handleFocusTask = (taskId) => {
+    setFocusedBlock(null)
     // Se estava rodando em outra tarefa, salva o tempo dela
     if (isRunning && focusedTaskId && focusedTaskId !== taskId && pomodoroMode === 'focus') {
       const elapsed = lastTimeRef.current - timeLeft
@@ -641,6 +661,20 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                     </span>
                   )}
                 </div>
+              ) : focusedBlock ? (
+                <div className="pomodoroCard__focus">
+                  <span className="focusCatBadge" style={{ '--c': CATEGORY_META.study.color }}>
+                    {CATEGORY_META.study.emoji} {CATEGORY_META.study.label}
+                  </span>
+                  <span className="focusLabel">Estudando:</span>
+                  <p className="focusTitle">{focusedBlock.title}</p>
+                  {focusedBlock.studyTitle && (
+                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{focusedBlock.studyTitle}</span>
+                  )}
+                  <button type="button" className="focusClear" onClick={() => setFocusedBlock(null)}>
+                    Sair deste bloco
+                  </button>
+                </div>
               ) : (
                 <div className="pomodoroCard__free">
                   <span className="freeMode__eyebrow">Ciclo livre</span>
@@ -775,7 +809,12 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                     <div>
                       {(() => {
                         const sId = task.studyLessonId || task.study_lesson_id
-                        const sctx = sId ? lessonCtxMap[sId] : null
+                        const bId = task.studyModuleId || task.study_module_id
+                        const sctx = sId
+                          ? lessonCtxMap[sId]
+                          : bId
+                            ? { ...blockCtxMap[bId], lessonTitle: blockCtxMap[bId]?.blockTitle }
+                            : null
                         if (sctx) {
                           return (
                             <>
@@ -783,9 +822,11 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
                                 <span className="taskCtxChip taskCtxChip--course">
                                   <em>Curso</em> {sctx.studyTitle}
                                 </span>
-                                <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
-                                  <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
-                                </span>
+                                {sctx.containerTitle && (
+                                  <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
+                                    <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
+                                  </span>
+                                )}
                               </div>
                               <p className="taskCard__title">{sctx.lessonTitle}</p>
                             </>

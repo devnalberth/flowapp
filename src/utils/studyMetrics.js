@@ -31,10 +31,61 @@ export function countLessonsRecursively(modules = []) {
   )
 }
 
+export const childrenOf = (node) => (Array.isArray(node?.submodules) ? node.submodules : [])
+export const lessonsOf = (node) => (Array.isArray(node?.lessons) ? node.lessons : [])
+
+// Um bloco é "folha vazia" quando não tem aulas nem filhos. Nesse caso ele vale
+// como uma unidade de progresso própria, marcada pelo botão de concluir —
+// é o que permite acompanhar um curso sem cadastrar aula por aula.
+export const isEmptyLeaf = (node) =>
+  lessonsOf(node).length === 0 && childrenOf(node).length === 0
+
+export const isNodeComplete = (node) => {
+  if (isEmptyLeaf(node)) return Boolean(node?.isCompleted)
+  const units = countProgressUnits([node])
+  return units.total > 0 && units.completed >= units.total
+}
+
+/**
+ * Unidades de progresso de uma árvore.
+ *
+ * Cada aula vale 1. Cada bloco folha SEM aulas também vale 1, medido pelo
+ * próprio is_completed. Um bloco que tem aulas continua sendo medido pelas
+ * aulas — o is_completed dele é ignorado, como antes.
+ *
+ * Devolve também `lessons` e `blocks` para a tela saber como rotular o número
+ * (não faz sentido dizer "3/8 aulas" quando as 8 unidades são sub-módulos).
+ */
+export function countProgressUnits(nodes = []) {
+  return (nodes || []).reduce(
+    (acc, node) => {
+      if (isEmptyLeaf(node)) {
+        acc.total += 1
+        acc.blocks += 1
+        if (node.isCompleted) acc.completed += 1
+        return acc
+      }
+
+      const lessons = lessonsOf(node)
+      acc.total += lessons.length
+      acc.lessons += lessons.length
+      acc.completed += lessons.filter((l) => l.isCompleted).length
+
+      const nested = countProgressUnits(childrenOf(node))
+      acc.total += nested.total
+      acc.completed += nested.completed
+      acc.lessons += nested.lessons
+      acc.blocks += nested.blocks
+      return acc
+    },
+    { total: 0, completed: 0, lessons: 0, blocks: 0 },
+  )
+}
+
 export const pct = ({ total, completed }) => (total ? Math.round((completed / total) * 100) : 0)
 
-export const studyProgress = (study) => pct(countLessonsRecursively(study?.modules || []))
-export const moduleProgress = (module) => pct(countLessonsRecursively([module]))
+export const studyProgress = (study) => pct(countProgressUnits(study?.modules || []))
+export const moduleProgress = (module) => pct(countProgressUnits([module]))
 
 // Achata todas as aulas de um estudo num array plano (com referência ao módulo/matéria).
 export function flattenLessons(study) {
@@ -80,6 +131,54 @@ export function buildLessonContextMap(studies = []) {
   return map
 }
 
+// Achata todos os BLOCOS (módulo/sub-módulo/matéria) de um estudo, com o nome
+// do pai. Usado para agenda e para o contexto na aba Tarefas.
+export function flattenBlocks(study) {
+  const out = []
+  const walk = (nodes, parentTitle) => {
+    for (const node of nodes || []) {
+      out.push({
+        ...node,
+        studyId: study.id,
+        studyTitle: study.title,
+        parentTitle,
+      })
+      walk(childrenOf(node), node.title)
+    }
+  }
+  walk(study?.modules || [], null)
+  return out
+}
+
+// Tudo que tem data marcada no estudo — aulas E blocos — num array só,
+// já ordenado. É o que alimenta "próximos" no painel.
+export function flattenScheduled(study) {
+  const lessons = flattenLessons(study)
+    .filter((l) => l.scheduledDate)
+    .map((l) => ({ ...l, itemKind: 'lesson' }))
+  const blocks = flattenBlocks(study)
+    .filter((b) => b.scheduledDate)
+    .map((b) => ({ ...b, itemKind: 'block', isCompleted: isNodeComplete(b) }))
+  return [...lessons, ...blocks].sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
+}
+
+// Mapa blockId → contexto, para a aba Tarefas rotular a tarefa-espelho de um
+// bloco com "Curso / Módulo" em vez de um título solto.
+export function buildBlockContextMap(studies = []) {
+  const map = {}
+  for (const study of studies || []) {
+    for (const block of flattenBlocks(study)) {
+      map[block.id] = {
+        studyTitle: study.title,
+        containerTitle: block.parentTitle,
+        containerKind: block.kind || 'module',
+        blockTitle: block.title,
+      }
+    }
+  }
+  return map
+}
+
 // Conta nós por tipo (sub-módulos e matérias) em toda a árvore, fora o nível raiz.
 export function tallyKinds(modules = []) {
   let submodules = 0
@@ -97,11 +196,17 @@ export function tallyKinds(modules = []) {
 
 // Status derivado: respeita PAUSED manual, senão deriva do progresso.
 export function deriveStudyStatus(study) {
-  const progress = studyProgress(study)
+  const units = countProgressUnits(study?.modules || [])
   if (study?.status === 'PAUSED') return 'PAUSED'
-  if (progress >= 100 && countLessonsRecursively(study?.modules || []).total > 0) return 'COMPLETED'
-  if (progress > 0) return 'IN_PROGRESS'
+  if (units.total > 0 && units.completed >= units.total) return 'COMPLETED'
+  if (units.completed > 0) return 'IN_PROGRESS'
   return 'NOT_STARTED'
+}
+
+// Chave YYYY-MM-DD no fuso local (toISOString jogaria o fim da noite no dia seguinte)
+const localDayKey = (d = new Date()) => {
+  const off = d.getTimezoneOffset()
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
 }
 
 const startOfWeek = (d = new Date()) => {
@@ -114,18 +219,16 @@ const startOfWeek = (d = new Date()) => {
 
 // Resumo de um estudo (dashboard interno).
 export function studyOverview(study) {
-  const counts = countLessonsRecursively(study?.modules || [])
+  const units = countProgressUnits(study?.modules || [])
   const modulesCount = (study?.modules || []).length
   const kinds = tallyKinds(study?.modules || [])
   const materiasCount = kinds.subjects
   const submodulesCount = kinds.submodules
   const lessons = flattenLessons(study)
 
-  const scheduled = lessons.filter((l) => l.scheduledDate)
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const upcoming = scheduled
-    .filter((l) => !l.isCompleted && l.scheduledDate >= todayKey)
-    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
+  const scheduled = flattenScheduled(study)
+  const todayKey = localDayKey()
+  const upcoming = scheduled.filter((i) => !i.isCompleted && i.scheduledDate >= todayKey)
 
   const rated = lessons.filter((l) => l.rating > 0)
   const avgRating = rated.length
@@ -133,9 +236,13 @@ export function studyOverview(study) {
     : 0
 
   return {
-    progress: pct(counts),
-    totalLessons: counts.total,
-    completedLessons: counts.completed,
+    progress: pct(units),
+    // "totalLessons" continua sendo o número exibido no anel: são as unidades
+    // de progresso, que incluem blocos sem aulas.
+    totalLessons: units.total,
+    completedLessons: units.completed,
+    lessonUnits: units.lessons,
+    blockUnits: units.blocks,
     modulesCount,
     materiasCount,
     submodulesCount,
@@ -174,10 +281,13 @@ export function aggregateStudies(studies = []) {
 
     flattenLessons(study).forEach((l) => {
       if (l.rating > 0) ratings.push(l.rating)
-      if (l.scheduledDate) {
-        const d = new Date(`${l.scheduledDate}T00:00:00`)
-        if (d >= weekStart && d < weekEnd) lessonsThisWeek += 1
-      }
+    })
+
+    // "Esta semana" conta aulas e blocos agendados, já que agora os dois
+    // podem ter data e cair na aba Tarefas.
+    flattenScheduled(study).forEach((item) => {
+      const d = new Date(`${item.scheduledDate}T00:00:00`)
+      if (d >= weekStart && d < weekEnd) lessonsThisWeek += 1
     })
 
     allUpcoming = allUpcoming.concat(ov.upcoming.map((l) => ({ ...l, studyTitle: study.title })))

@@ -621,7 +621,103 @@
 }
 .stInlineEdit--lg { font-size: 1.1rem; font-family: var(--font-brand, 'Outfit', sans-serif); }
 
-.stRowActions { display: flex; gap: 4px; flex-shrink: 0; }
+.stRowActions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+
+/* =========================================================
+   Controles do bloco (módulo / sub-módulo / matéria)
+   ---------------------------------------------------------
+   Um bloco vazio vira a própria unidade de progresso: ganha checkbox.
+   Qualquer bloco pode ser agendado e ir para as Tarefas.
+   ========================================================= */
+
+.stBlockCheck {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #d5d5df;
+  border-radius: 6px;
+  background: #fff;
+  color: #fff;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.stBlockCheck:hover { border-color: #16a34a; }
+
+.stBlockCheck.is-done {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.stMateria.is-done > .stMateria__head h4,
+.stSub.is-done > .stSub__head h4 {
+  color: #8b8b93;
+  text-decoration: line-through;
+}
+
+.stBlockChips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.stBlockChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.stBlockChip--date { background: rgba(255, 72, 0, 0.1); color: #c73a00; }
+.stBlockChip--task { background: rgba(79, 70, 229, 0.1); color: #4338ca; }
+.stBlockChip--flow { background: rgba(239, 68, 68, 0.11); color: #dc2626; }
+
+/* Atalho para o pomodoro: mede o tempo do bloco sem exigir tarefa nem aula. */
+.stStudyNow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid #e2e2ea;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5b5a64;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.stStudyNow:hover {
+  border-color: #ff4800;
+  color: #ff4800;
+  background: rgba(255, 72, 0, 0.05);
+}
+
+.stModule__tail .stStudyNow,
+.stMateria__head .stStudyNow,
+.stSub__head .stSub__toggle + .stRowActions .stStudyNow { flex: none; }
+
+.stBlockCheck:focus-visible,
+.stStudyNow:focus-visible {
+  outline: 2px solid #ff4800;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .stStudyNow span { display: none; }
+}
 .stRowActions__btn {
   width: 30px; height: 30px;
   display: grid; place-items: center;

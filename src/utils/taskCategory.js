@@ -4,6 +4,7 @@
 export function categorizeTask(task) {
   if (!task) return 'work'
   if (task.studyLessonId || task.study_lesson_id) return 'study'
+  if (task.studyModuleId || task.study_module_id) return 'study'
   return 'work'
 }
 

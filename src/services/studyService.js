@@ -71,6 +71,13 @@ const normalizeModule = (module) => ({
   parentModuleId: module?.parent_module_id ?? module?.parentModuleId ?? null,
   kind: module?.kind ?? (module?.parent_module_id ? 'subject' : 'module'),
   description: module?.description ?? null,
+  // Agendamento e conclusão no próprio bloco: permite acompanhar um módulo ou
+  // sub-módulo sem precisar cadastrar as aulas dele.
+  isCompleted: Boolean(module?.is_completed ?? module?.isCompleted),
+  scheduledDate: module?.scheduled_date ?? module?.scheduledDate ?? null,
+  scheduledTime: module?.scheduled_time ?? module?.scheduledTime ?? null,
+  priority: module?.priority ?? null,
+  taskId: module?.task_id ?? module?.taskId ?? null,
   lessons: Array.isArray(module?.lessons)
     ? module.lessons.map(normalizeLesson).sort(compareByVisualOrder)
     : [],
@@ -240,6 +247,9 @@ export const studyService = {
           parent_module_id: moduleData.parentModuleId || null,
           kind: moduleData.kind || (moduleData.parentModuleId ? 'subject' : 'module'),
           description: moduleData.description || null,
+          scheduled_date: moduleData.scheduledDate || null,
+          scheduled_time: moduleData.scheduledTime || null,
+          priority: moduleData.priority || null,
         },
       ])
       .select()
@@ -250,7 +260,29 @@ export const studyService = {
       throw error
     }
 
-    return data
+    return normalizeModule(data)
+  },
+
+  // Cria vários blocos irmãos de uma vez (cadastro em lote a partir de uma
+  // lista colada). Devolve os blocos na ordem em que foram enviados.
+  async createModules(studyItemId, rows) {
+    const payload = (rows || []).map((row) => ({
+      study_item_id: studyItemId,
+      title: row.title,
+      parent_module_id: row.parentModuleId || null,
+      kind: row.kind || (row.parentModuleId ? 'subject' : 'module'),
+      description: row.description || null,
+    }))
+    if (payload.length === 0) return []
+
+    const { data, error } = await supabase.from('study_modules').insert(payload).select()
+
+    if (error) {
+      console.error('Error creating modules in bulk:', error)
+      throw error
+    }
+
+    return (data || []).map(normalizeModule)
   },
 
   async updateModule(moduleId, updates) {
@@ -259,6 +291,11 @@ export const studyService = {
       description: updates.description,
       kind: updates.kind,
       parent_module_id: updates.parentModuleId ?? updates.parent_module_id,
+      is_completed: updates.isCompleted ?? updates.is_completed,
+      scheduled_date: updates.scheduledDate ?? updates.scheduled_date,
+      scheduled_time: updates.scheduledTime ?? updates.scheduled_time,
+      priority: updates.priority,
+      task_id: updates.taskId ?? updates.task_id,
     }
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k])
     const { data, error } = await supabase
@@ -273,7 +310,23 @@ export const studyService = {
       throw error
     }
 
-    return data
+    return normalizeModule(data)
+  },
+
+  async toggleModuleComplete(moduleId, isCompleted) {
+    const { data, error } = await supabase
+      .from('study_modules')
+      .update({ is_completed: isCompleted })
+      .eq('id', moduleId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling module:', error)
+      throw error
+    }
+
+    return normalizeModule(data)
   },
 
   async deleteModule(moduleId) {

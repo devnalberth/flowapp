@@ -115,6 +115,34 @@ function mapLessonInStudies(studies, lessonId, patch) {
   return (studies || []).map((s) => ({ ...s, modules: mapModules(s.modules || []) }))
 }
 
+// Busca um bloco (módulo, sub-módulo ou matéria) na árvore de estudos.
+function findModuleInStudies(studies, moduleId) {
+  const search = (mods) => {
+    for (const mod of mods || []) {
+      if (mod.id === moduleId) return mod
+      const nested = search(mod.submodules || [])
+      if (nested) return nested
+    }
+    return null
+  }
+  for (const study of studies || []) {
+    const found = search(study.modules || [])
+    if (found) return found
+  }
+  return null
+}
+
+// Patch imutável num bloco (update otimista, sem recarregar tudo do banco).
+function mapModuleInStudies(studies, moduleId, patch) {
+  const mapMods = (mods) =>
+    (mods || []).map((mod) =>
+      mod.id === moduleId
+        ? { ...mod, ...patch, submodules: mapMods(mod.submodules || []) }
+        : { ...mod, submodules: mapMods(mod.submodules || []) },
+    )
+  return (studies || []).map((s) => ({ ...s, modules: mapMods(s.modules || []) }))
+}
+
 // Monta os campos da tarefa-espelho de uma aula agendada.
 // - Combina data + horário no due_date; sem horário, usa só a data.
 // - Prioridade Alta/Urgente entra no Flow (tag 'flow'), além da tag 'Estudos'.
@@ -371,6 +399,46 @@ export function AppProvider({ children, userId }) {
       // Se der erro de rede, aí sim poderíamos reverter, mas manter assim é melhor para UX
     }
 
+    // Espelha a conclusão no BLOCO de estudo vinculado (módulo/sub-módulo agendado).
+    const linkedModuleId = existingTask?.studyModuleId || existingTask?.study_module_id || null
+    if (linkedModuleId && updates.completed !== undefined) {
+      const done = !!updates.completed
+      setStudies(prev => mapModuleInStudies(prev, linkedModuleId, { isCompleted: done, is_completed: done }))
+      try {
+        await studyService.toggleModuleComplete(linkedModuleId, done)
+      } catch (error) {
+        console.error('Erro ao espelhar conclusão no bloco:', error)
+        setStudies(prev => mapModuleInStudies(prev, linkedModuleId, { isCompleted: !done, is_completed: !done }))
+      }
+    }
+
+    // Reprogramação (data/horário/prioridade/título) de volta no bloco vinculado.
+    if (linkedModuleId) {
+      const modPatch = {}
+      const newDue = normalizedUpdates.due_date
+      if (newDue !== undefined) {
+        if (newDue === null) {
+          modPatch.scheduledDate = null
+          modPatch.scheduledTime = null
+        } else {
+          const { dateKey, time } = localDateAndTime(newDue)
+          if (dateKey) modPatch.scheduledDate = dateKey
+          if (time) modPatch.scheduledTime = time
+        }
+      }
+      if (updates.priority !== undefined) modPatch.priority = updates.priority
+      if (updates.title !== undefined) modPatch.title = updates.title
+
+      if (Object.keys(modPatch).length > 0) {
+        setStudies(prev => mapModuleInStudies(prev, linkedModuleId, modPatch))
+        try {
+          await studyService.updateModule(linkedModuleId, modPatch)
+        } catch (error) {
+          console.error('Erro ao espelhar reprogramação no bloco:', error)
+        }
+      }
+    }
+
     // Espelha a conclusão na aula vinculada (otimista + service direto p/ não re-disparar o sync).
     if (linkedLessonId && updates.completed !== undefined) {
       const done = !!updates.completed
@@ -419,8 +487,19 @@ export function AppProvider({ children, userId }) {
     // deixar referência órfã.
     const existing = tasks.find(t => t.id === id)
     const linkedLessonId = existing?.studyLessonId || existing?.study_lesson_id || null
+    const linkedModuleId = existing?.studyModuleId || existing?.study_module_id || null
     setTasks(prev => prev.filter(t => t.id !== id))
     await taskService.deleteTask(id, userId)
+    if (linkedModuleId) {
+      // Apagar a tarefa desagenda o bloco, senão sobraria um vínculo órfão.
+      const cleared = { taskId: null, scheduledDate: null, scheduledTime: null }
+      setStudies(prev => mapModuleInStudies(prev, linkedModuleId, cleared))
+      try {
+        await studyService.updateModule(linkedModuleId, cleared)
+      } catch (error) {
+        console.error('Erro ao desvincular bloco da tarefa removida:', error)
+      }
+    }
     if (linkedLessonId) {
       try {
         await studyService.updateLesson(linkedLessonId, { taskId: null })
@@ -945,25 +1024,141 @@ export function AppProvider({ children, userId }) {
     await studyService.deleteStudy(id)
   }
 
+  // Tarefa-espelho de um BLOCO agendado (módulo/sub-módulo/matéria).
+  // Mesma mecânica da aula: só existe enquanto o bloco tiver data.
+  const createModuleTask = async (block) => {
+    const newTask = await taskService.createTask(userId, {
+      ...buildLessonTaskFields({
+        date: block.scheduledDate,
+        time: block.scheduledTime,
+        priority: block.priority,
+        title: block.title,
+        completed: block.isCompleted,
+      }),
+      status: 'todo',
+      studyModuleId: block.id,
+    })
+    setTasks(prev => [newTask, ...prev])
+    return newTask
+  }
+
   const addStudyModule = async (studyItemId, moduleData) => {
     if (!userId) return
-    await studyService.createModule(studyItemId, moduleData)
+    const block = await studyService.createModule(studyItemId, moduleData)
+    // Já nasceu com data → entra nas Tarefas na hora
+    if (block?.id && moduleData.scheduledDate) {
+      try {
+        const task = await createModuleTask(block)
+        await studyService.updateModule(block.id, { taskId: task.id })
+      } catch (error) {
+        console.error('Erro ao criar tarefa do bloco:', error)
+      }
+    }
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+    return block
+  }
+
+  // Cadastro em lote: várias linhas coladas viram vários blocos irmãos.
+  const addStudyModulesBulk = async (studyItemId, rows) => {
+    if (!userId || !rows?.length) return []
+    const created = await studyService.createModules(studyItemId, rows)
+    const allStudies = await studyService.getStudies(userId)
+    setStudies(allStudies)
+    return created
   }
 
   const updateStudyModule = async (moduleId, updates) => {
     if (!userId) return
-    await studyService.updateModule(moduleId, updates)
+    const current = findModuleInStudies(studies, moduleId)
+    const hadTask = current?.taskId || null
+
+    const nextDate = updates.scheduledDate !== undefined ? updates.scheduledDate : current?.scheduledDate
+    const nextTime = updates.scheduledTime !== undefined ? updates.scheduledTime : current?.scheduledTime
+    const nextPriority = updates.priority !== undefined ? updates.priority : current?.priority
+    const nextTitle = updates.title !== undefined ? updates.title : current?.title
+
+    const saved = await studyService.updateModule(moduleId, updates)
+
+    // Sincroniza a tarefa-espelho conforme a data resultante
+    try {
+      if (nextDate) {
+        const fields = buildLessonTaskFields({ date: nextDate, time: nextTime, priority: nextPriority, title: nextTitle })
+        if (hadTask) {
+          const updatedTask = await taskService.updateTask(hadTask, userId, fields)
+          if (updatedTask?.id) setTasks(prev => prev.map(t => t.id === hadTask ? updatedTask : t))
+        } else {
+          const task = await createModuleTask({ ...saved, scheduledDate: nextDate, scheduledTime: nextTime, priority: nextPriority, title: nextTitle })
+          await studyService.updateModule(moduleId, { taskId: task.id })
+        }
+      } else if (hadTask) {
+        // Tirou a data → some das Tarefas
+        await taskService.deleteTask(hadTask, userId)
+        setTasks(prev => prev.filter(t => t.id !== hadTask))
+        await studyService.updateModule(moduleId, { taskId: null })
+      }
+    } catch (error) {
+      console.error('Erro ao sincronizar bloco↔tarefa:', error)
+    }
+
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+    return saved
   }
 
   const deleteStudyModule = async (moduleId) => {
     if (!userId) return
+    const current = findModuleInStudies(studies, moduleId)
+    // Recolhe as tarefas do bloco e de tudo que some junto com ele
+    const taskIds = []
+    const collect = (node) => {
+      if (node?.taskId) taskIds.push(node.taskId)
+      ;(node?.lessons || []).forEach((l) => { if (l.taskId) taskIds.push(l.taskId) })
+      ;(node?.submodules || []).forEach(collect)
+    }
+    if (current) collect(current)
+
     await studyService.deleteModule(moduleId)
+
+    for (const taskId of taskIds) {
+      try {
+        await taskService.deleteTask(taskId, userId)
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+      } catch (error) {
+        console.error('Erro ao remover tarefa do bloco excluído:', error)
+      }
+    }
+
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
+  }
+
+  // Concluir/reabrir um bloco sem aulas. Otimista, com a tarefa-espelho junto.
+  const toggleStudyModule = async (moduleId, isCompleted) => {
+    if (!userId) return
+    const current = findModuleInStudies(studies, moduleId)
+    setStudies(prev => mapModuleInStudies(prev, moduleId, { isCompleted, is_completed: isCompleted }))
+
+    if (current?.taskId) {
+      const completedAt = isCompleted ? new Date().toISOString() : null
+      setTasks(prev => prev.map(t => t.id === current.taskId
+        ? { ...t, completed: isCompleted, completed_at: completedAt, status: isCompleted ? 'done' : 'todo' }
+        : t))
+    }
+
+    try {
+      await studyService.toggleModuleComplete(moduleId, isCompleted)
+      if (current?.taskId) {
+        await taskService.updateTask(current.taskId, userId, {
+          completed: isCompleted,
+          status: isCompleted ? 'done' : 'todo',
+          completed_at: isCompleted ? new Date().toISOString() : null,
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao concluir bloco:', error)
+      setStudies(prev => mapModuleInStudies(prev, moduleId, { isCompleted: !isCompleted, is_completed: !isCompleted }))
+    }
   }
 
   // Cria uma tarefa espelho de uma aula agendada (aparece na aba de Tarefas).
@@ -1153,7 +1348,7 @@ export function AppProvider({ children, userId }) {
     financeLimits, addFinanceLimit, updateFinanceLimit, deleteFinanceLimit,
     financeRecurrences, addFinanceRecurrence, updateFinanceRecurrence, deleteFinanceRecurrence,
     addStudy, updateStudy, deleteStudy,
-    addStudyModule, updateStudyModule, deleteStudyModule,
+    addStudyModule, addStudyModulesBulk, updateStudyModule, deleteStudyModule, toggleStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
     toggleStudyLesson,
     addDreamMap, updateDreamMap, deleteDreamMap,

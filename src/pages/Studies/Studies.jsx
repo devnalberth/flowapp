@@ -7,11 +7,12 @@ import ModuleModal from '../../components/ModuleModal/ModuleModal.jsx'
 import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import {
   Pencil, Trash2, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock, Check,
-  Layers, Boxes, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2,
+  Layers, Boxes, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2, Play, Zap,
 } from 'lucide-react'
 import {
-  STUDY_TYPE_META, STUDY_STATUS_META, studyProgress, moduleProgress,
-  countLessonsRecursively, studyOverview, aggregateStudies, deriveStudyStatus,
+  STUDY_TYPE_META, STUDY_STATUS_META, moduleProgress,
+  countProgressUnits, studyOverview, aggregateStudies, deriveStudyStatus,
+  isEmptyLeaf, isNodeComplete,
 } from '../../utils/studyMetrics'
 import { compareMixedNodes } from '../../services/studyService'
 
@@ -20,6 +21,14 @@ import './Studies.css'
 const TYPE_ICON = { COURSE: BookOpen, UNIVERSITY: GraduationCap, BOOK: Book, MENTORSHIP: Compass }
 
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+// "3/8 aulas" só faz sentido quando as unidades contadas são aulas mesmo.
+// Blocos sem aulas contam como itens, então o rótulo acompanha.
+const unitLabel = ({ lessons = 0, blocks = 0 }) => {
+  if (blocks === 0) return 'aulas'
+  if (lessons === 0) return blocks === 1 ? 'item' : 'itens'
+  return 'itens'
+}
+
 const fmtShort = (iso) => {
   if (!iso) return ''
   const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number)
@@ -79,7 +88,7 @@ function StudiesDashboard({ agg }) {
     { label: 'Estudos', value: agg.totalStudies, icon: Layers },
     { label: 'Em andamento', value: agg.inProgress, icon: TrendingUp },
     { label: 'Concluídos', value: agg.completed, icon: Check },
-    { label: 'Aulas esta semana', value: agg.lessonsThisWeek, icon: CalendarClock },
+    { label: 'Agendados na semana', value: agg.lessonsThisWeek, icon: CalendarClock },
   ]
   const types = Object.entries(agg.byType)
 
@@ -90,7 +99,7 @@ function StudiesDashboard({ agg }) {
         <div className="stDash__heroText">
           <span className="stDash__eyebrow">Painel de estudos</span>
           <h2>{agg.overallProgress}% da jornada concluída</h2>
-          <p>{agg.completedLessons} de {agg.totalLessons} aulas finalizadas{agg.avgRating > 0 ? ` · nota média ${agg.avgRating}★` : ''}</p>
+          <p>{agg.completedLessons} de {agg.totalLessons} concluídos{agg.avgRating > 0 ? ` · nota média ${agg.avgRating}★` : ''}</p>
         </div>
       </div>
 
@@ -109,9 +118,9 @@ function StudiesDashboard({ agg }) {
 
       <div className="stDash__cols">
         <div className="stDash__panel">
-          <h4>Próximas aulas</h4>
+          <h4>Próximos estudos</h4>
           {agg.upcoming.length === 0 ? (
-            <p className="stDash__empty">Nenhuma aula agendada. Defina uma data em uma aula para vê-la aqui (e nas Tarefas).</p>
+            <p className="stDash__empty">Nada agendado. Defina uma data num módulo, sub-módulo ou aula para vê-lo aqui e na aba Tarefas.</p>
           ) : (
             <ul className="stUpcoming">
               {agg.upcoming.map((l) => (
@@ -157,15 +166,15 @@ function StudyOverviewPanel({ overview }) {
   const kpis = [
     { label: 'Módulos', value: overview.modulesCount, icon: Layers },
     { label: 'Matérias', value: overview.materiasCount, icon: BookOpen },
-    { label: 'Aulas', value: overview.totalLessons, icon: ListChecks },
-    { label: 'Agendadas', value: overview.scheduledCount, icon: Calendar },
+    { label: 'Concluídos', value: `${overview.completedLessons}/${overview.totalLessons}`, icon: ListChecks },
+    { label: 'Agendados', value: overview.scheduledCount, icon: Calendar },
   ]
   return (
     <section className="stOverview">
       <div className="stOverview__ring">
         <ProgressRing value={overview.progress} size={120} stroke={12} />
         <span className="stOverview__ringLabel">
-          {overview.completedLessons}/{overview.totalLessons} aulas
+          {overview.completedLessons}/{overview.totalLessons} concluídos
         </span>
       </div>
       <div className="stOverview__right">
@@ -192,10 +201,10 @@ function StudyOverviewPanel({ overview }) {
           )}
           {overview.nextLesson ? (
             <span className="stChip stChip--accent">
-              <CalendarClock size={13} /> Próxima: {overview.nextLesson.title} · {fmtShort(overview.nextLesson.scheduledDate)}
+              <CalendarClock size={13} /> Próximo: {overview.nextLesson.title} · {fmtShort(overview.nextLesson.scheduledDate)}
             </span>
           ) : (
-            <span className="stChip stChip--muted">Sem aulas agendadas</span>
+            <span className="stChip stChip--muted">Nada agendado</span>
           )}
         </div>
       </div>
@@ -206,7 +215,7 @@ function StudyOverviewPanel({ overview }) {
 export default function Studies({ user, onNavigate, onLogout }) {
   const {
     studies, addStudy, deleteStudy,
-    addStudyModule, updateStudyModule, deleteStudyModule,
+    addStudyModule, addStudyModulesBulk, updateStudyModule, deleteStudyModule, toggleStudyModule,
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
     toggleStudyLesson, loading,
   } = useApp()
@@ -262,14 +271,38 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const openModuleModal = (cfg) => setModuleModal(cfg)
   const closeModuleModal = () => setModuleModal(null)
 
+  // Abre os containers pais para o item recém-criado ficar visível.
+  const revealParent = (pid) => {
+    if (!pid) return
+    setExpandedModules((prev) => ({ ...prev, [pid]: true }))
+    setExpandedSubmodules((prev) => ({ ...prev, [pid]: true }))
+    setExpandedMaterias((prev) => ({ ...prev, [pid]: true }))
+  }
+
+  // Cadastro em lote: uma linha por item, tudo irmão dentro do mesmo pai.
+  const handleBulkSubmit = async ({ kind, titles }) => {
+    if (!activeStudy || !titles?.length) return
+    const parentId = moduleModal?.parentId || null
+    if (kind === 'lesson') {
+      for (const title of titles) {
+        await addStudyLesson(parentId, { title })
+      }
+    } else {
+      await addStudyModulesBulk(activeStudy.id, titles.map((title) => ({ title, kind, parentModuleId: parentId })))
+    }
+    revealParent(parentId)
+  }
+
   const handleModuleSubmit = async (data) => {
-    // data = { title, description, kind }
     if (!activeStudy) return
     if (moduleModal?.mode === 'edit') {
       await updateStudyModule(moduleModal.initial.id, {
         title: data.title,
         description: data.description,
         kind: data.kind,
+        scheduledDate: data.scheduledDate,
+        scheduledTime: data.scheduledTime,
+        priority: data.priority,
         ...(data.parentModuleId !== undefined ? { parentModuleId: data.parentModuleId } : {}),
       })
     } else if (data.kind === 'lesson') {
@@ -290,6 +323,9 @@ export default function Studies({ user, onNavigate, onLogout }) {
         title: data.title,
         description: data.description,
         kind: data.kind,
+        scheduledDate: data.scheduledDate || null,
+        scheduledTime: data.scheduledTime || null,
+        priority: data.priority || null,
         parentModuleId: moduleModal?.parentId || null,
       })
       if (moduleModal?.parentId) {
@@ -315,7 +351,13 @@ export default function Studies({ user, onNavigate, onLogout }) {
     openModuleModal({
       mode: 'edit',
       allowedKinds: [kind],
-      initial: { id: node.id, title: node.title, description: node.description, kind, parentId: node.parentModuleId || '' },
+      initial: {
+        id: node.id, title: node.title, description: node.description, kind,
+        parentId: node.parentModuleId || '',
+        scheduledDate: node.scheduledDate || '',
+        scheduledTime: node.scheduledTime || '',
+        priority: node.priority || 'Normal',
+      },
       parentOptions: buildParentOptions(activeStudy, kind, node.id),
     })
 
@@ -379,21 +421,83 @@ export default function Studies({ user, onNavigate, onLogout }) {
     )
   }
 
+  /* ---------- Controles compartilhados de um bloco ---------- */
+  // Vale para módulo, sub-módulo e matéria. O checkbox só aparece quando o bloco
+  // está vazio: é aí que ele deixa de ser um container e vira a própria unidade
+  // de progresso, para quem não quer cadastrar aula por aula.
+  const renderBlockCheck = (node) => {
+    if (!isEmptyLeaf(node)) return null
+    const done = Boolean(node.isCompleted)
+    return (
+      <button
+        type="button"
+        className={`stBlockCheck ${done ? 'is-done' : ''}`}
+        onClick={(e) => { e.stopPropagation(); toggleStudyModule(node.id, !done) }}
+        aria-pressed={done}
+        aria-label={done ? `Reabrir ${node.title}` : `Concluir ${node.title}`}
+        title={done ? 'Reabrir' : 'Concluir'}
+      >
+        {done ? <CheckIcon size={12} /> : null}
+      </button>
+    )
+  }
+
+  const renderBlockChips = (node) => {
+    if (!node.scheduledDate) return null
+    return (
+      <span className="stBlockChips">
+        <span className="stBlockChip stBlockChip--date">
+          <Calendar size={10} /> {fmtShort(node.scheduledDate)}{node.scheduledTime ? ` · ${node.scheduledTime}` : ''}
+        </span>
+        <span className="stBlockChip stBlockChip--task" title="Aparece na aba Tarefas">
+          <CalendarClock size={10} /> nas Tarefas
+        </span>
+        {(node.priority === 'Alta' || node.priority === 'Urgente') && (
+          <span className="stBlockChip stBlockChip--flow" title={`Prioridade ${node.priority}`}>
+            <Zap size={10} /> {node.priority}
+          </span>
+        )}
+      </span>
+    )
+  }
+
+  // Leva direto para o pomodoro com este bloco em foco, sem precisar agendar
+  // nem criar tarefa. O tempo entra na métrica de Estudos.
+  const renderStudyNow = (node) => (
+    <button
+      type="button"
+      className="stStudyNow"
+      onClick={(e) => {
+        e.stopPropagation()
+        onNavigate?.('Tarefas', {
+          initialFilter: 'flow',
+          studyTarget: { id: node.id, title: node.title, studyTitle: activeStudy?.title || null },
+        })
+      }}
+      title="Estudar agora com o pomodoro"
+    >
+      <Play size={12} /> Estudar
+    </button>
+  )
+
   /* ---------- Matéria (kind=subject) ---------- */
   const renderMateria = (materia) => {
     const progress = moduleProgress(materia)
     const isOpen = expandedMaterias[materia.id]
-    const counts = countLessonsRecursively([materia])
+    const counts = countProgressUnits([materia])
     return (
-      <article key={materia.id} className="stMateria">
+      <article key={materia.id} className={`stMateria ${isNodeComplete(materia) ? 'is-done' : ''}`}>
         <header className="stMateria__head">
+          {renderBlockCheck(materia)}
           <button type="button" className="stMateria__toggle" onClick={() => setExpandedMaterias((p) => ({ ...p, [materia.id]: !p[materia.id] }))}>
             <span className="stMateria__tag">Matéria</span>
             <h4>{materia.title}</h4>
+            {renderBlockChips(materia)}
             <span className="stMateria__stat">{counts.completed}/{counts.total} · {progress}%</span>
             <ChevronDown size={15} className={`stChevron ${isOpen ? 'is-open' : ''}`} />
           </button>
           <div className="stRowActions">
+            {renderStudyNow(materia)}
             <button className="stRowActions__btn" onClick={() => editModule(materia, 'subject')} title="Editar"><Pencil size={13} /></button>
             <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(materia.id, materia.title, 'matéria')} title="Excluir"><Trash2 size={13} /></button>
           </div>
@@ -406,7 +510,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
               {materia.lessons.length > 0 ? materia.lessons.map(renderLessonRow) : <p className="stEmpty">Nenhuma aula nesta matéria.</p>}
             </div>
             <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['lesson'], parentId: materia.id, parentLabel: materia.title })}>
-              <Plus size={14} /> Adicionar aula
+              <Plus size={14} /> Adicionar aulas
             </button>
           </div>
         </div>
@@ -426,21 +530,24 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const renderSubmodule = (sub) => {
     const progress = moduleProgress(sub)
     const isOpen = expandedSubmodules[sub.id]
-    const counts = countLessonsRecursively([sub])
+    const counts = countProgressUnits([sub])
     const directLessons = Array.isArray(sub.lessons) ? sub.lessons : []
     const materias = (sub.submodules || []).filter((c) => c.kind !== 'submodule')
     // Aulas e matérias na ordem em que foram criadas, intercaladas.
     const mixed = [...directLessons, ...materias].sort(compareMixedNodes)
     return (
-      <article key={sub.id} className="stSub">
+      <article key={sub.id} className={`stSub ${isNodeComplete(sub) ? 'is-done' : ''}`}>
         <header className="stSub__head">
+          {renderBlockCheck(sub)}
           <button type="button" className="stSub__toggle" onClick={() => setExpandedSubmodules((p) => ({ ...p, [sub.id]: !p[sub.id] }))}>
             <span className="stSub__tag"><Boxes size={12} /> Sub-módulo</span>
             <h4>{sub.title}</h4>
+            {renderBlockChips(sub)}
             <span className="stSub__stat">{counts.completed}/{counts.total} · {progress}%</span>
             <ChevronDown size={15} className={`stChevron ${isOpen ? 'is-open' : ''}`} />
           </button>
           <div className="stRowActions">
+            {renderStudyNow(sub)}
             <button className="stRowActions__btn" onClick={() => editModule(sub, 'submodule')} title="Editar"><Pencil size={13} /></button>
             <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(sub.id, sub.title, 'sub-módulo')} title="Excluir"><Trash2 size={13} /></button>
           </div>
@@ -450,8 +557,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
             <div className="stSub__bar"><span style={{ width: `${progress}%` }} /></div>
             {sub.description && <p className="stNodeDesc">{sub.description}</p>}
             {mixed.length > 0 && <div className="stMixed">{mixed.map(renderMixedNode)}</div>}
-            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['subject', 'lesson'], parentId: sub.id, parentLabel: sub.title })}>
-              <Plus size={14} /> Adicionar matéria ou aula
+            <button type="button" className="stAddMateria" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['lesson'], parentId: sub.id, parentLabel: sub.title })}>
+              <Plus size={14} /> Adicionar aulas
             </button>
           </div>
         </div>
@@ -463,7 +570,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
   const renderModule = (mod, index) => {
     const isOpen = expandedModules[mod.id]
     const progress = moduleProgress(mod)
-    const counts = countLessonsRecursively([mod])
+    const counts = countProgressUnits([mod])
     const directLessons = Array.isArray(mod.lessons) ? mod.lessons : []
     const children = mod.submodules || []
     // Aulas soltas, sub-módulos e matérias numa lista só, na ordem em que foram
@@ -481,11 +588,14 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <div className="stModule__meta">
             <span className="stModule__eyebrow">Módulo</span>
             <h3>{mod.title}</h3>
-            <span className="stModule__stat">{counts.completed}/{counts.total} aulas · {progress}%</span>
+            <span className="stModule__stat">{counts.total > 0 ? `${counts.completed}/${counts.total} ${unitLabel(counts)} · ` : ''}{progress}%</span>
+            {renderBlockChips(mod)}
           </div>
 
           <div className="stModule__tail">
             <div className="stRowActions" onClick={(e) => e.stopPropagation()}>
+              {renderBlockCheck(mod)}
+              {renderStudyNow(mod)}
               <button className="stRowActions__btn" onClick={() => editModule(mod, 'module')} title="Editar"><Pencil size={14} /></button>
               <button className="stRowActions__btn stRowActions__btn--danger" onClick={() => handleDeleteModule(mod.id, mod.title)} title="Excluir"><Trash2 size={14} /></button>
             </div>
@@ -499,8 +609,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
             {mixed.length > 0 && <div className="stMixed">{mixed.map(renderMixedNode)}</div>}
 
-            <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'subject', 'lesson'], parentId: mod.id, parentLabel: mod.title })}>
-              <Plus size={14} /> Adicionar sub-módulo, matéria ou aula
+            <button type="button" className="stAddMateria stAddMateria--module" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['submodule', 'lesson'], parentId: mod.id, parentLabel: mod.title })}>
+              <Plus size={14} /> Adicionar conteúdo
             </button>
           </div>
         )}
@@ -579,7 +689,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
                         </div>
                         {study.category && <span className="stCard__cat">{study.category}</span>}
                         <div className="stCard__meta">
-                          <span><ListChecks size={13} /> {ov.completedLessons}/{ov.totalLessons} aulas</span>
+                          <span><ListChecks size={13} /> {ov.completedLessons}/{ov.totalLessons} concluídos</span>
                           {ov.nextLesson
                             ? <span className="stCard__next"><Calendar size={13} /> {fmtShort(ov.nextLesson.scheduledDate)}</span>
                             : <span className="stCard__status" style={{ color: st.color }}>{st.label}</span>}
@@ -634,7 +744,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
                     {activeStudy.modules.length === 0 ? (
                       <div className="stModules__empty">
                         <Layers size={26} />
-                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos, matérias e aulas.</p>
+                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos e aulas — e pode agendar qualquer um deles para a aba Tarefas.</p>
                         <button onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['module'] })}><Plus size={15} /> Criar módulo</button>
                       </div>
                     ) : (
@@ -670,6 +780,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
             parentOptions={moduleModal.parentOptions}
             onClose={closeModuleModal}
             onSubmit={handleModuleSubmit}
+            onBulkSubmit={handleBulkSubmit}
           />
         )}
 
