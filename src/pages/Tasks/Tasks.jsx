@@ -17,9 +17,12 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
 
 import './Tasks.css'
 
+// Fallback usado só quando a página é montada sem a prop `user` (o app sempre
+// passa o usuário autenticado). Dados genéricos de propósito: o repositório é
+// público, e dado pessoal aqui vira alvo de spam sem oferecer nada em troca.
 const DEFAULT_USER = {
-  name: 'Matheus Nalberth',
-  email: 'Nalberthdev@gmail.com',
+  name: 'Usuário',
+  email: 'usuario@exemplo.com',
   avatarUrl: 'https://placehold.co/42x42',
 }
 
