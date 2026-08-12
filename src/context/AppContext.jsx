@@ -1013,7 +1013,7 @@ export function AppProvider({ children, userId }) {
   const updateStudy = async (id, updates) => {
     if (!userId) return
     setStudies(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
-    await studyService.updateStudy(id, updates)
+    await studyService.updateStudy(id, userId, updates)
     const allStudies = await studyService.getStudies(userId)
     setStudies(allStudies)
   }
@@ -1021,7 +1021,7 @@ export function AppProvider({ children, userId }) {
   const deleteStudy = async (id) => {
     if (!userId) return
     setStudies(prev => prev.filter(s => s.id !== id))
-    await studyService.deleteStudy(id)
+    await studyService.deleteStudy(id, userId)
   }
 
   // Tarefa-espelho de um BLOCO agendado (módulo/sub-módulo/matéria).

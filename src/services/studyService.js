@@ -226,7 +226,10 @@ export const studyService = {
     return data
   },
 
-  async updateStudy(studyId, updates) {
+  // O `user_id` aqui é defesa em profundidade, não a fronteira de segurança —
+  // essa continua sendo o RLS. Serve para que uma política derrubada por engano
+  // vire uma linha não encontrada em vez de uma escrita silenciosa em dado alheio.
+  async updateStudy(studyId, userId, updates) {
     const { data, error } = await supabase
       .from('study_items')
       .update({
@@ -239,6 +242,7 @@ export const studyService = {
         description: updates.description,
       })
       .eq('id', studyId)
+      .eq('user_id', userId)
       .select()
       .single()
 
@@ -250,8 +254,12 @@ export const studyService = {
     return data
   },
 
-  async deleteStudy(studyId) {
-    const { error } = await supabase.from('study_items').delete().eq('id', studyId)
+  async deleteStudy(studyId, userId) {
+    const { error } = await supabase
+      .from('study_items')
+      .delete()
+      .eq('id', studyId)
+      .eq('user_id', userId)
 
     if (error) {
       console.error('Error deleting study:', error)
@@ -259,6 +267,10 @@ export const studyService = {
     }
   },
 
+  // study_modules e study_lessons NÃO têm user_id: o dono é alcançado pela
+  // cadeia study_lessons -> study_modules -> study_items.user_id. O PostgREST não
+  // faz join num update/delete, então aqui o RLS é a única barreira possível —
+  // e as políticas de enable_rls_policies.sql cobrem exatamente essa cadeia.
   async createModule(studyItemId, moduleData) {
     const payload = {
       study_item_id: studyItemId,

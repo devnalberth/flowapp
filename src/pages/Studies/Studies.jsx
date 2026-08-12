@@ -15,6 +15,7 @@ import {
   isEmptyLeaf, isNodeComplete,
 } from '../../utils/studyMetrics'
 import { compareMixedNodes } from '../../services/studyService'
+import { safeExternalUrl } from '../../utils/safeUrl'
 
 import './Studies.css'
 
@@ -726,7 +727,11 @@ export default function Studies({ user, onNavigate, onLogout }) {
                         <span className="stChip stChip--status" style={{ color: st.color, borderColor: st.color }}>{st.label}</span>
                       </div>
                       <h2>{activeStudy.title}</h2>
-                      {activeStudy.url && <a className="stDetail__link" href={activeStudy.url} target="_blank" rel="noreferrer">Acessar plataforma →</a>}
+                      {safeExternalUrl(activeStudy.url) && (
+                        <a className="stDetail__link" href={safeExternalUrl(activeStudy.url)} target="_blank" rel="noreferrer">
+                          Acessar plataforma →
+                        </a>
+                      )}
                     </div>
                     <button className="stDetail__del" onClick={handleDeleteStudy} title="Excluir estudo"><Trash2 size={16} /></button>
                   </header>
