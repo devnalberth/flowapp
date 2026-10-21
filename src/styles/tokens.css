@@ -1,46 +1,264 @@
+/* ==========================================================================
+   Flowapp 3.0 — Design tokens (gerado do Figma, coleções "Flowapp 3.0")
+   Substitui src/styles/tokens.css. Nomes = code syntax WEB das variables.
+   ========================================================================== */
+
 :root {
-  /* Colors */
-  --bg: #e8e8e8;
-  --card: #ffffff;
-  --muted: #f6f6f6;
-  --text: #0d0d12;
-  --text-2: #2e2e2e;
-  --subtext: #5b5a64;
-  --kpi-label: #666d80;
+  /* ---------- Primitivas ---------- */
+  /* Brasa (marca) */
+  --fa-p-brasa-50: #FFF5ED;
+  --fa-p-brasa-100: #FFE8D5;
+  --fa-p-brasa-200: #FFCDA8;
+  --fa-p-brasa-300: #FFA970;
+  --fa-p-brasa-400: #FF8A3D;
+  --fa-p-brasa-500: #FF6E02;
+  --fa-p-brasa-600: #E85D00;
+  --fa-p-brasa-700: #C24A00;
+  --fa-p-brasa-800: #9A3B05;
+  --fa-p-brasa-900: #7A300A;
 
-  /* Brand */
-  --grad-primary: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
+  /* Papel (neutros claros, quentes) */
+  --fa-p-papel-0: #FFFFFF;
+  --fa-p-papel-50: #FAF9F7;
+  --fa-p-papel-100: #F8F7F5;
+  --fa-p-papel-150: #F3F1EE;
+  --fa-p-papel-200: #F0EDE9;
+  --fa-p-papel-250: #EFECE8;
+  --fa-p-papel-300: #E7E3DE;
+  --fa-p-papel-400: #CFC9C2;
 
-  /* Radius */
-  --r-card: 15px;
-  --r-pill: 9999px;
-  --r-soft: 12px;
+  /* Tinta (neutros escuros, quentes) */
+  --fa-p-tinta-500: #736D67;
+  --fa-p-tinta-600: #5F5A54;
+  --fa-p-tinta-700: #48433D;
+  --fa-p-tinta-800: #2A2621;
+  --fa-p-tinta-900: #17140F;
 
-  /* Spacing */
+  /* Apoio */
+  --fa-p-verde-50: #E3F5E9;
+  --fa-p-verde-500: #1F9D55;
+  --fa-p-verde-700: #157A3D;
+  --fa-p-vermelho-50: #FCEBE8;
+  --fa-p-vermelho-500: #E04A33;
+  --fa-p-vermelho-700: #C4321F;
+  --fa-p-ambar-50: #FFF4D6;
+  --fa-p-ambar-500: #E0A100;
+  --fa-p-ambar-700: #9A6400;
+  --fa-p-azul-50: #E8EFFD;
+  --fa-p-azul-500: #3D6FE0;
+  --fa-p-azul-700: #2257C9;
+  --fa-p-rosa-50: #FCE8EF;
+  --fa-p-rosa-500: #D9467A;
+  --fa-p-jade-50: #E0F4EE;
+  --fa-p-jade-500: #12916F;
+  --fa-p-ciano-50: #E0F4F8;
+  --fa-p-ciano-500: #0891B2;
+  --fa-p-violeta-50: #EFEAFE;
+  --fa-p-violeta-500: #8B5CF6;
+
+  /* ---------- Semânticas (use estas nos componentes) ---------- */
+  /* Fundos */
+  --fa-bg-app: var(--fa-p-papel-150);        /* janela */
+  --fa-bg-panel: var(--fa-p-papel-100);      /* sidebar, topbar, painel principal */
+  --fa-bg-card: var(--fa-p-papel-0);         /* cards, modais */
+  --fa-bg-soft: var(--fa-p-papel-50);        /* blocos internos, rodapé de modal, busca */
+  --fa-bg-track: var(--fa-p-papel-250);      /* trilhos, segmentado */
+  --fa-bg-hero: var(--fa-p-tinta-900);       /* herói escuro */
+  --fa-bg-hero-2: var(--fa-p-tinta-800);     /* tiles dentro do herói */
+  --fa-bg-action: var(--fa-p-tinta-900);     /* botão primário */
+  --fa-bg-action-hover: var(--fa-p-tinta-800);
+  --fa-bg-accent: var(--fa-p-brasa-500);     /* "+ Novo", Destaque, toggle ligado */
+  --fa-bg-accent-hover: var(--fa-p-brasa-400);
+  --fa-bg-accent-soft: var(--fa-p-brasa-50);
+  --fa-bg-accent-muted: var(--fa-p-brasa-100);
+
+  /* Texto */
+  --fa-text-primary: var(--fa-p-tinta-900);
+  --fa-text-secondary: var(--fa-p-tinta-700);
+  --fa-text-muted: var(--fa-p-tinta-600);
+  --fa-text-caption: var(--fa-p-tinta-500);
+  --fa-text-on-dark: var(--fa-p-papel-0);
+  --fa-text-on-dark-muted: var(--fa-p-papel-400);
+  --fa-text-on-accent: var(--fa-p-tinta-900); /* texto sobre laranja é sempre tinta */
+  --fa-text-accent: var(--fa-p-brasa-700);    /* texto laranja em fundo claro */
+  --fa-text-accent-on-dark: var(--fa-p-brasa-400); /* texto laranja em fundo escuro */
+
+  /* Bordas */
+  --fa-border-default: var(--fa-p-papel-300);
+  --fa-border-divider: var(--fa-p-papel-200);
+  --fa-border-strong: var(--fa-p-papel-400);
+  --fa-border-focus: var(--fa-p-brasa-500);
+
+  /* Status (texto / fundo / sólido) */
+  --fa-status-success: var(--fa-p-verde-700);
+  --fa-status-success-bg: var(--fa-p-verde-50);
+  --fa-status-success-solid: var(--fa-p-verde-500);
+  --fa-status-danger: var(--fa-p-vermelho-700);
+  --fa-status-danger-bg: var(--fa-p-vermelho-50);
+  --fa-status-danger-solid: var(--fa-p-vermelho-500);
+  --fa-status-warning: var(--fa-p-ambar-700);
+  --fa-status-warning-bg: var(--fa-p-ambar-50);
+  --fa-status-warning-solid: var(--fa-p-ambar-500);
+  --fa-status-info: var(--fa-p-azul-700);
+  --fa-status-info-bg: var(--fa-p-azul-50);
+  --fa-status-info-solid: var(--fa-p-azul-500);
+
+  /* Áreas (meta, projeto, tarefa, hábito) */
+  --fa-area-profissional: var(--fa-p-azul-500);
+  --fa-area-profissional-bg: var(--fa-p-azul-50);
+  --fa-area-pessoal: var(--fa-p-rosa-500);
+  --fa-area-pessoal-bg: var(--fa-p-rosa-50);
+  --fa-area-financeiro: var(--fa-p-jade-500);
+  --fa-area-financeiro-bg: var(--fa-p-jade-50);
+  --fa-area-estudos: var(--fa-p-ciano-500);
+  --fa-area-estudos-bg: var(--fa-p-ciano-50);
+  --fa-area-saude: var(--fa-p-verde-500);
+  --fa-area-saude-bg: var(--fa-p-verde-50);
+  --fa-area-relacionamento: var(--fa-p-violeta-500);
+  --fa-area-relacionamento-bg: var(--fa-p-violeta-50);
+
+  /* Progresso */
+  --fa-progress-fill: var(--fa-p-brasa-500);
+  --fa-progress-track: var(--fa-p-papel-250);
+  --fa-progress-done: var(--fa-p-verde-500);
+
+  /* Overlay de modal e gaveta (+ backdrop-filter: blur(6px)) */
+  --fa-overlay: rgba(23, 20, 15, 0.42);
+
+  /* Código (caderno da aula) */
+  --fa-code-bg: var(--fa-p-tinta-900);
+  --fa-code-bar: var(--fa-p-tinta-800);
+  --fa-code-text: var(--fa-p-papel-200);
+  --fa-code-keyword: var(--fa-p-brasa-300);
+  --fa-code-string: var(--fa-p-verde-500);
+  --fa-code-function: var(--fa-p-ciano-500);
+  --fa-code-number: var(--fa-p-violeta-500);
+  --fa-code-comment: var(--fa-p-tinta-500);
+  --fa-code-line-number: var(--fa-p-tinta-600);
+  --fa-code-inline: var(--fa-p-brasa-700);
+
+  /* ---------- Dimensões ---------- */
+  --fa-space-1: 4px;
+  --fa-space-2: 8px;
+  --fa-space-3: 12px;
+  --fa-space-4: 16px;
+  --fa-space-5: 20px;
+  --fa-space-6: 24px;
+  --fa-space-8: 32px;
+  --fa-space-10: 40px;
+  --fa-space-12: 48px;
+
+  --fa-radius-chip: 10px;
+  --fa-radius-input: 14px;
+  --fa-radius-block: 16px;
+  --fa-radius-card: 24px;
+  --fa-radius-panel: 28px;
+  --fa-radius-access: 32px;  /* cartão de login */
+  --fa-radius-pill: 999px;
+
+  --fa-size-sidebar: 232px;
+  --fa-size-topbar: 64px;
+
+  /* ---------- Tipografia ---------- */
+  --fa-font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fa-font-brand: 'Outfit', var(--fa-font-sans);
+  --fa-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* tamanho / altura de linha / peso / tracking */
+  --fa-type-hero: 700 40px/1.1 var(--fa-font-sans);          /* ls -0.02em */
+  --fa-type-page: 700 32px/1.15 var(--fa-font-sans);         /* ls -0.01em */
+  --fa-type-kpi: 700 30px/1.1 var(--fa-font-sans);           /* ls -0.015em */
+  --fa-type-section: 700 22px/1.2 var(--fa-font-sans);       /* ls -0.005em */
+  --fa-type-modal: 700 18px/1.3 var(--fa-font-sans);         /* ls -0.002em */
+  --fa-type-card: 600 17px/1.3 var(--fa-font-sans);          /* ls -0.002em */
+  --fa-type-body: 500 14px/1.5 var(--fa-font-sans);
+  --fa-type-body-strong: 600 14px/1.5 var(--fa-font-sans);
+  --fa-type-table: 500 13.5px/1.4 var(--fa-font-sans);
+  --fa-type-label: 600 12.5px/1.3 var(--fa-font-sans);
+  --fa-type-caption: 500 12px/1.4 var(--fa-font-sans);
+  --fa-type-badge: 600 11.5px/1.2 var(--fa-font-sans);
+  --fa-type-menu-section: 700 11px/1.2 var(--fa-font-sans);  /* MAIÚSCULAS, ls 0.06em */
+  --fa-type-wordmark: 500 22px/1 var(--fa-font-brand);       /* ls -0.01em */
+  --fa-type-reading: 500 15px/25px var(--fa-font-sans);      /* texto do caderno */
+  --fa-type-code: 400 13px/21px var(--fa-font-mono);
+
+  /* ---------- Sombras ---------- */
+  --fa-shadow-button: 0 4px 12px -4px rgba(23, 20, 15, 0.25);
+  --fa-shadow-hero: 0 16px 32px -8px rgba(23, 20, 15, 0.28);
+  --fa-shadow-modal: 0 24px 60px -8px rgba(23, 20, 15, 0.24);
+  --fa-shadow-menu: 0 12px 32px -6px rgba(23, 20, 15, 0.22);   /* menus, toasts, gaveta */
+  --fa-shadow-active: 0 2px 6px rgba(23, 20, 15, 0.06);        /* item ativo do menu, aba ativa */
+  --fa-focus-ring: 0 0 0 3px rgba(255, 110, 2, 0.22);          /* + borda 1.5px --fa-border-focus */
+
+  /* ---------- Motion ---------- */
+  --fa-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fa-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fa-dur-fast: 250ms;
+  --fa-dur-base: 450ms;
+  --fa-dur-card: 550ms;
+  --fa-dur-bar: 700ms;
+  --fa-stagger-card: 70ms;
+  --fa-stagger-row: 45ms;
+
+  /* Complementos de geometria e camadas do shell e componentes do Figma. */
+  --fa-radius-topbar: 20px;
+  --fa-radius-heat: 4px;
+  --fa-hero-ring-opacity: 0.06;
+  --fa-z-sidebar: 20;
+  --fa-z-menu: 30;
+  --fa-z-overlay: 40;
+  --fa-z-toast: 50;
+  --fa-heat-0: var(--fa-bg-track);
+  --fa-heat-1: var(--fa-p-brasa-100);
+  --fa-heat-2: var(--fa-p-brasa-200);
+  --fa-heat-3: var(--fa-p-brasa-400);
+  --fa-heat-4: var(--fa-p-brasa-600);
+}
+
+/* Números sempre tabulares */
+.fa-num { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fa-stagger-card: 0ms;
+    --fa-stagger-row: 0ms;
+  }
+}
+
+/* ==========================================================================
+   Ponte com os tokens antigos (remover quando todas as telas migrarem)
+   ========================================================================== */
+:root {
+  --bg: var(--fa-bg-app);
+  --card: var(--fa-bg-card);
+  --muted: var(--fa-bg-soft);
+  --text: var(--fa-text-primary);
+  --text-2: var(--fa-text-secondary);
+  --subtext: var(--fa-text-muted);
+  --kpi-label: var(--fa-text-muted);
+  --grad-primary: var(--fa-bg-accent); /* o gradiente laranja sai do design */
+  --r-card: var(--fa-radius-card);
+  --r-pill: var(--fa-radius-pill);
+  --r-soft: var(--fa-radius-input);
+  --gap-1: var(--fa-space-2);
+  --gap-2: var(--fa-space-3);
+  --gap-3: var(--fa-space-4);
+  --gap-4: var(--fa-space-5);
+  --gap-5: var(--fa-space-6);
+  --font-sans: var(--fa-font-sans);
+  --font-brand: var(--fa-font-brand);
+
+  /* Antigos sem equivalente: ficam com o valor atual até a tela migrar */
   --pad-page-y: 20px;
   --pad-page-x: 120px;
-  --gap-1: 8px;
-  --gap-2: 12px;
-  --gap-3: 16px;
-  --gap-4: 20px;
-  --gap-5: 24px;
-
-  /* Typography */
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-    Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --font-brand: 'Outfit', var(--font-sans);
-
   --h1-size: 42px;
   --h1-line: 50.4px;
   --h1-weight: 700;
-
   --lead-size: 22px;
   --lead-line: 33px;
   --lead-weight: 400;
-
   --body-size: 16px;
   --body-line: 24px;
-
   --pill-size: 12px;
   --pill-line: 14.4px;
   --pill-weight: 500;

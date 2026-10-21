@@ -26,6 +26,38 @@ img {
   display: block;
 }
 
+:focus-visible {
+  outline: 1.5px solid var(--fa-border-focus);
+  outline-offset: 3px;
+  box-shadow: var(--fa-focus-ring);
+}
+
+.fa-app :focus-visible {
+  outline: 1.5px solid var(--fa-border-focus);
+  outline-offset: 3px;
+  box-shadow: var(--fa-focus-ring);
+}
+
+.fa-app { font-variant-numeric: tabular-nums; }
+
+.fa-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-app *, .fa-overlay *, .fa-toast-stack * {
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Generic UI primitives */
 .ui-card {
   background: var(--card);
