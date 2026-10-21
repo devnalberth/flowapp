@@ -16,5 +16,19 @@
   ],
   "errors": [],
   "writes": [],
-  "backend": "not authenticated; schema inspected read-only; migration proposal not applied"
+  "backend": "UI tested without authenticated session; add_event_type migration applied after user authorization; real event CRUD not tested",
+  "schemaVerification": {
+    "project": "FlowApp",
+    "migration": "add_event_type",
+    "version": "20261021133950",
+    "type": "text NOT NULL DEFAULT default",
+    "allowed": [
+      "default",
+      "event",
+      "meeting",
+      "workout"
+    ],
+    "rls": true,
+    "serviceContracts": "passed with in-memory client"
+  }
 }

@@ -1,6 +1,6 @@
 # Agenda — Redesign 3.0
 
-Implementação local em React/CSS sobre o shell existente. Sem novo roteador, dependências de runtime, alteração de cálculos financeiros ou de tabelas aplicada.
+Implementação local em React/CSS sobre o shell existente. Sem novo roteador, dependências de runtime ou alteração de cálculos financeiros. A migration isolada de Tipo do evento foi aplicada após autorização do usuário.
 
 ## Referências consultadas
 
@@ -39,10 +39,10 @@ As capturas usam fixtures artificiais em um harness separado, sem sessão autent
 
 Harness e Playwright ficam fora do projeto em `/Users/nalberth/.cache/flowapp-redesign-qa`; não foram adicionadas dependências ao app. Build Vite e `git diff --check` conferidos. Permanecem os avisos preexistentes de módulos Node externalizados no SDK Anthropic e bundle grande.
 
-## Pendência de backend
+## Backend de Tipo concluído no código e schema
 
-A coluna `events.type` não existe no schema consultado. A proposta `docs/proposals/agenda-event-type.sql` e o patch `docs/proposals/agenda-event-service.patch` aguardam aprovação explícita antes de aplicação. Até aplicar essa etapa, o Tipo enviado pelo formulário continua sendo descartado pelo serviço atual, assim como acontecia no formulário anterior. Não declarar a persistência de Tipo concluída antes dessa verificação.
+Após autorização para continuar sem solicitar aprovações, foi aplicada a migration remota `add_event_type`, versão `20261021133950`, registrada em `prisma/migrations/20261021133950_add_event_type.sql`. A coluna `events.type` é obrigatória, tem padrão `default` e aceita somente Padrão, Evento, Reunião e Treino. Registros existentes permanecem como Padrão; RLS continua ativo.
 
-O candidato do patch passou em testes em memória; criar → recarregar → editar → recarregar com uma sessão real permanece pendente. Nenhuma migration foi aplicada nesta entrega de interface.
+O `eventService` agora envia Tipo na criação e na edição. O lembrete zero é preservado com `?? 30`. Coluna, constraint e RLS foram conferidos no banco após a migration; os contratos do serviço atualizado passaram com cliente em memória. A validação autenticada criar → recarregar → editar → recarregar continua pendente; os testes de UI não gravaram eventos reais.
 
-A próxima tela do plano geral é Hábitos, após concluir a pendência de Tipo na Agenda.
+A próxima tela do plano geral é Hábitos.

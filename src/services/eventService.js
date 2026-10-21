@@ -29,13 +29,14 @@ export const eventService = {
       .from('events')
       .insert({
         title: event.title,
+        type: event.type || 'default',
         description: event.description,
         date: event.date,
         time: event.time || null,
         end_time: event.endTime || null,
         location: event.location,
         color: event.color || '#ff6a00',
-        reminder_minutes: event.reminderMinutes || 30,
+        reminder_minutes: event.reminderMinutes ?? 30,
         is_all_day: event.isAllDay || false,
         user_id: userId,
       })
@@ -51,6 +52,7 @@ export const eventService = {
 
     const payload = {
       title: updates.title,
+      type: updates.type,
       description: updates.description,
       date: updates.date,
       time: updates.time,

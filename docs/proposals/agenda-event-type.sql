@@ -1,4 +1,5 @@
--- PROPOSTA: NAO APLICADA. Exige aprovacao explicita antes de executar.
+-- APLICADA: migration add_event_type / 20261021133950. Nao executar novamente.
+-- Registro definitivo: prisma/migrations/20261021133950_add_event_type.sql.
 -- Projeto confirmado em leitura: FlowApp / loxxsngnsuvuujxxigyw.
 -- Adiciona apenas o tipo do evento. Registros existentes ficam como Padrao;
 -- nao tenta inferir categorias pelo titulo ou pela cor. RLS permanece intacto.
