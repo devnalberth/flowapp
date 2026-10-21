@@ -6,6 +6,7 @@ import AppLayout from './components/layout/AppLayout.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
 import Tasks from './pages/Tasks/Tasks.jsx'
+import Agenda from './pages/Agenda/Agenda.jsx'
 import Goals from './pages/Goals/Goals.jsx'
 import Studies from './pages/Studies/Studies.jsx'
 import Habits from './pages/Habits/Habits.jsx'
@@ -16,7 +17,7 @@ import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import { getSupabaseClient, supabasePersistent, supabaseSession } from './lib/supabaseClient.js'
 import { userService } from './services/userService'
 
-const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'FlowChat']
+const SUPPORTED_PAGES = ['Dashboard', 'Tarefas', 'Agenda', 'Projetos', 'Metas', 'Estudos', 'Hábitos', 'Financeiro', 'FlowChat']
 const AUTH_STORAGE_KEY = 'flowapp-auth-storage'
 
 const getPathname = () => (typeof window === 'undefined' ? '/' : window.location.pathname)
@@ -183,6 +184,7 @@ function App() {
       <AppLayout user={currentUser} page={page} onNavigate={handleNavigate} onLogout={handleLogout}>
       {page === 'Projetos' && <Projects {...pageProps} {...pageParams} />}
       {page === 'Tarefas' && <Tasks {...pageProps} {...pageParams} />}
+      {page === 'Agenda' && <Agenda {...pageProps} {...pageParams} />}
       {page === 'Metas' && <Goals {...pageProps} {...pageParams} />}
       {page === 'Estudos' && <Studies {...pageProps} {...pageParams} />}
       {page === 'Hábitos' && <Habits {...pageProps} {...pageParams} />}

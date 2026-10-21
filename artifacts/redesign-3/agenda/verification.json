@@ -1,0 +1,20 @@
+{
+  "results": [
+    "Mês: geometria do Figma, navegação sem salto no fim do mês, seleção do dia, filtros sincronizados",
+    "Máscara global dos valores nas contas e nos títulos dos chips",
+    "Semana: sete dias, horários locais, tarefas fixas, eventos com duração e linha agora só na semana atual",
+    "Checks de tarefa: mesmo payload existente de conclusão/reabertura; sem cronômetro na Agenda",
+    "Dia sem compromissos: contas mantidas em Dia todo e ação de criar evento presente",
+    "Novo evento: payload de data local, início/fim, lembrete15, tipo e descrição; formulário usa Modal nativo",
+    "Detalhe540px: datas, duração real e hora do lembrete; menu dentro do dialog; edição preserva os campos existentes",
+    "Excluir evento: cancelar não chama handler; confirmar chama deleteEvent uma vez",
+    "Dia inteiro: horários desabilitados e payload sem horário; campos já suportados pelo serviço",
+    "Adaptadores: dia literal, sentinela sem hora, timestamp local, arquivadas fora; despesas pagas/receitas/cartão/legado fora; ano bissexto e mês de seis semanas",
+    "Responsivo: Mês/Semana/Dia sem overflow da página em1100/900/390; semana mantém scroll interno",
+    "Estado totalmente vazio e prefers-reduced-motion sem transform",
+    "Zero erros de execução e zero escritas no Supabase; fixtures locais, sem sessão autenticada"
+  ],
+  "errors": [],
+  "writes": [],
+  "backend": "not authenticated; schema inspected read-only; migration proposal not applied"
+}

@@ -1,0 +1,15 @@
+--- a/src/services/eventService.js
++++ b/src/services/eventService.js
+@@ -31,2 +31,3 @@
+         title: event.title,
++        type: event.type || 'default',
+         description: event.description,
+@@ -37,3 +38,3 @@
+         color: event.color || '#ff6a00',
+-        reminder_minutes: event.reminderMinutes || 30,
++        reminder_minutes: event.reminderMinutes ?? 30,
+         is_all_day: event.isAllDay || false,
+@@ -53,2 +54,3 @@
+       title: updates.title,
++      type: updates.type,
+       description: updates.description,

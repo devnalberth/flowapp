@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   Flame,
   FolderKanban,
   GraduationCap,
@@ -12,10 +13,15 @@ import SidebarItem from './SidebarItem.jsx'
 import AccountMenu from './AccountMenu.jsx'
 import './Sidebar.css'
 
-// Agenda joins this navigation when its screen is implemented in the next module.
 const groups = [
   { items: [{ page: 'Dashboard', label: 'Início', icon: House }] },
-  { label: 'FAZER', items: [{ page: 'Tarefas', label: 'Tarefas', icon: ListChecks }] },
+  {
+    label: 'FAZER',
+    items: [
+      { page: 'Tarefas', label: 'Tarefas', icon: ListChecks },
+      { page: 'Agenda', label: 'Agenda', icon: CalendarDays },
+    ],
+  },
   {
     label: 'PLANEJAR',
     items: [
