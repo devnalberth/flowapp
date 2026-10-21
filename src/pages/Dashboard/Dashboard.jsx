@@ -1,6 +1,6 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import StatCard from '../../components/StatCard/StatCard.jsx'
 import NextMeetingCard from '../../components/NextMeetingCard/NextMeetingCard.jsx'
 import ChatbotCard from '../../components/ChatbotCard/ChatbotCard.jsx'
@@ -10,7 +10,6 @@ import CalendarCard from '../../components/CalendarCard/CalendarCard.jsx'
 import GoalsHabitsCard from '../../components/GoalsHabitsCard/GoalsHabitsCard.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { Calendar, CheckCircle2 } from 'lucide-react'
 
 import './Dashboard.css'
@@ -164,9 +163,14 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
     }
   }
 
+  usePageActions({ options: [
+    { label: 'Nova tarefa', icon: CheckCircle2, onClick: () => setTaskModalOpen(true) },
+    { label: 'Novo evento', icon: Calendar, onClick: () => { setEditingEvent(null); setEventModalOpen(true) } },
+  ] })
+
   return (
     <div className="dash">
-      <TopNav user={user} active="Dashboard" onNavigate={onNavigate} onLogout={onLogout} />
+
 
       <div className="dashWrapper">
         <header className="dash__welcome">
@@ -214,7 +218,7 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
               <NextMeetingCard events={events || []} onEditEvent={handleEditEvent} />
             </section>
 
-            <main className="dash__grid">
+            <div className="dash__grid">
               <ProjectOverviewCard className="bento bento--project" projects={projects || []} tasks={tasks || []} />
               <ProductivityCard className="bento bento--productivity" tasks={tasks || []} />
               <ChatbotCard
@@ -232,18 +236,12 @@ export default function Dashboard({ onNavigate, onLogout, user }) {
                 events={events || []}
                 onEditEvent={handleEditEvent}
               />
-            </main>
+            </div>
           </>
         )}
       </div>
 
-      <FloatingCreateButton
-        label="Criar novo"
-        options={[
-          { label: 'Nova Tarefa', icon: CheckCircle2, onClick: () => setTaskModalOpen(true), color: '#3b82f6' },
-          { label: 'Novo Evento', icon: Calendar, onClick: () => { setEditingEvent(null); setEventModalOpen(true); }, color: '#f59e0b' }
-        ]}
-      />
+
 
       {isTaskModalOpen && (
         <CreateTaskModal

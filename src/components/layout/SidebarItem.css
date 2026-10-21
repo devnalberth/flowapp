@@ -1,0 +1,48 @@
+.fa-sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--fa-radius-input);
+  background: transparent;
+  color: var(--fa-text-secondary);
+  font: var(--fa-type-body);
+  cursor: pointer;
+  text-align: left;
+}
+.fa-sidebar-item > svg {
+  flex: none;
+}
+.fa-sidebar-item__label {
+  flex: 1;
+}
+.fa-sidebar-item__count {
+  padding: 1px 7px;
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-accent);
+  color: var(--fa-text-on-accent);
+  font: var(--fa-type-badge);
+}
+.fa-sidebar-item:hover {
+  background: var(--fa-bg-soft);
+}
+.fa-sidebar-item.is-active {
+  background: var(--fa-bg-card);
+  box-shadow: var(--fa-shadow-active);
+  color: var(--fa-text-primary);
+  font-weight: 600;
+}
+.fa-sidebar-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 9px;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--fa-bg-accent);
+}

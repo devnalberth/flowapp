@@ -1,8 +1,7 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 
-import TopNav from '../../components/TopNav/TopNav.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
 import DreamMapModal from '../../components/DreamMapModal/DreamMapModal.jsx'
 import { computeProjectStats } from '../../utils/projectMetrics'
@@ -571,11 +570,13 @@ export default function Goals({ onNavigate, onLogout, user }) {
     }
   }
 
+  usePageActions({ label: 'Nova meta', onClick: () => setIsGoalModalOpen(true) })
+
   return (
     <div className="goalsPage">
-      <TopNav user={user} active="Metas" onNavigate={onNavigate} onLogout={onLogout} />
 
-      <FloatingCreateButton label="Nova meta" onClick={() => setIsGoalModalOpen(true)} />
+
+
 
       {selectedArea ? (
         <AreaDetail

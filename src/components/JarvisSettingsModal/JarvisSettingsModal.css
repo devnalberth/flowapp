@@ -218,3 +218,14 @@
   background: var(--grad-primary, linear-gradient(180deg, #ff4800 0%, #ff9500 100%));
   color: #fff;
 }
+.jarvisSettings.jarvisSettings--embedded { position: static; inset: auto; padding: 0; background: transparent; backdrop-filter: none; display: block; z-index: auto; }
+.jarvisSettings--embedded .jarvisSettings__panel { width: 100%; max-width: none; padding: 0; border: 0; border-radius: 0; background: var(--fa-bg-card); box-shadow: none; animation: none; }
+.jarvisSettings--embedded .jarvisSettings__header { display: none; }
+.jarvisSettings--embedded .jarvisSettings__body { padding: 0; }
+.jarvisSettings--embedded .jarvisSettings__field > span { color: var(--fa-text-secondary); font: var(--fa-type-label); }
+.jarvisSettings--embedded .jarvisSettings__field input, .jarvisSettings--embedded .jarvisSettings__field select { background: var(--fa-bg-card); color: var(--fa-text-primary); border-color: var(--fa-border-default); border-radius: var(--fa-radius-input); font: var(--fa-type-body); }
+.jarvisSettings--embedded .jarvisSettings__field input:focus, .jarvisSettings--embedded .jarvisSettings__field select:focus { border-color: var(--fa-border-focus); box-shadow: var(--fa-focus-ring); }
+.jarvisSettings--embedded .jarvisSettings__field em { color: var(--fa-text-caption); }
+.jarvisSettings--embedded .jarvisSettings__footer { margin-top: 24px; padding: 16px 0 0; background: var(--fa-bg-card); border-color: var(--fa-border-divider); }
+.jarvisSettings--embedded .jarvisSettings__btn--primary { background: var(--fa-bg-action); color: var(--fa-text-on-dark); box-shadow: var(--fa-shadow-button); }
+.jarvisSettings--embedded .jarvisSettings__btn--ghost { color: var(--fa-text-secondary); }

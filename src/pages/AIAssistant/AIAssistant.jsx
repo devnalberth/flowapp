@@ -1,3 +1,4 @@
+import { useShell } from '../../context/ShellContext.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -11,8 +12,6 @@ import {
   CalendarClock,
   ListTodo,
 } from 'lucide-react'
-import TopNav from '../../components/TopNav/TopNav.jsx'
-import JarvisSettingsModal from '../../components/JarvisSettingsModal/JarvisSettingsModal.jsx'
 import { useJarvisToolCtx } from '../../hooks/useJarvisToolCtx.js'
 import { getJarvisConfig, isJarvisConfigured, providerMeta, effectiveModel } from '../../services/jarvisConfig.js'
 import { runJarvisTurn, loadJarvisChat, saveJarvisChat, clearJarvisChat } from '../../services/jarvisService.js'
@@ -48,7 +47,8 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
 
   const [draft, setDraft] = useState('')
   const [isThinking, setThinking] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
+  const { setAccountTab, providerRevision } = useShell()
+  useEffect(() => { setConfig(getJarvisConfig()) }, [providerRevision])
   const historyElRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -78,7 +78,7 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
     if (!value || isThinking) return
 
     if (!configured) {
-      setShowSettings(true)
+      setAccountTab('flowchat')
       return
     }
 
@@ -129,15 +129,9 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
 
   return (
     <div className="fcPage">
-      <TopNav user={user} active="FlowChat" onNavigate={onNavigate} onLogout={onLogout} />
 
-      {showSettings && (
-        <JarvisSettingsModal
-          config={config}
-          onSaved={(saved) => setConfig(saved)}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+
+
 
       <div className="fcShell">
         <header className="fcHeader">
@@ -159,7 +153,7 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
                 <Trash2 size={16} />
               </button>
             )}
-            <button type="button" onClick={() => setShowSettings(true)} title="Configurações" aria-label="Configurações do FlowChat">
+            <button type="button" onClick={() => setAccountTab('flowchat')} title="Configurações" aria-label="Configurações do FlowChat">
               <Settings size={16} />
             </button>
           </div>
@@ -178,7 +172,7 @@ export default function AIAssistant({ user, onNavigate, onLogout }) {
                   ou peça para eu criar algo por você.
                 </p>
                 {!configured && (
-                  <button type="button" className="fcSetupBtn" onClick={() => setShowSettings(true)}>
+                  <button type="button" className="fcSetupBtn" onClick={() => setAccountTab('flowchat')}>
                     <Settings size={15} /> Conectar provedor de IA
                   </button>
                 )}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useLayoutEffect } from 'react'
 import { AppProvider, useApp } from './context/AppContext.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import AppLayout from './components/layout/AppLayout.jsx'
 
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Projects from './pages/Projects/Projects.jsx'
@@ -179,6 +180,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <AppLayout user={currentUser} page={page} onNavigate={handleNavigate} onLogout={handleLogout}>
       {page === 'Projetos' && <Projects {...pageProps} {...pageParams} />}
       {page === 'Tarefas' && <Tasks {...pageProps} {...pageParams} />}
       {page === 'Metas' && <Goals {...pageProps} {...pageParams} />}
@@ -187,6 +189,7 @@ function App() {
       {page === 'Financeiro' && <Finance {...pageProps} {...pageParams} />}
       {page === 'FlowChat' && <AIAssistant {...pageProps} {...pageParams} />}
       {page === 'Dashboard' && <Dashboard {...pageProps} {...pageParams} />}
+      </AppLayout>
     </ErrorBoundary>
   )
 }

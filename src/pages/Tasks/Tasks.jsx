@@ -1,10 +1,9 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { Play, Pause, RotateCcw, Settings, Zap, Coffee, Timer, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw, BarChart3, Briefcase, BookOpen } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
@@ -601,9 +600,14 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
     , [detailTaskId, tasks])
 
+  usePageActions({ options: [
+    { label: 'Nova tarefa', icon: CheckCircle2, onClick: () => { setEditTask(null); setTaskModalOpen(true) } },
+    { label: 'Novo evento', icon: Calendar, onClick: () => setEventModalOpen(true) },
+  ] })
+
   return (
     <div className="tasksPage">
-      <TopNav user={currentUser} active="Tarefas" onNavigate={onNavigate} onLogout={onLogout} />
+
 
       <section className="tasksListShell">
         <div className="tasksListShell__filters">
@@ -917,13 +921,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
       </section>
 
-      <FloatingCreateButton
-        label="Criar novo"
-        options={[
-          { label: 'Nova Tarefa', icon: CheckCircle2, onClick: () => { setEditTask(null); setTaskModalOpen(true) }, color: '#3b82f6' },
-          { label: 'Novo Evento', icon: Calendar, onClick: () => setEventModalOpen(true), color: '#f59e0b' }
-        ]}
-      />
+
 
       {
         isTaskModalOpen && (

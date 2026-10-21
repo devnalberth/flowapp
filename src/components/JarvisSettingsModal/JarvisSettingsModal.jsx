@@ -6,7 +6,7 @@ import './JarvisSettingsModal.css'
 
 // Configuração do provedor de IA do FlowChat. A chave fica só no localStorage
 // deste dispositivo — nunca é enviada ao banco do FlowApp.
-export default function JarvisSettingsModal({ config, onSaved, onClose }) {
+export default function JarvisSettingsModal({ config, onSaved, onClose, embedded = false }) {
   const [form, setForm] = useState({
     provider: config.provider || 'anthropic',
     apiKey: config.apiKey || '',
@@ -42,7 +42,7 @@ export default function JarvisSettingsModal({ config, onSaved, onClose }) {
   }
 
   return (
-    <div className="jarvisSettings" onClick={onClose}>
+    <div className={`jarvisSettings${embedded ? ' jarvisSettings--embedded' : ''}`} onClick={embedded ? undefined : onClose}>
       <div className="jarvisSettings__panel" onClick={(e) => e.stopPropagation()}>
         <header className="jarvisSettings__header">
           <div className="jarvisSettings__avatar"><Bot size={20} /></div>

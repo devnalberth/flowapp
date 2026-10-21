@@ -1,8 +1,7 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useState, useMemo, useEffect, useRef } from 'react'
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import { useApp } from '../../context/AppContext.jsx'
 import CreateHabitModal from '../../components/CreateHabitModal/CreateHabitModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import { focusLogService } from '../../services/focusLogService.js'
 import {
   localDateKey,
@@ -342,9 +341,11 @@ export default function Habits({ user, onNavigate, onLogout }) {
 
   const todayKey = localDateKey()
 
+  usePageActions({ label: 'Novo hábito', onClick: handleAddHabit })
+
   return (
     <div className="habitsPage">
-      <TopNav user={user} active="Hábitos" onNavigate={onNavigate} onLogout={onLogout} />
+
 
       {showModal && (
         <CreateHabitModal
@@ -796,13 +797,7 @@ export default function Habits({ user, onNavigate, onLogout }) {
           )}
         </section>
 
-        <FloatingCreateButton
-          label="Novo hábito"
-          caption="Criar hábito"
-          onClick={handleAddHabit}
-          icon={Plus}
-          ariaLabel="Criar novo hábito"
-        />
+
       </div>
     </div>
   )

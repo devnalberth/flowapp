@@ -1,3 +1,4 @@
+import { useShell } from '../../context/ShellContext.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUpRight, Settings, Sparkles } from 'lucide-react'
 import { isJarvisConfigured } from '../../services/jarvisConfig.js'
@@ -16,7 +17,8 @@ const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.
 // Mini FlowChat do Dashboard: mesma conversa, config e ferramentas da página
 // FlowChat (histórico compartilhado via localStorage).
 export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
-  const configured = useMemo(() => isJarvisConfigured(), [])
+  const { providerRevision } = useShell()
+  const configured = useMemo(() => isJarvisConfigured(), [providerRevision])
 
   const [{ display: initialDisplay, history: initialHistory }] = useState(() => loadJarvisChat())
   const [messages, setMessages] = useState(initialDisplay)

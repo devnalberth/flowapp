@@ -1,0 +1,151 @@
+.fa-app {
+  display: grid;
+  grid-template-columns: var(--fa-size-sidebar) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 16px;
+  background: var(--fa-bg-app);
+  font: var(--fa-type-body);
+  color: var(--fa-text-primary);
+}
+.fa-app__sidebar {
+  position: sticky;
+  top: 16px;
+  height: calc(100dvh - 32px);
+  min-height: 620px;
+}
+.fa-app__workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.fa-app__panel {
+  min-width: 0;
+  flex: 1;
+  padding: 24px;
+  border-radius: var(--fa-radius-panel);
+  background: var(--fa-bg-panel);
+}
+.fa-skip-link {
+  position: fixed;
+  top: -100px;
+  left: 24px;
+  z-index: var(--fa-z-toast);
+  padding: 12px 16px;
+  border-radius: var(--fa-radius-input);
+  background: var(--fa-bg-action);
+  color: var(--fa-text-on-dark);
+  font: var(--fa-type-body-strong);
+}
+.fa-skip-link:focus {
+  top: 24px;
+}
+
+/* Only the old external wrappers are neutralized during the screen-by-screen migration. */
+.fa-app__panel
+  > :is(
+    .dash,
+    .tasksPage,
+    .projects,
+    .goalsPage,
+    .studiesPage,
+    .habitsPage,
+    .financePage,
+    .fcPage
+  ) {
+  padding: 0;
+  min-height: 0;
+  width: 100%;
+  background: transparent;
+}
+.fa-app__panel :is(.dashWrapper, .projectsWrapper, .studiesWrapper, .financeWrapper) {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.fa-app--chat {
+  height: 100dvh;
+  min-height: 640px;
+}
+.fa-app--chat .fa-app__workspace {
+  min-height: 0;
+}
+.fa-app--chat .fa-app__panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fa-app__panel > .fcPage {
+  height: 100%;
+  flex: 1;
+}
+.fa-mobile-nav .fa-modal__body {
+  padding: 0;
+}
+.fa-mobile-nav .fa-sidebar {
+  min-height: 0;
+  padding-top: 0;
+  background: var(--fa-bg-card);
+}
+.fa-mobile-nav .fa-sidebar-item.is-active {
+  background: var(--fa-bg-soft);
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .fa-app {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .fa-app__sidebar .fa-sidebar {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .fa-app__sidebar
+    :is(
+      .fa-sidebar__brand > span,
+      .fa-sidebar-item__label,
+      .fa-sidebar__group-label,
+      .fa-account-trigger__name,
+      .fa-account-trigger > svg
+    ) {
+    display: none;
+  }
+  .fa-app__sidebar .fa-sidebar__brand {
+    align-self: center;
+  }
+  .fa-app__sidebar .fa-sidebar__group {
+    margin-top: 12px;
+  }
+  .fa-app__sidebar .fa-sidebar-item {
+    width: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .fa-app__sidebar .fa-sidebar-item__count {
+    position: absolute;
+    right: -4px;
+    top: -4px;
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+  .fa-app__sidebar .fa-account-trigger {
+    padding: 5px;
+    justify-content: center;
+  }
+}
+@media (max-width: 767px) {
+  .fa-app {
+    display: block;
+    padding: 8px;
+  }
+  .fa-app__sidebar {
+    display: none;
+  }
+  .fa-app__workspace {
+    min-height: calc(100dvh - 16px);
+    gap: 8px;
+  }
+  .fa-app__panel {
+    padding: 16px;
+  }
+}

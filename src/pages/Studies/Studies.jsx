@@ -1,10 +1,9 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
 import LessonModal from '../../components/LessonModal/LessonModal.jsx'
 import ModuleModal from '../../components/ModuleModal/ModuleModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import {
   Pencil, Trash2, ArrowLeft, ChevronDown, Plus, Calendar, CalendarClock, Check,
   Layers, Boxes, BookOpen, GraduationCap, Book, Compass, Star, ListChecks, TrendingUp, Sparkles, Link2, Play, Zap,
@@ -633,9 +632,11 @@ export default function Studies({ user, onNavigate, onLogout }) {
     { id: 'BOOK', label: 'Livros' },
   ]
 
+  usePageActions({ label: activeStudy ? 'Novo módulo' : 'Novo estudo', title: activeStudy?.title || 'Estudos', onClick: activeStudy ? () => openModuleModal({ mode: 'create', allowedKinds: ['module'] }) : () => setModalOpen(true), disabled: loading })
+
   return (
     <div className="studiesPage">
-      <TopNav user={user} onNavigate={onNavigate} active="Estudos" onLogout={onLogout} />
+
 
       <div className="studiesWrapper">
         {!activeStudy ? (
@@ -789,9 +790,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
           />
         )}
 
-        {!activeStudy && (
-          <FloatingCreateButton label="Novo estudo" caption="Criar estudo" ariaLabel="Criar novo estudo" onClick={() => setModalOpen(true)} />
-        )}
+
       </div>
     </div>
   )

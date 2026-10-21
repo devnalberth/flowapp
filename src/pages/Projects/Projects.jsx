@@ -1,11 +1,10 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { Plus, FolderPlus, Archive } from 'lucide-react'
 
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateProjectModal from '../../components/CreateProjectModal/CreateProjectModal.jsx'
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import ProjectCard from '../../components/ProjectCard/ProjectCard.jsx'
 import ProjectWorkspace from './ProjectWorkspace.jsx'
 import ProjectsDashboard from './ProjectsDashboard.jsx'
@@ -181,10 +180,12 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
   const openNewProject = () => { setEditProject(null); setModalOpen(true) }
 
+  usePageActions({ label: activeProject ? 'Nova tarefa' : 'Novo projeto', title: activeProject?.title || 'Projetos', onClick: activeProject ? () => handleNewTask('todo') : openNewProject, disabled: loading })
+
   if (loading) {
     return (
       <div className="projects">
-        <TopNav user={user} active="Projetos" onNavigate={onNavigate} onLogout={onLogout} />
+
         <div style={{ padding: '2rem', color: '#666' }}>Carregando...</div>
       </div>
     )
@@ -192,7 +193,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
   return (
     <div className="projects">
-      <TopNav user={user} active="Projetos" onNavigate={onNavigate} onLogout={onLogout} />
+
 
       <div className="projectsWrapper">
         {activeProject ? (
@@ -289,7 +290,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
         )}
       </div>
 
-      {!activeProject && <FloatingCreateButton label="Novo projeto" onClick={openNewProject} />}
+
 
       {isModalOpen && (
         <CreateProjectModal

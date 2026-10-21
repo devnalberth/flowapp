@@ -1,3 +1,4 @@
+import { usePageActions } from '../../context/ShellContext.jsx'
 import { useMemo, useState, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import {
@@ -13,7 +14,6 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-import TopNav from '../../components/TopNav/TopNav.jsx'
 import CreateFinanceModal from '../../components/CreateFinanceModal/CreateFinanceModal.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AccountModal from '../../components/AccountModal/AccountModal.jsx'
@@ -21,7 +21,6 @@ import InvoiceView from '../../components/InvoiceView/InvoiceView.jsx'
 import FinanceGoalCard from '../../components/FinanceGoalCard/FinanceGoalCard.jsx'
 import CreateGoalModal from '../../components/CreateGoalModal/CreateGoalModal.jsx'
 import LimitsModal from '../../components/LimitsModal/LimitsModal.jsx'
-import FloatingCreateButton from '../../components/FloatingCreateButton/FloatingCreateButton.jsx'
 import BankLogo from '../../components/BankLogo/BankLogo.jsx'
 import CategoryIcon from '../../components/CategoryIcon/CategoryIcon.jsx'
 import UpcomingBills from '../../components/UpcomingBills/UpcomingBills.jsx'
@@ -147,7 +146,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
   }, [financeCategories])
   const catLabel = (slug) => catMap[slug]?.name || categoryLabelMap[slug] || slug
   const catColor = (slug) => catMap[slug]?.color || '#6b7280'
-  
+
   // CORREÇÃO: Inicializa com a data atual do sistema
   const today = new Date()
   const [selectedMonth, setSelectedMonth] = useState(String(today.getMonth() + 1).padStart(2, '0'))
@@ -306,10 +305,10 @@ export default function Finance({ user, onNavigate, onLogout }) {
           dateString: new Date(t.date).toISOString().split('T')[0]
         }))
         .filter(t => t.dateString.startsWith(monthKey))
-      
+
       const receitas = monthTransactions.filter(t => (t.type||'').toUpperCase() === 'RECEITA').reduce((sum, t) => sum + t.amount, 0)
       const despesas = monthTransactions.filter(t => (t.type||'').toUpperCase() === 'DESPESA').reduce((sum, t) => sum + t.amount, 0)
-      
+
       series.push({
         name: MONTHS[i].label.substring(0, 3),
         receita: receitas,
@@ -439,9 +438,11 @@ export default function Finance({ user, onNavigate, onLogout }) {
     }
   }
 
+  usePageActions({ label: 'Nova transação', onClick: handleOpenTransactionModal })
+
   return (
     <div className="financePage">
-      <TopNav user={user} active="Financeiro" onNavigate={onNavigate} onLogout={onLogout} />
+
 
       <div className="financeWrapper">
         <section className="financeHeader ui-card">
@@ -473,16 +474,6 @@ export default function Finance({ user, onNavigate, onLogout }) {
                 </svg>
               </button>
             </div>
-            <button
-              type="button"
-              className="financeHeader__eye"
-              aria-label={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
-              title={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
-              aria-pressed={hideValues}
-              onClick={() => updatePrefs({ hideFinanceValues: !hideValues })}
-            >
-              {hideValues ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
           </div>
         </section>
 
@@ -868,12 +859,7 @@ export default function Finance({ user, onNavigate, onLogout }) {
         />
       )}
 
-      <FloatingCreateButton
-        label="Nova transação"
-        caption="Adicionar"
-        ariaLabel="Adicionar transação"
-        onClick={handleOpenTransactionModal}
-      />
+
       </div>
     </div>
   )

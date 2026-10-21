@@ -1,0 +1,103 @@
+.fa-account .fa-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 480px;
+}
+.fa-account .fa-tabs {
+  align-self: flex-start;
+}
+.fa-account__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fa-account__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fa-account__field > span {
+  font: var(--fa-type-label);
+  color: var(--fa-text-secondary);
+}
+.fa-account__field input {
+  padding: 11px 14px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-input);
+  background: var(--fa-bg-card);
+  color: var(--fa-text-primary);
+  font: var(--fa-type-body);
+}
+.fa-account__field input:disabled {
+  background: var(--fa-bg-soft);
+  color: var(--fa-text-muted);
+}
+.fa-account__field input:focus {
+  outline: 1.5px solid var(--fa-border-focus);
+  box-shadow: var(--fa-focus-ring);
+}
+.fa-account__field input::placeholder {
+  color: var(--fa-text-caption);
+}
+.fa-account__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+.fa-account__btn {
+  padding: 11px 18px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-card);
+  color: var(--fa-text-secondary);
+  font: var(--fa-type-body-strong);
+  cursor: pointer;
+}
+.fa-account__btn--primary {
+  background: var(--fa-bg-action);
+  color: var(--fa-text-on-dark);
+  border-color: transparent;
+  box-shadow: var(--fa-shadow-button);
+}
+.fa-account__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.fa-account__error,
+.fa-account__success {
+  margin: 0;
+  font: var(--fa-type-caption);
+  color: var(--fa-status-danger);
+}
+.fa-account__success {
+  color: var(--fa-status-success);
+}
+.fa-account__securityIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--fa-radius-block);
+  background: var(--fa-bg-soft);
+  font: var(--fa-type-body);
+}
+.fa-account__securityIntro span {
+  color: var(--fa-text-muted);
+}
+.fa-account__preferences {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px;
+  border-radius: var(--fa-radius-block);
+  background: var(--fa-bg-soft);
+  font: var(--fa-type-body);
+}
+.fa-account__preferences p {
+  margin: 4px 0 0;
+  color: var(--fa-text-muted);
+  font: var(--fa-type-caption);
+}

@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-20",
+  "scope": "Fases 1–3, QA de componentes com AppProvider real e userId null; sem dados de produção",
+  "results": [
+    "Shell 1440: sidebar 232, topbar 1160×64, painel 1160×912, margens e gaps 16; botão Novo 43px",
+    "Olho global: alterna preferência e aria-pressed",
+    "Menu Novo: abre, navega por setas e fecha com Esc",
+    "Troca pela sidebar: contexto Novo acompanha a página sem remontar o shell",
+    "Início: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Tarefas: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Hábitos: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Metas: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Projetos: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Estudos: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Financeiro: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "FlowChat: shell único, sem FAB, sem overflow desktop; ação existente abre",
+    "Conta: e-mail somente leitura, validação de senhas preservada e preferência sincronizada com a topbar",
+    "Modal compartilhado: foco preso, Esc e retorno de foco",
+    "Toggle, tabs por teclado, menu de ações e toast: verificados",
+    "Shell 1100px: sem overflow; sidebar 72px",
+    "Shell 900px: sem overflow; sidebar 72px",
+    "Shell 390px: sem overflow; gaveta móvel",
+    "Movimento reduzido: entrada sem transformação",
+    "Zero erros de execução e zero chamadas de escrita ao backend"
+  ],
+  "errors": [],
+  "requests": []
+}
