@@ -45,6 +45,9 @@ const normalizeHabit = (habit) => {
     ...habit,
     // Mantém compatibilidade: label para frontend, name do banco
     label: habit.name,
+    description: habit.description || '',
+    time: habit.ideal_time ? habit.ideal_time.slice(0, 5) : '',
+    iconId: habit.icon_id || 'sparkles',
     currentStreak: habit.current_streak,
     bestStreak: habit.best_streak,
     completions: completions,
@@ -74,6 +77,9 @@ export const habitService = {
     const payload = {
       name: habit.label || habit.name,
       category: habit.category,
+      description: habit.description || null,
+      ideal_time: habit.time || null,
+      icon_id: habit.iconId || null,
       goal: habit.goal || null,
       frequency: habit.frequency || 'daily',
       current_streak: habit.currentStreak || 0,
@@ -110,6 +116,9 @@ export const habitService = {
     if (updates.name !== undefined) payload.name = updates.name;
 
     if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.description !== undefined) payload.description = updates.description || null;
+    if (updates.time !== undefined) payload.ideal_time = updates.time || null;
+    if (updates.iconId !== undefined) payload.icon_id = updates.iconId || null;
     if (updates.goal !== undefined) payload.goal = updates.goal;
     if (updates.frequency !== undefined) payload.frequency = updates.frequency;
     if (updates.currentStreak !== undefined) payload.current_streak = updates.currentStreak;
