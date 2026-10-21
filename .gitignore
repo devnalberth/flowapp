@@ -7,3 +7,8 @@ dist
 .env.*
 !.env.example
 !.env.production
+
+# Local redesign reference documents
+/FLOWAPP-REDESIGN.md
+/flowapp-tokens.css
+/flowapp.md
