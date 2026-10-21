@@ -1,0 +1,7 @@
+.fa-heat {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: var(--fa-radius-heat);
+}

@@ -1,0 +1,25 @@
+.fa-modal--drawer {
+  margin: 8px 8px 8px auto;
+  height: calc(100dvh - 16px);
+  max-height: calc(100dvh - 16px);
+  box-shadow: var(--fa-shadow-menu);
+}
+.fa-modal--drawer .fa-modal__body {
+  flex: 1;
+  overflow: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fa-modal--drawer[open] {
+    animation: fa-drawer-enter 450ms var(--fa-ease-out);
+  }
+  @keyframes fa-drawer-enter {
+    from {
+      opacity: 0;
+      transform: translateX(48px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}

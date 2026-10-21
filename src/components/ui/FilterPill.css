@@ -1,0 +1,18 @@
+.fa-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font: var(--fa-type-badge);
+  background: var(--fa-bg-card);
+  color: var(--fa-text-secondary);
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fa-filter.is-applied {
+  background: var(--fa-bg-accent-soft);
+  border-color: var(--fa-bg-accent-muted);
+  color: var(--fa-text-accent);
+}

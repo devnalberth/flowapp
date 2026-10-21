@@ -1,0 +1,34 @@
+.fa-priority-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fa-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--fa-radius-pill);
+  font: var(--fa-type-badge);
+  background: var(--fa-bg-track);
+  color: var(--fa-text-secondary);
+  white-space: nowrap;
+}
+.fa-priority--danger {
+  color: var(--fa-status-danger);
+  background: var(--fa-status-danger-bg);
+}
+.fa-priority--warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.fa-priority--low {
+  color: var(--fa-text-caption);
+  background: var(--fa-bg-soft);
+  border-color: var(--fa-border-default);
+}
+.fa-priority__flow {
+  font: var(--fa-type-badge);
+  color: var(--fa-text-accent);
+}

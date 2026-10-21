@@ -1,0 +1,40 @@
+.fa-status {
+  --status-ink: var(--fa-text-secondary);
+  --status-bg: var(--fa-bg-track);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--fa-radius-pill);
+  background: var(--status-bg);
+  color: var(--status-ink);
+  font: var(--fa-type-badge);
+  white-space: nowrap;
+}
+.fa-status__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: var(--fa-radius-pill);
+  background: currentColor;
+}
+.fa-status--success {
+  --status-ink: var(--fa-status-success);
+  --status-bg: var(--fa-status-success-bg);
+}
+.fa-status--danger {
+  --status-ink: var(--fa-status-danger);
+  --status-bg: var(--fa-status-danger-bg);
+}
+.fa-status--warning {
+  --status-ink: var(--fa-status-warning);
+  --status-bg: var(--fa-status-warning-bg);
+}
+.fa-status--info {
+  --status-ink: var(--fa-status-info);
+  --status-bg: var(--fa-status-info-bg);
+}
+.fa-status--accent {
+  --status-ink: var(--fa-text-accent);
+  --status-bg: var(--fa-bg-accent-soft);
+}

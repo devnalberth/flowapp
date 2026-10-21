@@ -1,0 +1,45 @@
+.fa-check {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 0;
+  padding: 9px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--fa-text-on-dark);
+  cursor: pointer;
+  border-radius: var(--fa-radius-pill);
+}
+.fa-check > span {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--fa-border-strong);
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-card);
+  display: grid;
+  place-items: center;
+}
+.fa-check.is-checked > span {
+  background: var(--fa-status-success-solid);
+  border-color: var(--fa-status-success-solid);
+}
+.fa-check:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fa-check.is-checked svg {
+    animation: fa-check-pop 250ms var(--fa-ease-pop);
+  }
+  @keyframes fa-check-pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}

@@ -1,0 +1,23 @@
+.fa-area {
+  --area-color: var(--fa-text-muted);
+  --area-bg: var(--fa-bg-track);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--fa-radius-chip);
+  padding: 4px 8px;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-primary);
+  background: var(--area-bg);
+  white-space: nowrap;
+}
+.fa-area__swatch {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--area-color);
+  border-radius: 2.5px;
+}
+.fa-area svg {
+  color: var(--area-color);
+}

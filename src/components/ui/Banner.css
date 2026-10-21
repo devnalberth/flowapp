@@ -1,0 +1,30 @@
+.fa-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--fa-radius-block);
+  color: var(--fa-status-info);
+  background: var(--fa-status-info-bg);
+  font: var(--fa-type-body);
+}
+.fa-banner > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.fa-banner strong {
+  display: block;
+  font-weight: 600;
+}
+.fa-banner--success {
+  color: var(--fa-status-success);
+  background: var(--fa-status-success-bg);
+}
+.fa-banner--warning {
+  color: var(--fa-status-warning);
+  background: var(--fa-status-warning-bg);
+}
+.fa-banner--danger {
+  color: var(--fa-status-danger);
+  background: var(--fa-status-danger-bg);
+}

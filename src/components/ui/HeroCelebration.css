@@ -1,0 +1,43 @@
+.fa-celebration__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.fa-celebration__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fa-status-success-solid);
+  font: var(--fa-type-badge);
+}
+.fa-celebration h2 {
+  margin: 12px 0 8px;
+  font: var(--fa-type-section);
+}
+.fa-celebration p {
+  margin: 0;
+  color: var(--fa-text-on-dark-muted);
+  font: var(--fa-type-body);
+}
+.fa-celebration .fa-ring {
+  color: var(--fa-status-success-solid);
+}
+.fa-celebration .fa-ring__track {
+  stroke: var(--fa-bg-hero-2);
+}
+.fa-celebration__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+@media (max-width: 767px) {
+  .fa-celebration__top {
+    align-items: flex-start;
+  }
+  .fa-celebration .fa-ring {
+    width: 64px !important;
+    height: 64px !important;
+  }
+}

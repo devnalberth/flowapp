@@ -1,0 +1,34 @@
+.fa-toggle {
+  width: 36px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--fa-radius-pill);
+  padding: 2px;
+  display: flex;
+  flex: none;
+  background: var(--fa-border-strong);
+  cursor: pointer;
+}
+.fa-toggle > span {
+  width: 16px;
+  height: 16px;
+  border-radius: inherit;
+  background: var(--fa-bg-card);
+  transform: translateX(0);
+  transition: transform var(--fa-dur-fast) var(--fa-ease-out);
+}
+.fa-toggle.is-on {
+  background: var(--fa-bg-accent);
+}
+.fa-toggle.is-on > span {
+  transform: translateX(16px);
+}
+.fa-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fa-toggle > span {
+    transition: none;
+  }
+}

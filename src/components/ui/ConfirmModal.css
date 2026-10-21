@@ -1,0 +1,9 @@
+.fa-confirm__message {
+  margin: 0;
+  font: var(--fa-type-body);
+  color: var(--fa-text-secondary);
+}
+.fa-confirm .fa-modal__actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}

@@ -1,0 +1,20 @@
+.fa-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-accent);
+  color: var(--fa-text-on-accent);
+  font: var(--fa-type-badge);
+}
+.fa-avatar--md {
+  width: 36px;
+  height: 36px;
+}
+.fa-avatar--lg {
+  width: 48px;
+  height: 48px;
+  font: var(--fa-type-body-strong);
+}

@@ -1,0 +1,32 @@
+.fa-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px dashed var(--fa-border-divider);
+  border-radius: var(--fa-radius-block);
+  background: var(--fa-bg-soft);
+  text-align: center;
+}
+.fa-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-accent-soft);
+  color: var(--fa-text-accent);
+}
+.fa-empty h3 {
+  margin: 0;
+  color: var(--fa-text-primary);
+  font: var(--fa-type-body-strong);
+}
+.fa-empty p {
+  margin: 0;
+  color: var(--fa-text-muted);
+  font: var(--fa-type-caption);
+  max-width: 40ch;
+}

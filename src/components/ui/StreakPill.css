@@ -1,0 +1,23 @@
+.fa-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-bg-accent-soft);
+  color: var(--fa-text-accent);
+  font: var(--fa-type-badge);
+  white-space: nowrap;
+}
+.fa-streak strong {
+  font-weight: 600;
+}
+.fa-streak > span {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+.fa-streak--zero {
+  background: var(--fa-bg-soft);
+  border: 1px solid var(--fa-border-default);
+  color: var(--fa-text-muted);
+}

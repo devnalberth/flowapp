@@ -1,0 +1,27 @@
+.fa-progress {
+  min-width: 0;
+}
+.fa-progress__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-primary);
+}
+.fa-progress__header span:last-child {
+  color: var(--fa-text-muted);
+  font: var(--fa-type-caption);
+}
+.fa-progress__track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--fa-radius-pill);
+  background: var(--fa-progress-track);
+}
+.fa-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left;
+}

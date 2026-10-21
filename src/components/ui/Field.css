@@ -1,0 +1,67 @@
+.fa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.fa-field > label {
+  font: var(--fa-type-label);
+  color: var(--fa-text-secondary);
+}
+.fa-field > label > span {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+.fa-field .fa-field__control {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: var(--fa-radius-input);
+  background: var(--fa-bg-card);
+  color: var(--fa-text-primary);
+  font: var(--fa-type-body);
+}
+.fa-field textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+.fa-field__control::placeholder {
+  color: var(--fa-text-caption);
+  opacity: 1;
+}
+.fa-field .fa-field__control:focus {
+  outline: 1.5px solid var(--fa-border-focus);
+  outline-offset: -1px;
+  border-color: var(--fa-border-focus);
+  box-shadow: var(--fa-focus-ring);
+}
+.fa-field .fa-field__control:disabled {
+  background: var(--fa-bg-soft);
+  color: var(--fa-text-muted);
+  cursor: not-allowed;
+}
+.fa-field--error .fa-field__control {
+  border-color: var(--fa-status-danger-solid);
+}
+.fa-field__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+.fa-field__footer p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.fa-field__footer > span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.fa-field--error .fa-field__footer p {
+  color: var(--fa-status-danger);
+}
