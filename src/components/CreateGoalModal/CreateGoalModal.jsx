@@ -1,370 +1,414 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Trash2 } from 'lucide-react'
-import './CreateGoalModal.css'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Target, Trash2, Wallet, Pencil } from "lucide-react";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
+import { Input, Select, DateInput, Textarea } from "../ui/Field";
+import Banner from "../ui/Banner";
+import "./CreateGoalModal.css";
 
-const DESCRIPTION_LIMIT = 280
+const DESCRIPTION_LIMIT = 280;
 
 const GOAL_TYPES = [
-  { value: 'trimestral', label: 'Trimestral (3 meses)' },
-  { value: 'semestral', label: 'Semestral (6 meses)' },
-  { value: 'anual', label: 'Anual (12 meses)' },
-  { value: 'custom', label: 'Personalizado' },
-]
+  { value: "trimestral", label: "Trimestral (3 meses)" },
+  { value: "semestral", label: "Semestral (6 meses)" },
+  { value: "anual", label: "Anual (12 meses)" },
+  { value: "custom", label: "Personalizado" },
+];
 
 const TRIMESTERS = [
-  { value: 1, label: '1º Trimestre', months: [1, 2, 3] },
-  { value: 2, label: '2º Trimestre', months: [4, 5, 6] },
-  { value: 3, label: '3º Trimestre', months: [7, 8, 9] },
-  { value: 4, label: '4º Trimestre', months: [10, 11, 12] },
-]
+  { value: 1, label: "1º Trimestre", months: [1, 2, 3] },
+  { value: 2, label: "2º Trimestre", months: [4, 5, 6] },
+  { value: 3, label: "3º Trimestre", months: [7, 8, 9] },
+  { value: 4, label: "4º Trimestre", months: [10, 11, 12] },
+];
 
 const SEMESTERS = [
-  { value: 1, label: '1º Semestre', months: [1, 2, 3, 4, 5, 6] },
-  { value: 2, label: '2º Semestre', months: [7, 8, 9, 10, 11, 12] },
-]
+  { value: 1, label: "1º Semestre", months: [1, 2, 3, 4, 5, 6] },
+  { value: 2, label: "2º Semestre", months: [7, 8, 9, 10, 11, 12] },
+];
 
 // Função auxiliar para converter "1º Trimestre" -> 1
 const parseTrimesterValue = (val) => {
-  if (typeof val === 'number') return val
-  if (typeof val === 'string') {
-    if (val.includes('1º')) return 1
-    if (val.includes('2º')) return 2
-    if (val.includes('3º')) return 3
-    if (val.includes('4º')) return 4
+  if (typeof val === "number") return val;
+  if (typeof val === "string") {
+    if (val.includes("1º")) return 1;
+    if (val.includes("2º")) return 2;
+    if (val.includes("3º")) return 3;
+    if (val.includes("4º")) return 4;
   }
-  return 1 // Padrão
-}
+  return 1; // Padrão
+};
 
 const calculateTrimester = (startDate, endDate) => {
-  if (!startDate) return null
-  const start = new Date(startDate)
-  const startMonth = start.getMonth() + 1
+  if (!startDate) return null;
+  const start = new Date(startDate);
+  const startMonth = start.getMonth() + 1;
 
   if (endDate) {
-    const end = new Date(endDate)
-    const endMonth = end.getMonth() + 1
-    const startQuarter = Math.ceil(startMonth / 3)
-    const endQuarter = Math.ceil(endMonth / 3)
-    const quarters = []
+    const end = new Date(endDate);
+    const endMonth = end.getMonth() + 1;
+    const startQuarter = Math.ceil(startMonth / 3);
+    const endQuarter = Math.ceil(endMonth / 3);
+    const quarters = [];
     for (let q = startQuarter; q <= endQuarter; q++) {
-      if (TRIMESTERS[q - 1]) quarters.push(TRIMESTERS[q - 1])
+      if (TRIMESTERS[q - 1]) quarters.push(TRIMESTERS[q - 1]);
     }
-    return quarters
+    return quarters;
   }
 
-  const quarter = Math.ceil(startMonth / 3)
-  return [TRIMESTERS[quarter - 1]]
-}
+  const quarter = Math.ceil(startMonth / 3);
+  return [TRIMESTERS[quarter - 1]];
+};
 
-const isFinanceArea = (area) => String(area || '').toLowerCase() === 'financeiro'
+const isFinanceArea = (area) =>
+  String(area || "").toLowerCase() === "financeiro";
 
-export default function CreateGoalModal({ open, onClose, onSubmit, onDelete, areaOptions = [], projectOptions = [], financeCategories = [], defaultArea = null, initialData = null }) {
+export default function CreateGoalModal({
+  open,
+  onClose,
+  onSubmit,
+  onDelete,
+  areaOptions = [],
+  projectOptions = [],
+  financeCategories = [],
+  defaultArea = null,
+  initialData = null,
+}) {
   const [form, setForm] = useState(() => ({
-    title: '',
-    area: defaultArea ?? areaOptions[0] ?? '',
-    type: 'trimestral',
+    title: "",
+    area: defaultArea ?? areaOptions[0] ?? "",
+    type: "trimestral",
     trimester: 1,
     semester: 1,
-    startDate: '',
-    endDate: '',
-    target: '',
-    projectId: '',
-    financeCategory: '',
-    financeTarget: '',
-  }))
-  const titleRef = useRef(null)
-
-  const charCount = useMemo(() => `${(form.target || '').length}/${DESCRIPTION_LIMIT}`, [form.target])
+    startDate: "",
+    endDate: "",
+    target: "",
+    projectId: "",
+    financeCategory: "",
+    financeTarget: "",
+  }));
+  const titleRef = useRef(null);
 
   const calculatedTrimesters = useMemo(() => {
-    return calculateTrimester(form.startDate, form.endDate)
-  }, [form.startDate, form.endDate])
+    return calculateTrimester(form.startDate, form.endDate);
+  }, [form.startDate, form.endDate]);
 
   useEffect(() => {
-    if (!open) return undefined
-    const currentYear = new Date().getFullYear()
+    if (!open) return undefined;
+    const currentYear = new Date().getFullYear();
 
     if (initialData) {
       // CORREÇÃO CRÍTICA: Converter string do trimestre para número seguro
-      const safeTrimester = parseTrimesterValue(initialData.trimester)
+      const safeTrimester = parseTrimesterValue(initialData.trimester);
 
       setForm({
-        title: initialData.title || initialData.name || '',
-        area: initialData.area || defaultArea || areaOptions[0] || '',
-        type: initialData.type || 'trimestral',
+        title: initialData.title || initialData.name || "",
+        area: initialData.area || defaultArea || areaOptions[0] || "",
+        type: initialData.type || "trimestral",
         trimester: safeTrimester,
         semester: initialData.semester || 1,
-        startDate: initialData.startDate || initialData.start_date || `${currentYear}-01-01`,
-        endDate: initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
-        target: initialData.target || '',
-        projectId: initialData.projects?.[0]?.id || '',
-        financeCategory: initialData.financeCategory || initialData.finance_category || '',
-        financeTarget: initialData.financeTarget ?? initialData.finance_target ?? '',
-      })
+        startDate:
+          initialData.startDate ||
+          initialData.start_date ||
+          `${currentYear}-01-01`,
+        endDate:
+          initialData.endDate || initialData.end_date || `${currentYear}-03-31`,
+        target: initialData.target || "",
+        projectId: initialData.projects?.[0]?.id || "",
+        financeCategory:
+          initialData.financeCategory || initialData.finance_category || "",
+        financeTarget:
+          initialData.financeTarget ?? initialData.finance_target ?? "",
+      });
     } else {
       setForm({
-        title: '',
-        area: defaultArea ?? areaOptions[0] ?? '',
-        type: 'trimestral',
+        title: "",
+        area: defaultArea ?? areaOptions[0] ?? "",
+        type: "trimestral",
         trimester: 1,
         semester: 1,
         startDate: `${currentYear}-01-01`,
         endDate: `${currentYear}-03-31`,
-        target: '',
-        projectId: '',
-        financeCategory: '',
-        financeTarget: '',
-      })
+        target: "",
+        projectId: "",
+        financeCategory: "",
+        financeTarget: "",
+      });
     }
 
     // Pequeno timeout para focar e garantir que o estado atualizou
-    setTimeout(() => titleRef.current?.focus(), 50)
-
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [open, initialData])
+    const focusTimer = setTimeout(() => titleRef.current?.focus(), 50);
+    return () => clearTimeout(focusTimer);
+  }, [open, initialData]);
 
   // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
   // Atualizar datas automaticamente (BLINDADO CONTRA CRASH)
   useEffect(() => {
     // Se for personalizado, ou se os dados necessários não existirem, não faz nada
-    if (form.type === 'custom') return
+    if (form.type === "custom") return;
 
-    const currentYear = new Date().getFullYear()
-    let newStartDate = ''
-    let newEndDate = ''
+    const currentYear = new Date().getFullYear();
+    let newStartDate = "";
+    let newEndDate = "";
 
-    if (form.type === 'trimestral' && form.trimester) {
-      const trimesterData = TRIMESTERS[form.trimester - 1]
+    if (form.type === "trimestral" && form.trimester) {
+      const trimesterData = TRIMESTERS[form.trimester - 1];
       if (trimesterData) {
-        const months = trimesterData.months
+        const months = trimesterData.months;
         // Start: 1º dia do 1º mês
-        newStartDate = `${currentYear}-${String(months[0]).padStart(2, '0')}-01`
+        newStartDate = `${currentYear}-${String(months[0]).padStart(2, "0")}-01`;
 
         // End: Último dia do último mês
-        const lastMonth = months[2]
-        const lastDay = [4, 6, 9, 11].includes(lastMonth) ? 30 : 31
-        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
+        const lastMonth = months[2];
+        const lastDay = [4, 6, 9, 11].includes(lastMonth) ? 30 : 31;
+        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, "0")}-${lastDay}`;
       }
-    } else if (form.type === 'semestral' && form.semester) {
-      const semesterData = SEMESTERS[form.semester - 1]
+    } else if (form.type === "semestral" && form.semester) {
+      const semesterData = SEMESTERS[form.semester - 1];
       if (semesterData) {
-        const months = semesterData.months
-        newStartDate = `${currentYear}-${String(months[0]).padStart(2, '0')}-01`
+        const months = semesterData.months;
+        newStartDate = `${currentYear}-${String(months[0]).padStart(2, "0")}-01`;
 
-        const lastMonth = months[months.length - 1]
-        const lastDay = lastMonth === 6 ? 30 : 31
-        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`
+        const lastMonth = months[months.length - 1];
+        const lastDay = lastMonth === 6 ? 30 : 31;
+        newEndDate = `${currentYear}-${String(lastMonth).padStart(2, "0")}-${lastDay}`;
       }
-    } else if (form.type === 'anual') {
-      newStartDate = `${currentYear}-01-01`
-      newEndDate = `${currentYear}-12-31`
+    } else if (form.type === "anual") {
+      newStartDate = `${currentYear}-01-01`;
+      newEndDate = `${currentYear}-12-31`;
     }
 
     if (newStartDate && newEndDate) {
-      setForm(prev => {
+      setForm((prev) => {
         // Evita updates infinitos
         if (prev.startDate !== newStartDate || prev.endDate !== newEndDate) {
-          return { ...prev, startDate: newStartDate, endDate: newEndDate }
+          return { ...prev, startDate: newStartDate, endDate: newEndDate };
         }
-        return prev
-      })
+        return prev;
+      });
     }
-  }, [form.type, form.trimester, form.semester])
+  }, [form.type, form.trimester, form.semester]);
 
-  if (!open) return null
+  if (!open) return null;
 
   const updateField = (field) => (event) => {
-    const value = event.target.value
+    const value = event.target.value;
     setForm((prev) => {
-      const newForm = { ...prev, [field]: value }
+      const newForm = { ...prev, [field]: value };
 
-      if (field === 'type') {
-        const currentYear = new Date().getFullYear()
-        if (value === 'trimestral') {
-          newForm.trimester = 1
-          newForm.startDate = `${currentYear}-01-01`
-        } else if (value === 'semestral') {
-          newForm.semester = 1
-          newForm.startDate = `${currentYear}-01-01`
-        } else if (value === 'anual') {
-          newForm.startDate = `${currentYear}-01-01`
-          newForm.endDate = `${currentYear}-12-31`
+      if (field === "type") {
+        const currentYear = new Date().getFullYear();
+        if (value === "trimestral") {
+          newForm.trimester = 1;
+          newForm.startDate = `${currentYear}-01-01`;
+        } else if (value === "semestral") {
+          newForm.semester = 1;
+          newForm.startDate = `${currentYear}-01-01`;
+        } else if (value === "anual") {
+          newForm.startDate = `${currentYear}-01-01`;
+          newForm.endDate = `${currentYear}-12-31`;
         }
       }
 
       // Casting para número ao mudar selects
-      if (field === 'trimester') newForm.trimester = parseInt(value)
-      if (field === 'semester') newForm.semester = parseInt(value)
+      if (field === "trimester") newForm.trimester = parseInt(value);
+      if (field === "semester") newForm.semester = parseInt(value);
 
-      return newForm
-    })
-  }
+      return newForm;
+    });
+  };
 
   const handleSubmit = (event) => {
-    event.preventDefault()
-    const trimesters = calculatedTrimesters || []
+    event.preventDefault();
+    const trimesters = calculatedTrimesters || [];
 
-    const finance = isFinanceArea(form.area)
+    const finance = isFinanceArea(form.area);
     const payload = {
       ...form,
-      trimesters: trimesters.length > 0 ? trimesters[0].label : '1º Trimestre', // Simplificação para salvar o principal
-      trimesterValues: trimesters.map(t => t.value),
+      trimesters: trimesters.length > 0 ? trimesters[0].label : "1º Trimestre", // Simplificação para salvar o principal
+      trimesterValues: trimesters.map((t) => t.value),
       // Só persiste vínculo financeiro quando a área é Financeiro
-      financeCategory: finance ? (form.financeCategory || null) : null,
-      financeTarget: finance && form.financeTarget !== '' ? Number(form.financeTarget) : null,
-    }
-    onSubmit?.(payload)
-  }
+      financeCategory: finance ? form.financeCategory || null : null,
+      financeTarget:
+        finance && form.financeTarget !== ""
+          ? Number(form.financeTarget)
+          : null,
+    };
+    onSubmit?.(payload);
+  };
 
   return (
-    <div className="createGoalModal" role="dialog" aria-modal="true">
-      <div className="createGoalModal__backdrop" onClick={onClose} />
-      <section className="createGoalModal__panel">
-        <header className="createGoalModal__header">
-          <div>
-            <p className="createGoalModal__eyebrow">Nova meta</p>
-            <h3>{initialData ? 'Editar meta' : 'Mapear objetivo'}</h3>
-          </div>
-          <button type="button" className="createGoalModal__close" onClick={onClose}>✕</button>
-        </header>
-
-        <form className="createGoalModal__form" onSubmit={handleSubmit}>
-          <label className="createGoalModal__field">
-            <span>Título da meta*</span>
-            <input
-              ref={titleRef}
-              type="text"
-              placeholder="Ex: Escalar Flow OS"
-              value={form.title}
-              onChange={updateField('title')}
-              required
-            />
-          </label>
-
-          <div className="createGoalModal__row">
-            <label className="createGoalModal__field">
-              <span>Área</span>
-              <select value={form.area} onChange={updateField('area')}>
-                {areaOptions.map((area) => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="createGoalModal__field">
-              <span>Tipo de meta</span>
-              <select value={form.type} onChange={updateField('type')}>
-                {GOAL_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {isFinanceArea(form.area) && (
-            <div className="createGoalModal__finance">
-              <p className="createGoalModal__financeHint">💰 Meta financeira — acompanhada pelas <strong>receitas da categoria</strong> no mês.</p>
-              <div className="createGoalModal__row">
-                <label className="createGoalModal__field">
-                  <span>Categoria vinculada</span>
-                  <select value={form.financeCategory} onChange={updateField('financeCategory')}>
-                    <option value="">Selecione…</option>
-                    {financeCategories
-                      .filter((c) => (c.type || '').toUpperCase() !== 'DESPESA')
-                      .map((c) => (
-                        <option key={c.slug} value={c.slug}>{c.icon ? `${c.icon} ` : ''}{c.name}</option>
-                      ))}
-                  </select>
-                </label>
-                <label className="createGoalModal__field">
-                  <span>Alvo mensal (R$)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    placeholder="Ex: 10000"
-                    value={form.financeTarget}
-                    onChange={updateField('financeTarget')}
-                  />
-                </label>
-              </div>
-            </div>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={initialData ? "Editar meta" : "Nova meta"}
+      subtitle={
+        initialData
+          ? "O progresso segue vindo dos projetos ligados."
+          : "Mapeie o objetivo. Projetos e tarefas fazem ela andar."
+      }
+      icon={initialData ? Pencil : Target}
+      width={600}
+      className={`goal-form-modal ${initialData ? "is-editing" : ""}`}
+      hint="Enter salva · Esc cancela"
+      footer={
+        <>
+          {initialData && onDelete && (
+            <Button
+              className="goal-form-delete"
+              variant="danger"
+              icon={Trash2}
+              onClick={onDelete}
+            >
+              Excluir
+            </Button>
           )}
-
-          <div className="createGoalModal__row">
-            {form.type === 'trimestral' && (
-              <label className="createGoalModal__field">
-                <span>Trimestre</span>
-                <select value={form.trimester} onChange={updateField('trimester')}>
-                  {TRIMESTERS.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="goal-form">
+            {initialData ? "Salvar alterações" : "Criar meta"}
+          </Button>
+        </>
+      }
+    >
+      <form id="goal-form" className="goal-form" onSubmit={handleSubmit}>
+        <Input
+          label="Título da meta"
+          ref={titleRef}
+          value={form.title}
+          onChange={updateField("title")}
+          required
+          placeholder="O que você quer construir?"
+        />
+        <div className="goal-form-row">
+          <Select label="Área" value={form.area} onChange={updateField("area")}>
+            {areaOptions.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Tipo de meta"
+            value={form.type}
+            onChange={updateField("type")}
+          >
+            {GOAL_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {isFinanceArea(form.area) && (
+          <section className="goal-form-finance">
+            <p>
+              <Wallet size={16} strokeWidth={1.75} />
+              Meta financeira: acompanhada pelas receitas da categoria no mês.
+            </p>
+            <div className="goal-form-row">
+              <Select
+                label="Categoria vinculada"
+                value={form.financeCategory}
+                onChange={updateField("financeCategory")}
+              >
+                <option value="">Selecione…</option>
+                {financeCategories
+                  .filter((c) => (c.type || "").toUpperCase() !== "DESPESA")
+                  .map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.name}
+                    </option>
                   ))}
-                </select>
-              </label>
-            )}
-
-            {form.type === 'semestral' && (
-              <label className="createGoalModal__field">
-                <span>Semestre</span>
-                <select value={form.semester} onChange={updateField('semester')}>
-                  {SEMESTERS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <label className="createGoalModal__field">
-              <span>Vincular a Projeto (Opcional)</span>
-              <select value={form.projectId} onChange={updateField('projectId')}>
-                <option value="">Sem vínculo</option>
-                {projectOptions.map((proj) => (
-                  <option key={proj.id} value={proj.id}>{proj.title}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="createGoalModal__row">
-            <label className="createGoalModal__field">
-              <span>Início</span>
-              <input type="date" value={form.startDate} onChange={updateField('startDate')} disabled={form.type !== 'custom'} />
-            </label>
-            <label className="createGoalModal__field">
-              <span>Prazo</span>
-              <input type="date" value={form.endDate} min={form.startDate} onChange={updateField('endDate')} disabled={form.type !== 'custom'} />
-            </label>
-          </div>
-
-          <label className="createGoalModal__field">
-            <span>Resultado desejado</span>
-            <div className="createGoalModal__textareaWrap">
-              <textarea
-                placeholder="Descreva o sucesso..."
-                maxLength={DESCRIPTION_LIMIT}
-                value={form.target}
-                onChange={updateField('target')}
+              </Select>
+              <Input
+                label="Alvo mensal (R$)"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={form.financeTarget}
+                onChange={updateField("financeTarget")}
+                placeholder="Ex: 1500"
               />
-              <small>{charCount}</small>
             </div>
-          </label>
-
-          <footer className="createGoalModal__footer" style={{ justifyContent: initialData ? 'space-between' : 'flex-end' }}>
-            {initialData && onDelete && (
-              <button type="button" onClick={onDelete} className="btn btn--danger" style={{ marginRight: 'auto', color: '#ef4444', background: '#fee2e2', padding: '0.75rem 1rem', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Trash2 size={16} /> Excluir
-              </button>
-            )}
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button type="button" onClick={onClose} className="btn btn--ghost">Cancelar</button>
-              <button type="submit" className="btn btn--primary">{initialData ? 'Salvar' : 'Criar'}</button>
-            </div>
-          </footer>
-        </form>
-      </section>
-    </div>
-  )
+          </section>
+        )}
+        <div className="goal-form-row">
+          {form.type === "trimestral" && (
+            <Select
+              label="Trimestre"
+              value={form.trimester}
+              onChange={updateField("trimester")}
+            >
+              {TRIMESTERS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </Select>
+          )}
+          {form.type === "semestral" && (
+            <Select
+              label="Semestre"
+              value={form.semester}
+              onChange={updateField("semester")}
+            >
+              {SEMESTERS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </Select>
+          )}
+          <Select
+            label="Vincular a projeto"
+            optional
+            value={form.projectId}
+            onChange={updateField("projectId")}
+          >
+            <option value="">Sem vínculo</option>
+            {projectOptions.map((proj) => (
+              <option key={proj.id} value={proj.id}>
+                {proj.title}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {initialData?.projects?.length > 1 && (
+          <Banner tone="info">
+            Esta meta tem {initialData.projects.length} projetos. Se escolher um
+            projeto diferente dos atuais ou “Sem vínculo”, os projetos atuais
+            serão desvinculados.
+          </Banner>
+        )}
+        <div className="goal-form-row">
+          <DateInput
+            label="Início"
+            value={form.startDate}
+            onChange={updateField("startDate")}
+            disabled={form.type !== "custom"}
+            hint={form.type !== "custom" ? "Calculado pelo tipo" : undefined}
+          />
+          <DateInput
+            label="Prazo"
+            value={form.endDate}
+            min={form.startDate}
+            onChange={updateField("endDate")}
+            disabled={form.type !== "custom"}
+            hint={form.type !== "custom" ? "Calculado pelo tipo" : undefined}
+          />
+        </div>
+        <Textarea
+          rows={(form.target || "").length > 75 ? 2 : 1}
+          label="Resultado desejado"
+          placeholder="Como você vai reconhecer essa conquista?"
+          maxLength={DESCRIPTION_LIMIT}
+          value={form.target}
+          onChange={updateField("target")}
+        />
+      </form>
+    </Modal>
+  );
 }

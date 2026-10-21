@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-21",
+  "harness": "Actual components with synthetic AppContext; Supabase requests blocked",
+  "checks": [
+    "Empty area opens existing form with selected area; Escape closes",
+    "Create retains financial payload and Q4 dates; existing timezone quarter result [3,4] preserved",
+    "Completed goal uses celebration component and opens next goal in same area",
+    "Financial detail uses category revenue and global value masking",
+    "painel responsive 390px no document overflow",
+    "area responsive 390px no document overflow",
+    "detalhe responsive 390px no document overflow",
+    "concluida responsive 390px no document overflow",
+    "sem-metas responsive 390px no document overflow",
+    "Mobile form fits viewport and closes with Escape",
+    "Multi-project warning accurate; delete cancellation preserves unsaved edit and sends no delete",
+    "Edit submits existing updateGoal data; confirmed deletion calls existing deleteGoal once",
+    "No runtime page errors"
+  ],
+  "errors": [],
+  "livePersistence": "Not tested"
+}

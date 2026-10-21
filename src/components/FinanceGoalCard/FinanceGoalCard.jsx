@@ -7,7 +7,7 @@ const fmtMoney = (n) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Number(n) || 0)
 
 // Soma das receitas da categoria vinculada dentro das transações do mês.
-function categoryRevenue(transactions, slug) {
+export function categoryRevenue(transactions, slug) {
   return (transactions || [])
     .filter((t) => (t.type || '').toUpperCase() === 'RECEITA' && t.category === slug)
     .reduce((s, t) => s + (Number(t.amount) || 0), 0)

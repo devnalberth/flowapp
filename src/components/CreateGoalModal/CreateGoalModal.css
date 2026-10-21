@@ -1,233 +1,88 @@
-:root {
-  --modal-bg: rgba(16, 16, 22, 0.5);
-  --panel-bg: #ffffff;
-  --panel-border: rgba(0, 0, 0, 0.1);
-  --panel-radius: 20px;
-  --surface-elev: 0 18px 60px rgba(0, 0, 0, 0.15);
-}
-
-.createGoalModal {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Sora', sans-serif;
-}
-
-.createGoalModal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--modal-bg);
-  backdrop-filter: blur(6px);
-}
-
-.createGoalModal__panel {
-  position: relative;
-  width: min(800px, calc(100vw - 32px));
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--panel-radius);
-  padding: 32px;
-  box-shadow: var(--surface-elev);
-  color: #0d0d12;
+.goal-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
-
-.createGoalModal__row {
+.goal-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
-
+.goal-form-row > .fa-field:only-child {
+  grid-column: 1/-1;
+}
+.goal-form-finance {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background: var(--fa-area-financeiro-bg);
+}
+.goal-form-finance > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--fa-area-financeiro);
+  font: var(--fa-type-badge);
+}
+.goal-form-finance > p svg {
+  flex: none;
+}
+.goal-form-modal .fa-field:has(input:disabled) {
+  opacity: 0.6;
+}
+.goal-form-modal textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.goal-form-modal .goal-form-delete {
+  color: var(--fa-status-danger);
+  margin-right: auto;
+}
+.goal-form-modal:has(.goal-form-delete) .fa-modal__hint {
+  display: none;
+}
+.goal-form-modal:has(.goal-form-delete) .fa-modal__actions {
+  width: 100%;
+}
 @media (max-width: 600px) {
-  .createGoalModal__row {
+  .goal-form-row {
     grid-template-columns: 1fr;
+  }
+  .goal-form-modal .fa-modal__hint {
+    display: none;
   }
 }
 
-.createGoalModal__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.goal-form-modal {
+  margin: min(14vh, 232px) auto auto;
 }
-
-.createGoalModal__eyebrow {
-  text-transform: uppercase;
-  color: #ff4800;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-}
-
-.createGoalModal__header h3 {
-  margin: 4px 0 0;
-  font-size: 1.6rem;
-}
-
-.createGoalModal__close {
-  border: 1px solid var(--panel-border);
-  background: transparent;
-  color: inherit;
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: border-color 200ms ease;
-}
-
-.createGoalModal__close:hover {
-  border-color: #8b8da2;
-}
-
-.createGoalModal__form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.createGoalModal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: #5b5a64;
-}
-
-.createGoalModal__field span {
-  color: #0d0d12;
-  font-weight: 600;
-}
-
-.createGoalModal__field input,
-.createGoalModal__field select,
-.createGoalModal__field textarea {
-  background: #f9f9fb;
-  border: 1px solid #e0e0e6;
-  border-radius: 14px;
-  padding: 14px 16px;
-  color: inherit;
-  font: inherit;
-  transition: border-color 200ms ease, background 200ms ease;
-}
-
-.createGoalModal__field input:focus,
-.createGoalModal__field select:focus,
-.createGoalModal__field textarea:focus {
-  outline: none;
-  border-color: #ff4800;
-  background: rgba(255, 72, 0, 0.06);
-}
-
-.createGoalModal__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.createGoalModal__textareaWrap {
+.goal-form .fa-field:has(textarea) {
   position: relative;
 }
-
-.createGoalModal__textareaWrap textarea {
-  min-height: 120px;
-  resize: vertical;
+.goal-form .fa-field textarea {
+  min-height: 68px;
+  padding-bottom: 28px;
 }
-
-.createGoalModal__textareaWrap small {
+.goal-form .fa-field:has(textarea) .fa-field__footer {
   position: absolute;
-  bottom: 12px;
-  right: 16px;
-  color: #8b8b95;
-  font-weight: 500;
-}
-
-.createGoalModal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.createGoalModal__finance {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background: rgba(22, 163, 74, 0.06);
-  border: 1px solid rgba(22, 163, 74, 0.22);
-  border-radius: 16px;
-  padding: 16px;
-}
-
-.createGoalModal__financeHint {
+  left: 14px;
+  bottom: 10px;
   margin: 0;
-  font-size: 0.85rem;
-  color: #15803d;
+}
+@media (max-width: 767px) {
+  .goal-form-modal {
+    margin: 16px auto;
+  }
 }
 
-.createGoalModal__financeHint strong {
-  font-weight: 700;
+.goal-form-modal.is-editing {
+  margin-top: min(18.5vh, 306px);
 }
-
-.createGoalModal__finance .createGoalModal__field input:focus,
-.createGoalModal__finance .createGoalModal__field select:focus {
-  border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.07);
-}
-
-.createGoalModal__info {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin: 8px 0;
-}
-
-.createGoalModal__info p {
-  margin: 0;
-  font-size: 14px;
-  color: #0369a1;
-}
-
-.createGoalModal__info strong {
-  font-weight: 600;
-}
-
-.btn {
-  border-radius: 14px;
-  padding: 12px 18px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: transform 150ms ease, box-shadow 150ms ease;
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn--ghost {
-  background: transparent;
-  color: #5b5a64;
-  border: 1px solid #d0d0d8;
-}
-
-.btn--ghost:hover {
-  border-color: #0d0d12;
-  background: #f9f9fb;
-}
-
-.btn--primary {
-  background: linear-gradient(180deg, #ff4800 0%, #ff9500 100%);
-  color: #ffffff;
-  box-shadow: 0 12px 30px rgba(255, 72, 0, 0.32);
-}
-
-.btn--primary:hover {
-  box-shadow: 0 16px 36px rgba(255, 72, 0, 0.4);
+@media (max-width: 767px) {
+  .goal-form-modal.is-editing {
+    margin-top: 16px;
+  }
 }
