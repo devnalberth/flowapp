@@ -90,6 +90,7 @@ export default function Modal({
       aria-describedby={subtitle ? subtitleId : undefined}
       onKeyDown={trapFocus}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return
         event.preventDefault()
         onCloseRef.current?.()
       }}

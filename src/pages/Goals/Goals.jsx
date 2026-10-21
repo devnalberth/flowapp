@@ -6,24 +6,12 @@ import CreateGoalModal from "../../components/CreateGoalModal/CreateGoalModal.js
 import DreamMapModal from "../../components/DreamMapModal/DreamMapModal.jsx";
 import { computeProjectStats } from "../../utils/projectMetrics";
 import { getGoalSchedule, TRIMESTER_LABELS } from "../../utils/goalSchedule";
-import {
-  Target,
-  FolderKanban,
-  ListChecks,
-  CheckCircle2,
-  CalendarClock,
-  ArrowUpRight,
-  Pencil,
-  Eye,
-  X,
-  Trophy,
-  TrendingUp,
-} from "lucide-react";
 
 import "./Goals.css";
 import GoalsPanel from "./GoalsPanel";
 import GoalAreaView from "./GoalAreaView";
 import GoalDetailView from "./GoalDetailView";
+import DreamLightbox from "./DreamLightbox";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import { useToast } from "../../components/ui/ToastProvider";
 import { Trash2 } from "lucide-react";
@@ -62,13 +50,6 @@ const DEFAULT_LIFE_AREAS = [
   },
 ];
 
-const fmtDate = (value) => {
-  if (!value) return null;
-  const d = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-};
-
 // Agrega métricas de um conjunto de metas (para os dashboards)
 const aggregateGoals = (metas = []) => {
   const total = metas.length;
@@ -104,333 +85,8 @@ const aggregateGoals = (metas = []) => {
 };
 
 // Visão geral consolidada (topo da página de Metas)
-function MetasOverview({ areas }) {
-  const all = areas.flatMap((a) => a.metas);
-  const stats = aggregateGoals(all);
-  const maxQ = Math.max(1, ...stats.byQuarter);
-
-  return (
-    <section className="metasOverview">
-      <header className="metasOverview__head">
-        <div>
-          <p className="metasOverview__eyebrow">Visão geral</p>
-          <h2>Painel de Metas</h2>
-        </div>
-        <div className="metasOverview__big">
-          <strong>{stats.avgProgress}%</strong>
-          <span>progresso geral</span>
-        </div>
-      </header>
-
-      <div className="metaStats__kpis">
-        <div className="metaKpi">
-          <Target size={17} />
-          <strong>{stats.total}</strong>
-          <span>Metas</span>
-        </div>
-        <div className="metaKpi metaKpi--done">
-          <Trophy size={17} />
-          <strong>{stats.done}</strong>
-          <span>Concluídas</span>
-        </div>
-        <div className="metaKpi">
-          <TrendingUp size={17} />
-          <strong>{stats.inProgress}</strong>
-          <span>Em progresso</span>
-        </div>
-        <div className="metaKpi">
-          <FolderKanban size={17} />
-          <strong>{stats.projects}</strong>
-          <span>Projetos</span>
-        </div>
-        <div className="metaKpi">
-          <ListChecks size={17} />
-          <strong>
-            {stats.doneTasks}/{stats.totalTasks}
-          </strong>
-          <span>Tarefas</span>
-        </div>
-      </div>
-
-      <div className="metasOverview__charts">
-        <div className="metasOverview__chart">
-          <h4>Metas por trimestre</h4>
-          <div className="qbars">
-            {stats.byQuarter.map((v, i) => (
-              <div key={i} className="qbar">
-                <div className="qbar__track">
-                  <span
-                    style={{
-                      height: `${Math.max((v / maxQ) * 100, v ? 8 : 0)}%`,
-                    }}
-                  />
-                </div>
-                <span className="qbar__val">{v}</span>
-                <span className="qbar__label">{i + 1}º Tri</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="metasOverview__chart">
-          <h4>Progresso por área</h4>
-          <ul className="areaBars">
-            {areas.map((a) => (
-              <li key={a.id}>
-                <span className="areaBars__name">
-                  {a.icon} {a.label}
-                </span>
-                <div className="areaBars__track">
-                  <span style={{ width: `${a.progressPercent || 0}%` }} />
-                </div>
-                <span className="areaBars__pct">{a.progressPercent || 0}%</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // Dashboard compacto de uma área (acima do kanban)
-function AreaDashboard({ metas }) {
-  const stats = aggregateGoals(metas);
-  return (
-    <div className="metaStats">
-      <div className="metaStats__kpis">
-        <div className="metaKpi">
-          <Target size={17} />
-          <strong>{stats.avgProgress}%</strong>
-          <span>Progresso</span>
-        </div>
-        <div className="metaKpi metaKpi--done">
-          <Trophy size={17} />
-          <strong>{stats.done}</strong>
-          <span>Concluídas</span>
-        </div>
-        <div className="metaKpi">
-          <TrendingUp size={17} />
-          <strong>{stats.inProgress}</strong>
-          <span>Em progresso</span>
-        </div>
-        <div className="metaKpi">
-          <FolderKanban size={17} />
-          <strong>{stats.projects}</strong>
-          <span>Projetos</span>
-        </div>
-        <div className="metaKpi">
-          <ListChecks size={17} />
-          <strong>
-            {stats.doneTasks}/{stats.totalTasks}
-          </strong>
-          <span>Tarefas</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Lightbox para ver a imagem completa do mapa dos sonhos
-function Lightbox({ image, title, onClose }) {
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose?.();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return (
-    <div className="dreamLightbox" onClick={onClose}>
-      <button
-        className="dreamLightbox__close"
-        onClick={onClose}
-        aria-label="Fechar"
-      >
-        <X size={22} />
-      </button>
-      <figure
-        className="dreamLightbox__figure"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img src={image} alt={title || ""} />
-        {title && <figcaption>{title}</figcaption>}
-      </figure>
-    </div>
-  );
-}
-
-function MetaDetail({ meta, onNavigate }) {
-  if (!meta) return null;
-
-  const progressPercent = meta.progressPercent || 0;
-  const schedule = meta.schedule;
-  const projectsList = meta.projects || [];
-  const statusTone =
-    progressPercent >= 100 ? "done" : progressPercent > 0 ? "doing" : "todo";
-  const ring = `conic-gradient(${progressPercent >= 100 ? "#10b981" : "#ff7a18"} ${progressPercent * 3.6}deg, rgba(0,0,0,0.07) 0deg)`;
-  const periodStart = fmtDate(schedule?.range?.start);
-  const periodEnd = fmtDate(schedule?.range?.end);
-  const daysLeft = schedule?.daysLeft;
-
-  return (
-    <section className="metaDash">
-      <header className="metaDash__hero">
-        <div className="metaDash__heroText">
-          <p className="metaDash__eyebrow">Meta</p>
-          <h2>{meta.title}</h2>
-          <div className="metaDash__tags">
-            <span
-              className={`metaDash__statusTag metaDash__statusTag--${statusTone}`}
-            >
-              {meta.status}
-            </span>
-            <span className="metaDash__tag">{meta.areaLabel}</span>
-            <span className="metaDash__tag">
-              {schedule?.currentLabel || meta.trimester}
-            </span>
-          </div>
-        </div>
-        <div className="metaDash__ring" style={{ background: ring }}>
-          <div className="metaDash__ringInner">
-            <strong>{progressPercent}%</strong>
-            <span>andamento</span>
-          </div>
-        </div>
-      </header>
-
-      <div className="metaDash__quarters">
-        <div className="metaDash__quartersHead">
-          <span>Trajetória {schedule?.year || ""}</span>
-          <span className="metaDash__period">
-            <CalendarClock size={13} /> {periodStart} → {periodEnd}
-            {typeof daysLeft === "number" &&
-              !meta.status.includes("Conclu") && (
-                <em className={daysLeft < 0 ? "is-late" : ""}>
-                  {daysLeft < 0
-                    ? ` · ${Math.abs(daysLeft)}d atrasado`
-                    : ` · ${daysLeft}d restantes`}
-                </em>
-              )}
-          </span>
-        </div>
-        <div className="metaDash__quartersTrack">
-          {[1, 2, 3, 4].map((q) => {
-            const inRange =
-              schedule &&
-              q >= schedule.startQuarter &&
-              q <= schedule.endQuarter;
-            const isCurrent = schedule && q === schedule.currentQuarter;
-            return (
-              <div
-                key={q}
-                className={`metaQuarter ${inRange ? "in-range" : ""} ${isCurrent ? "is-current" : ""}`}
-              >
-                <span className="metaQuarter__label">{q}º Tri</span>
-                {isCurrent && <span className="metaQuarter__now">agora</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="metaDash__kpis">
-        <div className="metaKpi">
-          <Target size={17} />
-          <strong>{progressPercent}%</strong>
-          <span>Progresso</span>
-        </div>
-        <div className="metaKpi">
-          <FolderKanban size={17} />
-          <strong>{projectsList.length}</strong>
-          <span>Projetos</span>
-        </div>
-        <div className="metaKpi">
-          <ListChecks size={17} />
-          <strong>{meta.totalTasks || 0}</strong>
-          <span>Tarefas</span>
-        </div>
-        <div className="metaKpi metaKpi--done">
-          <CheckCircle2 size={17} />
-          <strong>{meta.doneTasks || 0}</strong>
-          <span>Concluídas</span>
-        </div>
-      </div>
-
-      <article className="metaDash__panel">
-        <header className="metaDash__panelHead">
-          <h3>Objetivo</h3>
-          <span>Por que esta meta importa</span>
-        </header>
-        <p className="metaDash__objective">
-          {meta.objective || "Sem descrição definida."}
-        </p>
-      </article>
-
-      <article className="metaDash__panel">
-        <header className="metaDash__panelHead">
-          <h3>Projetos vinculados</h3>
-          <span>
-            {projectsList.length}{" "}
-            {projectsList.length === 1 ? "projeto" : "projetos"}
-          </span>
-        </header>
-
-        {projectsList.length === 0 ? (
-          <div className="metaDash__empty">
-            Nenhum projeto vinculado ainda. Vincule um projeto para alimentar o
-            progresso desta meta.
-          </div>
-        ) : (
-          <ul className="metaDash__projects">
-            {projectsList.map((project) => {
-              const s = project._stats || {
-                progress: 0,
-                totalTasks: 0,
-                doneTasks: 0,
-              };
-              const color = `#${(project.color || "ff9500").replace("#", "")}`;
-              return (
-                <li
-                  key={project.id}
-                  className="metaProjItem"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onNavigate?.("Projetos")}
-                  title="Abrir em Projetos"
-                >
-                  <span
-                    className="metaProjItem__dot"
-                    style={{ background: color }}
-                  />
-                  <div className="metaProjItem__body">
-                    <div className="metaProjItem__top">
-                      <strong>{project.title}</strong>
-                      <span className="metaProjItem__count">
-                        {s.doneTasks}/{s.totalTasks} tarefas
-                      </span>
-                    </div>
-                    <div className="metaProjItem__bar">
-                      <span
-                        style={{ width: `${s.progress}%`, background: color }}
-                      />
-                    </div>
-                  </div>
-                  <span className="metaProjItem__pct">{s.progress}%</span>
-                  <ArrowUpRight size={16} className="metaProjItem__go" />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </article>
-    </section>
-  );
-}
 
 function AreaDetail({
   area,
@@ -515,6 +171,8 @@ export default function Goals({ onNavigate, onLogout, user }) {
   const [selectedAreaId, setSelectedAreaId] = useState(null);
   const [isDreamModalOpen, setIsDreamModalOpen] = useState(false);
   const [editingDream, setEditingDream] = useState(null);
+  const [dreamPending, setDreamPending] = useState(false);
+  const [dreamError, setDreamError] = useState("");
   const [lightbox, setLightbox] = useState(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editGoal, setEditGoal] = useState(null);
@@ -649,10 +307,12 @@ export default function Goals({ onNavigate, onLogout, user }) {
 
   const openNewDream = () => {
     setEditingDream(null);
+    setDreamError("");
     setIsDreamModalOpen(true);
   };
   const openEditDream = (dream) => {
     setEditingDream(dream);
+    setDreamError("");
     setIsDreamModalOpen(true);
   };
   const closeDreamModal = () => {
@@ -661,6 +321,9 @@ export default function Goals({ onNavigate, onLogout, user }) {
   };
 
   const handleDreamSubmit = async (form, imageFile) => {
+    if (dreamPending) return;
+    setDreamPending(true);
+    setDreamError("");
     try {
       if (editingDream) {
         await updateDreamMap(
@@ -674,19 +337,24 @@ export default function Goals({ onNavigate, onLogout, user }) {
       closeDreamModal();
     } catch (error) {
       console.error("Erro ao salvar imagem:", error);
-      alert(`Erro ao salvar imagem: ${error?.message || error}`);
+      setDreamError("Não conseguimos salvar a imagem. Tente novamente.");
+    } finally {
+      setDreamPending(false);
     }
   };
 
   const handleDeleteDream = async () => {
-    if (!editingDream) return;
-    if (!window.confirm("Remover esta imagem do mapa?")) return;
+    if (!editingDream || dreamPending) return;
+    setDreamPending(true);
+    setDreamError("");
     try {
       await deleteDreamMap(editingDream.id);
       closeDreamModal();
     } catch (error) {
       console.error(error);
-      alert("Erro ao remover imagem.");
+      setDreamError("Não conseguimos excluir a imagem. Tente novamente.");
+    } finally {
+      setDreamPending(false);
     }
   };
 
@@ -721,7 +389,11 @@ export default function Goals({ onNavigate, onLogout, user }) {
       setEditGoal(null);
     } catch (error) {
       console.error(error);
-      alert("Não conseguimos salvar a meta.");
+      notify?.({
+        title: "Não conseguimos salvar a meta.",
+        tone: "danger",
+        detail: "Tente novamente.",
+      });
     }
   };
 
@@ -788,12 +460,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
             setEditGoal(null);
             setIsGoalModalOpen(true);
           }}
-          onViewDream={(dream) =>
-            setLightbox({
-              url: dream.imageUrl || dream.image_url,
-              title: dream.title,
-            })
-          }
+          onViewDream={(dream) => setLightbox(dream)}
           mask={(value) =>
             prefs.hideFinanceValues
               ? String(value || "").replace(
@@ -823,12 +490,7 @@ export default function Goals({ onNavigate, onLogout, user }) {
           }}
           onCreateDream={openNewDream}
           onEditDream={openEditDream}
-          onViewDream={(dream) =>
-            setLightbox({
-              url: dream.imageUrl || dream.image_url,
-              title: dream.title,
-            })
-          }
+          onViewDream={(dream) => setLightbox(dream)}
           onNavigate={onNavigate}
           mask={(value) =>
             prefs.hideFinanceValues
@@ -866,14 +528,26 @@ export default function Goals({ onNavigate, onLogout, user }) {
           onDelete={editingDream ? handleDeleteDream : undefined}
           goals={goals}
           initialData={editingDream}
+          pending={dreamPending}
+          error={dreamError}
         />
       )}
 
       {lightbox && (
-        <Lightbox
-          image={lightbox.url}
-          title={lightbox.title}
+        <DreamLightbox
+          dream={lightbox}
+          goal={LIFE_AREAS.flatMap((area) => area.metas).find(
+            (meta) => meta.id === (lightbox.goalId || lightbox.goal_id),
+          )}
           onClose={() => setLightbox(null)}
+          mask={(value) =>
+            prefs.hideFinanceValues
+              ? String(value || "").replace(
+                  /R\$\s*[\d.,]+(?:\s*(?:mil|milhões?|mi))?/gi,
+                  "R$ ••••",
+                )
+              : value
+          }
         />
       )}
     </div>

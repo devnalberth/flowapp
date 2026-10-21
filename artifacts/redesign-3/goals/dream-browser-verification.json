@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-21",
+  "environment": "Actual UI, synthetic AppContext, no Supabase writes",
+  "checks": [
+    "Canceling file picker leaves form open",
+    "Missing image explains required action without sending save",
+    "Pending disables repeated save; save failure retains draft and shows error",
+    "Add sends original form and File to existing callback and renders created record",
+    "Edit without image replacement sends null file and clears goal link",
+    "Replacing image sends selected File through existing update callback",
+    "Lightbox shows actual association; Escape restores trigger focus",
+    "Deletion cancel preserves draft; confirm calls original delete once",
+    "Click outside image closes lightbox",
+    "Upload and lightbox fit 390px viewport without document overflow",
+    "Reduced motion uses fade without displacement",
+    "No runtime page errors"
+  ],
+  "errors": []
+}

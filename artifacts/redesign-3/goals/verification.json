@@ -1,13 +1,12 @@
 {
   "date": "2026-10-21",
-  "scope": "8 Figma references: overview, area, financial detail, completed, empty, create, edit, delete; dream map flows pending",
+  "scope": "10 Figma references: goal views and dialogs, dream map add/edit and lightbox",
   "build": "passed",
   "diffCheck": "passed",
   "astPreserved": [
     "aggregateGoals",
     "LIFE_AREAS",
     "quarterColumns",
-    "handleGoalSubmit",
     "parseTrimesterValue",
     "calculateTrimester",
     "updateField",
@@ -18,5 +17,8 @@
   "deletion": "Native confirmation replaced; same deleteGoal(editGoal.id) call; pending/cancel/toast presentation",
   "backend": "No database migration or service/API change in this unit",
   "persistence": "Authenticated Supabase CRUD not tested; synthetic harness only",
-  "knownExistingIssue": "UTC date parsing in calculateTrimester can include previous quarter in America/Maceio; preserved"
+  "knownExistingIssue": "UTC date parsing in calculateTrimester can include previous quarter in America/Maceio; preserved",
+  "goalSave": "Original try-block with writes and project links unchanged; error UI is toast",
+  "dreamMap": "Original callbacks, fields, File and optional replacement preserved; local pending/error and confirmation UI",
+  "sharedModal": "Child input file cancel no longer triggers dialog dismissal; Escape still closes dialog"
 }
