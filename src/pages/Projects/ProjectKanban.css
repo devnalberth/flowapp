@@ -1,0 +1,144 @@
+.project-overview-tabs {
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.project-board-hint {
+  margin: 0;
+  font: var(--fa-type-caption);
+  color: var(--fa-text-muted);
+}
+.project-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.project-board-column {
+  min-width: 0;
+  min-height: 442px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 12px 12px;
+  border-radius: 20px;
+  background: var(--fa-bg-soft);
+}
+.project-board-column.is-over {
+  background: var(--fa-bg-accent-soft);
+  outline: 1px dashed var(--fa-bg-accent);
+  outline-offset: -1px;
+}
+.project-board-column-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 3px;
+}
+.project-board-column-head h2 {
+  flex: 1;
+  margin: 0;
+  font: var(--fa-type-body-strong);
+}
+.project-board-column-head i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fa-text-muted);
+}
+.project-board-column[data-col="in_progress"] .project-board-column-head i {
+  background: var(--fa-status-info-solid);
+}
+.project-board-column[data-col="done"] .project-board-column-head i {
+  background: var(--fa-status-success-solid);
+}
+.project-board-column-head > span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-secondary);
+  background: var(--fa-bg-card);
+}
+.project-board-task {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--fa-bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: grab;
+}
+.project-board-task.is-dragging {
+  opacity: 0.35 !important;
+  outline: 1px dashed var(--fa-border-default);
+}
+.project-board-task:active {
+  cursor: grabbing;
+}
+.project-board-task > p {
+  margin: 0;
+  font: var(--fa-type-body-strong);
+  color: var(--fa-text-primary);
+  overflow-wrap: anywhere;
+}
+.project-board-task.is-done > p {
+  color: var(--fa-text-muted);
+  text-decoration: line-through;
+}
+.project-board-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.project-board-task-meta:empty {
+  display: none;
+}
+.project-board-task-meta > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-muted);
+}
+.project-board-task-meta .is-completed svg {
+  color: var(--fa-status-success-solid);
+}
+.project-board-add {
+  padding: 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  background: none;
+  border: 1px dashed var(--fa-border-default);
+  border-radius: 12px;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-muted);
+  cursor: pointer;
+}
+.project-board-add:hover {
+  background: var(--fa-bg-card);
+}
+.project-board-more {
+  padding: 0 3px;
+  text-align: left;
+  border: 0;
+  background: none;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-muted);
+  cursor: pointer;
+}
+@media (max-width: 1023px) {
+  .project-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .project-board-column {
+    min-height: 180px;
+  }
+  .project-overview-tabs {
+    flex-wrap: wrap;
+  }
+}

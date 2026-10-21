@@ -39,10 +39,16 @@ Harness com callbacks e estado sintéticos; requisições Supabase bloqueadas. N
 
 ## Próximas unidades
 
-Kanban (48474:241), Lista (48475:265), Calendário (48475:860), Sem projetos (48477:953) e os fluxos de menu, criação, cliente, exclusão e arquivo com Desfazer. O workspace e seus modais ainda estão com a apresentação anterior; diálogos nativos desses fluxos serão migrados na unidade correspondente. A limpeza dos estilos antigos de Projects fica para o fim do módulo.
+Lista (48475:265), Calendário (48475:860), Sem projetos (48477:953) e os fluxos de menu, criação, cliente, exclusão e arquivo com Desfazer. O workspace e seus modais ainda estão com a apresentação anterior; diálogos nativos desses fluxos serão migrados na unidade correspondente. A limpeza dos estilos antigos de Projects fica para o fim do módulo.
 
 ## Visão geral — 48473:2
 
 Implementada com tokens e componentes compartilhados: cabeçalho, ações existentes, andamento, tempo decorrido, KPIs, abas, detalhes, cliente e descrição. Comparação de tempo usa apenas datas existentes; meta financeira reutiliza categoryRevenue para o mês corrente. Nenhuma gravação adicional. Sem timestamps de conclusão, o contexto mostra “tarefas do projeto”, evitando uma data inventada. Ausência de cliente, prazo, descrição ou meta tem apresentação condicional.
 
 Capturas projeto-visao-geral-1440/1024/390.png. Herói 548×306 em (288,220.6), painéis 548×347 em y601.6. overview-verification.json registra oito verificações locais. Build passou e os 20 cálculos/handlers da galeria continuam iguais por AST. O workspace ainda abre em Kanban, como antes; demais visões e modais permanecem pendentes. Nenhuma validação autenticada de backend ou deployment nesta unidade.
+
+## Kanban — 48474:241
+
+Re-skin das três colunas existentes, com cabeçalho compartilhado com Visão geral, PriorityTag e cards de tarefas. Exibe quatro concluídas inicialmente; o contador revela as demais sem mudar o conjunto de tarefas. O destaque tracejado existe somente durante drag-over real. O frame do Figma demonstra uma tarefa arrastada; não é uma tarefa duplicada permanente. Cronômetro em foco omitido porque o timer existente pertence à página Tarefas. Datas de conclusão só aparecem quando disponíveis, sem inventar timestamps.
+
+Sete verificações em kanban-verification.json: contagens, expansão, payload de drop idêntico, no-op no mesmo status, navegação entre abas, 1024/390px e criação por coluna. Comparação AST adicional confirma oito cálculos/handlers do workspace, incluindo byColumn e handleDrop, sem alterações. Capturas projeto-kanban-1440/1024/390.png. Oito verificações da Visão geral passaram novamente após compartilhar o cabeçalho. Backend autenticado não exercitado; callbacks sintéticos registraram os payloads.

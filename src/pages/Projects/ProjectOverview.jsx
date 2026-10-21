@@ -65,6 +65,8 @@ function InfoRow({ icon: Icon, label, value, accent = false, danger = false }) {
 }
 
 export default function ProjectOverview({
+  activeTab = "overview",
+  children,
   project,
   stats,
   client,
@@ -313,91 +315,114 @@ export default function ProjectOverview({
       <motion.div className="project-overview-tabs" variants={presets.card}>
         <Tabs
           options={tabs}
-          value="overview"
+          value={activeTab}
           onChange={onTab}
           label="Visões do projeto"
         />
+        {activeTab === "kanban" && (
+          <p className="project-board-hint">
+            Arraste entre as colunas para mudar o status
+          </p>
+        )}
       </motion.div>
-      <div className="project-overview-panels">
-        <motion.article
-          className="project-overview-card"
-          variants={presets.card}
-        >
-          <CardHeader title="Detalhes" subtitle="Datas, área e vínculo" />
-          <InfoRow icon={Play} label="Início" value={tidyDate(start)} />
-          <InfoRow icon={Flag} label="Prazo de término" value={tidyDate(end)} />
-          <InfoRow
-            icon={Clock}
-            label="Dias restantes"
-            value={
-              remaining == null
-                ? "—"
-                : remaining < 0
-                  ? `${Math.abs(remaining)} dias de atraso`
-                  : `${remaining} dias`
-            }
-            danger={remaining != null && remaining < 0}
-          />
-          <InfoRow icon={Briefcase} label="Área" value={project.area || "—"} />
-          <InfoRow
-            icon={Target}
-            label="Meta vinculada"
-            value={goal ? mask(goal.title) : "Sem meta"}
-            accent={!!goal}
-          />
-        </motion.article>
-        <motion.article
-          className="project-overview-card"
-          variants={presets.card}
-        >
-          <CardHeader
-            title="Cliente"
-            subtitle={
-              client
-                ? mask(client.company || client.name)
-                : "Sem cliente vinculado"
-            }
-          />
-          {client ? (
-            <>
-              <InfoRow icon={User} label="Nome" value={mask(client.name)} />
-              {client.company && (
-                <InfoRow
-                  icon={Briefcase}
-                  label="Empresa"
-                  value={mask(client.company)}
+      {activeTab === "overview" ? (
+        <>
+          <div className="project-overview-panels">
+            <motion.article
+              className="project-overview-card"
+              variants={presets.card}
+            >
+              <CardHeader title="Detalhes" subtitle="Datas, área e vínculo" />
+              <InfoRow icon={Play} label="Início" value={tidyDate(start)} />
+              <InfoRow
+                icon={Flag}
+                label="Prazo de término"
+                value={tidyDate(end)}
+              />
+              <InfoRow
+                icon={Clock}
+                label="Dias restantes"
+                value={
+                  remaining == null
+                    ? "—"
+                    : remaining < 0
+                      ? `${Math.abs(remaining)} dias de atraso`
+                      : `${remaining} dias`
+                }
+                danger={remaining != null && remaining < 0}
+              />
+              <InfoRow
+                icon={Briefcase}
+                label="Área"
+                value={project.area || "—"}
+              />
+              <InfoRow
+                icon={Target}
+                label="Meta vinculada"
+                value={goal ? mask(goal.title) : "Sem meta"}
+                accent={!!goal}
+              />
+            </motion.article>
+            <motion.article
+              className="project-overview-card"
+              variants={presets.card}
+            >
+              <CardHeader
+                title="Cliente"
+                subtitle={
+                  client
+                    ? mask(client.company || client.name)
+                    : "Sem cliente vinculado"
+                }
+              />
+              {client ? (
+                <>
+                  <InfoRow icon={User} label="Nome" value={mask(client.name)} />
+                  {client.company && (
+                    <InfoRow
+                      icon={Briefcase}
+                      label="Empresa"
+                      value={mask(client.company)}
+                    />
+                  )}{" "}
+                  {client.email && (
+                    <InfoRow icon={Send} label="E-mail" value={client.email} />
+                  )}{" "}
+                  {client.phone && (
+                    <InfoRow
+                      icon={Bell}
+                      label="Telefone"
+                      value={client.phone}
+                    />
+                  )}{" "}
+                  {client.notes && (
+                    <div className="project-client-notes">
+                      <span>Notas</span>
+                      <p>{mask(client.notes)}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <EmptyState
+                  icon={User}
+                  title="Projeto sem cliente"
+                  description="Os dados do cliente vinculado aparecem aqui."
                 />
-              )}{" "}
-              {client.email && (
-                <InfoRow icon={Send} label="E-mail" value={client.email} />
-              )}{" "}
-              {client.phone && (
-                <InfoRow icon={Bell} label="Telefone" value={client.phone} />
-              )}{" "}
-              {client.notes && (
-                <div className="project-client-notes">
-                  <span>Notas</span>
-                  <p>{mask(client.notes)}</p>
-                </div>
               )}
-            </>
-          ) : (
-            <EmptyState
-              icon={User}
-              title="Projeto sem cliente"
-              description="Os dados do cliente vinculado aparecem aqui."
-            />
+            </motion.article>
+          </div>
+          {project.description && (
+            <motion.article
+              className="project-overview-card project-overview-description"
+              variants={presets.card}
+            >
+              <CardHeader title="Descrição" subtitle="O que vai ser entregue" />
+              <p>{mask(project.description)}</p>
+            </motion.article>
           )}
-        </motion.article>
-      </div>
-      {project.description && (
-        <motion.article
-          className="project-overview-card project-overview-description"
-          variants={presets.card}
-        >
-          <CardHeader title="Descrição" subtitle="O que vai ser entregue" />
-          <p>{mask(project.description)}</p>
-        </motion.article>
+        </>
+      ) : (
+        children
       )}
     </motion.section>
   );

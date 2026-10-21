@@ -28,6 +28,10 @@ import {
 } from "../../utils/projectMetrics";
 import { normalizeTaskStatus } from "../../utils/taskStatus";
 import ProjectOverview from "./ProjectOverview";
+import PriorityTag from "../../components/ui/PriorityTag";
+import { motion } from "framer-motion";
+import { useMotionPresets } from "../../components/ui/motion";
+import "./ProjectKanban.css";
 import "./ProjectWorkspace.css";
 
 const TASK_COLUMNS = [
@@ -111,9 +115,10 @@ export default function ProjectWorkspace({
     { id: "calendar", label: "Calendário", icon: CalendarDays },
   ];
 
-  if (tab === "overview")
+  if (tab === "overview" || tab === "kanban")
     return (
       <OverviewView
+        activeTab={tab}
         project={project}
         stats={stats}
         client={client}
@@ -128,7 +133,16 @@ export default function ProjectWorkspace({
         onTab={setTab}
         onNavigate={onNavigate}
         mask={mask}
-      />
+      >
+        {tab === "kanban" && (
+          <KanbanView
+            tasks={projectTasks}
+            updateTask={updateTask}
+            onNewTask={onNewTask}
+            mask={mask}
+          />
+        )}
+      </OverviewView>
     );
 
   return (
@@ -282,10 +296,11 @@ function OverviewView({ project, stats, client, goal, ...presentation }) {
 }
 
 /* ---------- Kanban de tarefas ---------- */
-function KanbanView({ tasks, updateTask, onNewTask }) {
+function KanbanView({ tasks, updateTask, onNewTask, mask = (value) => value }) {
   const [draggingId, setDraggingId] = useState(null);
   const [overCol, setOverCol] = useState(null);
-
+  const [showAllDone, setShowAllDone] = useState(false);
+  const presets = useMotionPresets();
   const byColumn = useMemo(() => {
     const map = { todo: [], in_progress: [], done: [] };
     tasks.forEach((t) => {
@@ -312,29 +327,44 @@ function KanbanView({ tasks, updateTask, onNewTask }) {
   };
 
   return (
-    <div className="pw__kanban">
-      {TASK_COLUMNS.map((col) => (
-        <section
-          key={col.status}
-          className={`pw__col ${overCol === col.status ? "is-over" : ""}`}
-          data-col={col.status}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setOverCol(col.status);
-          }}
-          onDragLeave={() => setOverCol((c) => (c === col.status ? null : c))}
-          onDrop={(e) => handleDrop(e, col.status)}
-        >
-          <header className="pw__colHead">
-            <span className="pw__colTitle">{col.label}</span>
-            <span className="pw__colCount">{byColumn[col.status].length}</span>
-          </header>
-
-          <div className="pw__colBody">
-            {byColumn[col.status].map((task) => (
-              <article
+    <motion.div className="project-board" variants={presets.grid}>
+      {TASK_COLUMNS.map((col) => {
+        const items = byColumn[col.status];
+        const visible =
+          col.status === "done" && !showAllDone ? items.slice(0, 4) : items;
+        return (
+          <motion.section
+            key={col.status}
+            variants={presets.card}
+            className={`project-board-column ${overCol === col.status ? "is-over" : ""}`}
+            data-col={col.status}
+            aria-label={col.label}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOverCol(col.status);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget))
+                setOverCol((c) => (c === col.status ? null : c));
+            }}
+            onDrop={(e) => handleDrop(e, col.status)}
+          >
+            <header className="project-board-column-head">
+              <i />
+              <h2>
+                {col.status === "todo"
+                  ? "A fazer"
+                  : col.status === "in_progress"
+                    ? "Em andamento"
+                    : "Concluída"}
+              </h2>
+              <span>{items.length}</span>
+            </header>
+            {visible.map((task) => (
+              <motion.article
                 key={task.id}
-                className="pw__task"
+                variants={presets.row}
+                className={`project-board-task ${col.status === "done" ? "is-done" : ""} ${draggingId === task.id ? "is-dragging" : ""}`}
                 draggable
                 onDragStart={(e) => {
                   setDraggingId(task.id);
@@ -346,37 +376,59 @@ function KanbanView({ tasks, updateTask, onNewTask }) {
                   setOverCol(null);
                 }}
               >
-                <p className="pw__taskTitle">{task.title}</p>
-                <div className="pw__taskMeta">
-                  {task.priority && (
-                    <span
-                      className="pw__prio"
-                      style={{
-                        "--p": PRIORITY_TONE[task.priority] || "#9ca3af",
-                      }}
-                    >
-                      <Flag size={11} /> {task.priority}
-                    </span>
+                <p>{mask(task.title)}</p>
+                <div className="project-board-task-meta">
+                  {col.status !== "done" && task.priority && (
+                    <PriorityTag priority={task.priority} />
                   )}
-                  {fmtShort(task.due_date) && (
-                    <span className="pw__due">
-                      <Clock size={11} /> {fmtShort(task.due_date)}
+                  {fmtShort(
+                    col.status === "done"
+                      ? task.completed_at || task.due_date
+                      : task.due_date,
+                  ) && (
+                    <span
+                      className={col.status === "done" ? "is-completed" : ""}
+                    >
+                      {col.status === "done" ? (
+                        <CheckCircle2 size={12} />
+                      ) : (
+                        <Clock size={12} />
+                      )}{" "}
+                      {fmtShort(
+                        col.status === "done"
+                          ? task.completed_at || task.due_date
+                          : task.due_date,
+                      )
+                        ?.replace(" de ", " ")
+                        .replace(".", "")}
                     </span>
                   )}
                 </div>
-              </article>
+              </motion.article>
             ))}
-
+            {col.status === "done" && items.length > 4 && (
+              <button
+                type="button"
+                className="project-board-more"
+                onClick={() => setShowAllDone((v) => !v)}
+                aria-expanded={showAllDone}
+              >
+                {showAllDone
+                  ? "Mostrar menos"
+                  : `+ ${items.length - 4} concluídas`}
+              </button>
+            )}
             <button
-              className="pw__addTask"
+              type="button"
+              className="project-board-add"
               onClick={() => onNewTask?.(col.status)}
             >
-              <Plus size={14} /> Nova tarefa
+              <Plus size={13} /> Nova tarefa
             </button>
-          </div>
-        </section>
-      ))}
-    </div>
+          </motion.section>
+        );
+      })}
+    </motion.div>
   );
 }
 

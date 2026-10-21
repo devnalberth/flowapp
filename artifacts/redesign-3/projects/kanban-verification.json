@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Three original status columns show 4 todo, 1 in progress and 8 done",
+    "Completed preview expands to all existing tasks and collapses",
+    "Drop retains original status, completed and completed_at payload",
+    "Dropping on same status does not write",
+    "Shared overview and Kanban tabs switch correctly",
+    "1024px and 390px fit viewport",
+    "Column creation opens existing task form"
+  ],
+  "scope": "Local UI, synthetic callbacks, Supabase blocked"
+}
