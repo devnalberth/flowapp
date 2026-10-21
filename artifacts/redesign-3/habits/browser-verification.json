@@ -1,0 +1,25 @@
+{
+  "environment": "Local component harness with actual components and mocked AppContext; no real user writes",
+  "passed": [
+    "Checklist toggles existing completion handler and day KPI",
+    "Search, category and scheduled-day filters",
+    "Active category remains visible and clearable in Stats",
+    "Past-day completion, date argument, Escape and focus return",
+    "Previous and next month navigation",
+    "Stats heatmap/detail links and metadata edit payload",
+    "Create custom-day habit, view metadata, cancel deletion and confirm deletion",
+    "Four mobile views without document overflow at 390px",
+    "Tablet layout without document overflow at 1024px",
+    "Reduced motion, responsive dialog and Escape",
+    "Local HeroRings asset loaded at original 360x220 size; no runtime errors"
+  ],
+  "errors": [],
+  "assets": [
+    {
+      "src": "/assets/brand/hero-rings.svg",
+      "loaded": true,
+      "width": 360,
+      "height": 220
+    }
+  ]
+}

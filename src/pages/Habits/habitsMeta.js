@@ -4,11 +4,36 @@
 import { Sparkles, Dumbbell, Brain, BookOpen, Book } from 'lucide-react'
 
 export const CATEGORIES = [
-  { id: 'all', label: 'Todos', color: '#ff4800' },
-  { id: 'saude', label: 'Saúde', color: '#0a9463' },
-  { id: 'produtividade', label: 'Produtividade', color: '#16a34a' },
-  { id: 'estudos', label: 'Estudos', color: '#ff7a00' },
-  { id: 'mindfulness', label: 'Mindfulness', color: '#7c5cff' },
+  {
+    id: 'all',
+    label: 'Todos',
+    color: 'var(--fa-bg-accent)',
+    background: 'var(--fa-bg-accent-soft)',
+  },
+  {
+    id: 'saude',
+    label: 'Saúde',
+    color: 'var(--fa-area-saude)',
+    background: 'var(--fa-area-saude-bg)',
+  },
+  {
+    id: 'produtividade',
+    label: 'Produtividade',
+    color: 'var(--fa-area-profissional)',
+    background: 'var(--fa-area-profissional-bg)',
+  },
+  {
+    id: 'estudos',
+    label: 'Estudos',
+    color: 'var(--fa-area-estudos)',
+    background: 'var(--fa-area-estudos-bg)',
+  },
+  {
+    id: 'mindfulness',
+    label: 'Mindfulness',
+    color: 'var(--fa-area-relacionamento)',
+    background: 'var(--fa-area-relacionamento-bg)',
+  },
 ]
 
 export const ICON_OPTIONS = [

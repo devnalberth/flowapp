@@ -1,0 +1,46 @@
+{
+  "figmaFileKey": "8BETSzvCvZT1odD8o05jhL",
+  "date": "2026-10-21",
+  "viewport": {
+    "desktop": 1440,
+    "mobile": 390,
+    "tablet": 1024
+  },
+  "geometry": {
+    "hero": [
+      548,
+      306
+    ],
+    "daily": [
+      740,
+      560
+    ],
+    "weekly": [
+      740,
+      581
+    ],
+    "monthly": [
+      740,
+      546
+    ],
+    "statsHeatmap": [
+      740,
+      357
+    ]
+  },
+  "preservedCalculationsAndHandlers": 12,
+  "build": "passed",
+  "diffCheck": "passed",
+  "habitMetadataMigration": {
+    "project": "loxxsngnsuvuujxxigyw",
+    "version": "20261021140637",
+    "columns": [
+      "description",
+      "ideal_time",
+      "icon_id"
+    ],
+    "rlsEnabled": true
+  },
+  "authenticatedApiRoundTrip": "pending",
+  "deployed": false
+}
