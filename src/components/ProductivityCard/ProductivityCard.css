@@ -404,3 +404,17 @@
   box-shadow: 0 4px 12px rgba(255, 72, 0, 0.3);
   transform: translateY(-1px);
 }
+/* Dashboard 3.0; calculations and legacy period controls remain unchanged. */
+.prod.home-weekly { display: flex; flex-direction: column; gap: 16px; padding: 20px; background: var(--fa-bg-card); border: 0; border-radius: var(--fa-radius-card); box-shadow: none; min-height: 0; }
+.home-weekly__chart { display: flex; align-items: flex-end; flex: 1; min-height: 0; overflow-x: auto; gap: 0; padding-top: 20px; }
+.home-weekly__day { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-width: 40px; }
+.home-weekly__day > span { font-size: 10.5px; line-height: 1.4; color: var(--fa-text-caption); }
+.home-weekly__day > i { display: block; width: 44px; max-width: 85%; border-radius: 10px; background: var(--fa-chart-focus-past); transform-origin: bottom; }
+.home-weekly__day > i[style*="height: 6px"] { background: var(--fa-bg-track); }
+.home-weekly__day[data-active] > i { background: var(--fa-bg-accent); }
+.home-weekly__day[data-active] > span { color: var(--fa-text-accent); }
+.home-weekly__day > small { font-size: 11.5px; line-height: 1.2; color: var(--fa-text-caption); }
+.home-goal-config__description { color: var(--fa-text-muted); font: var(--fa-type-body); }
+.home-goal-config__fields { display: flex; gap: 16px; }
+.home-goal-config__fields label { display: flex; flex-direction: column; gap: 6px; flex: 1; font: var(--fa-type-label); }
+.home-goal-config__fields input { width: 100%; padding: 12px; border: 1px solid var(--fa-border-default); border-radius: var(--fa-radius-input); background: var(--fa-bg-card); color: var(--fa-text-primary); font: var(--fa-type-body); }

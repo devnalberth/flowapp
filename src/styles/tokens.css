@@ -72,6 +72,8 @@
   --fa-bg-accent-soft: var(--fa-p-brasa-50);
   --fa-bg-accent-muted: var(--fa-p-brasa-100);
 
+  --fa-chart-focus-past: var(--fa-p-brasa-200);
+
   /* Texto */
   --fa-text-primary: var(--fa-p-tinta-900);
   --fa-text-secondary: var(--fa-p-tinta-700);

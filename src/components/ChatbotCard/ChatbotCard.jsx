@@ -1,22 +1,27 @@
 import { useShell } from '../../context/ShellContext.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUpRight, Settings, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Settings, Sparkles, Send } from 'lucide-react'
 import { isJarvisConfigured } from '../../services/jarvisConfig.js'
 import { runJarvisTurn, loadJarvisChat, saveJarvisChat } from '../../services/jarvisService.js'
 import { useJarvisToolCtx } from '../../hooks/useJarvisToolCtx.js'
+import { useApp } from '../../context/AppContext'
+import { useReducedMotion } from 'framer-motion'
 import './ChatbotCard.css'
 
-const QUICK_PROMPTS = [
-  'Resuma meu dia',
-  'O que vence em breve?',
-  'Quais tarefas estão atrasadas?',
-]
+const QUICK_PROMPTS = ['Resuma meu dia', 'O que vence em breve?', 'Quais tarefas estão atrasadas?']
 
-const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
+const uuid = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now())
 
 // Mini FlowChat do Dashboard: mesma conversa, config e ferramentas da página
 // FlowChat (histórico compartilhado via localStorage).
 export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
+  const { prefs } = useApp()
+  const reducedMotion = useReducedMotion()
+  const displayText = (value) =>
+    prefs?.hideFinanceValues
+      ? String(value || '').replace(/R\$\s*[\d.,]+(?:\s*(?:mil|milhões?|mi))?/gi, 'R$ ••••')
+      : value
   const { providerRevision } = useShell()
   const configured = useMemo(() => isJarvisConfigured(), [providerRevision])
 
@@ -28,19 +33,19 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
   const [isThinking, setThinking] = useState(false)
   const historyElRef = useRef(null)
 
-  const userName = useMemo(
-    () => {
-      const first = user?.name?.trim()?.split(' ')[0] || ''
-      return first ? first.charAt(0).toUpperCase() + first.slice(1) : ''
-    },
-    [user],
-  )
+  const userName = useMemo(() => {
+    const first = user?.name?.trim()?.split(' ')[0] || ''
+    return first ? first.charAt(0).toUpperCase() + first.slice(1) : ''
+  }, [user])
 
   const toolCtx = useJarvisToolCtx(userName)
 
   useEffect(() => {
     if (!historyElRef.current) return
-    historyElRef.current.scrollTo({ top: historyElRef.current.scrollHeight, behavior: 'smooth' })
+    historyElRef.current.scrollTo({
+      top: historyElRef.current.scrollHeight,
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    })
   }, [messages, isThinking])
 
   const sendMessage = async (text) => {
@@ -57,9 +62,21 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
     setThinking(true)
 
     try {
-      const result = await runJarvisTurn({ history: historyRef.current, userText: value, ctx: toolCtx })
+      const result = await runJarvisTurn({
+        history: historyRef.current,
+        userText: value,
+        ctx: toolCtx,
+      })
       setMessages((prev) => {
-        const next = [...prev, { id: uuid(), role: 'assistant', text: result.text, tools: result.toolLabels }]
+        const next = [
+          ...prev,
+          {
+            id: uuid(),
+            role: 'assistant',
+            text: result.text,
+            tools: result.toolLabels,
+          },
+        ]
         saveJarvisChat(next, historyRef.current)
         return next
       })
@@ -67,7 +84,12 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
       console.error('FlowChat (dashboard):', error)
       setMessages((prev) => [
         ...prev,
-        { id: uuid(), role: 'assistant', text: error?.message || 'Algo deu errado. Tente novamente.', error: true },
+        {
+          id: uuid(),
+          role: 'assistant',
+          text: error?.message || 'Algo deu errado. Tente novamente.',
+          error: true,
+        },
       ])
     } finally {
       setThinking(false)
@@ -92,7 +114,15 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
   return (
     <section className={`chat ui-card ${className}`.trim()}>
       <header className="chat__header">
-        <p className="chat__eyebrow">Flow Chat</p>
+        <div className="chat__brand">
+          <span>
+            <Sparkles size={18} />
+          </span>
+          <div>
+            <h2>FlowChat</h2>
+            <p>Pergunte sobre suas tarefas, metas e finanças</p>
+          </div>
+        </div>
         <div className="chat__headerRight">
           <span className={`chat__status ${configured ? '' : 'chat__status--off'}`}>
             {configured ? 'Online' : 'Não configurado'}
@@ -114,7 +144,9 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
           {!configured ? (
             <div className="chat__setup">
               <Sparkles size={22} />
-              <p>Conecte um provedor de IA para conversar sobre suas tarefas, finanças e hábitos.</p>
+              <p>
+                Conecte um provedor de IA para conversar sobre suas tarefas, finanças e hábitos.
+              </p>
               <button type="button" className="chat__setupBtn" onClick={() => onOpenFlowChat?.()}>
                 <Settings size={14} /> Configurar FlowChat
               </button>
@@ -122,14 +154,9 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
           ) : visibleMessages.length === 0 && !isThinking ? (
             <div className="chat__empty">
               <div className="chat__bubble chat__bubble--assistant">
-                <p>{userName ? `Olá, ${userName}! ` : 'Olá! '}Pergunte algo ou escolha um atalho:</p>
-              </div>
-              <div className="chat__quick">
-                {QUICK_PROMPTS.map((prompt) => (
-                  <button key={prompt} type="button" onClick={() => sendMessage(prompt)}>
-                    {prompt}
-                  </button>
-                ))}
+                <p>
+                  {userName ? `Olá, ${userName}! ` : 'Olá! '}Pergunte algo ou escolha um atalho:
+                </p>
               </div>
             </div>
           ) : (
@@ -139,18 +166,36 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
                   key={message.id}
                   className={`chat__bubble chat__bubble--${message.role} ${message.error ? 'chat__bubble--error' : ''}`}
                 >
-                  <p>{message.text}</p>
+                  <p>{displayText(message.text)}</p>
                 </div>
               ))}
               {isThinking && (
                 <div className="chat__bubble chat__bubble--assistant chat__bubble--thinking">
-                  <span className="chat__dots"><i /><i /><i /></span>
+                  <span className="chat__dots">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
                 </div>
               )}
             </>
           )}
         </div>
 
+        {configured && (
+          <div className="chat__quick">
+            {QUICK_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                disabled={isThinking}
+                onClick={() => sendMessage(prompt)}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
         <form className="chat__composer" onSubmit={handleSubmit}>
           <label htmlFor="chat-minimal-input" className="chat__srOnly">
             Digite sua mensagem para o Flow Chat
@@ -158,17 +203,24 @@ export default function ChatbotCard({ className = '', user, onOpenFlowChat }) {
           <div className="chat__composerField">
             <textarea
               id="chat-minimal-input"
-              placeholder={configured ? 'Pergunte ou peça algo ao FlowChat...' : 'Configure o FlowChat para começar'}
+              placeholder={
+                configured
+                  ? 'Pergunte ou peça algo ao FlowChat...'
+                  : 'Configure o FlowChat para começar'
+              }
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={handleKeyDown}
-              rows={2}
+              rows={1}
               disabled={!configured}
             />
-            <button type="submit" className="chat__sendBtn" aria-label="Enviar mensagem" disabled={isThinking || !draft.trim()}>
-              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                <path d="M8 5l11 7-11 7z" />
-              </svg>
+            <button
+              type="submit"
+              className="chat__sendBtn"
+              aria-label="Enviar mensagem"
+              disabled={!configured || isThinking || !draft.trim()}
+            >
+              <Send size={18} />
             </button>
           </div>
           <p className="chat__hint">

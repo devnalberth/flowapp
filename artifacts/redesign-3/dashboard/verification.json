@@ -1,0 +1,17 @@
+{
+  "results": [
+    "1440px: oito cards com posição e dimensão do Figma (tolerância <0,6px)",
+    "Asset local dos anéis: 360×220, x496/y160; slot original preservado",
+    "Timer: Deep Work 50m → avanço 31m18 → 18m42; pausa grava ~31,3m na tarefa via handler existente",
+    "Tarefa envia completed/status/timestamps existentes; hábito manual usa completeHabit; AUTO é somente leitura",
+    "Olho global mascara os títulos financeiros exibidos no Início",
+    "Calendário: detalhes do dia, Escape, mês seguinte e retorno a hoje; meta de foco abre em modal acessível",
+    "Atrasos: Mover para hoje reutiliza updateTask com due_date local",
+    "Estados: dia fechado, dia livre, com atrasos e conta vazia renderizam sem dados inventados",
+    "1100/900/390px: sem transbordamento horizontal da página",
+    "Movimento reduzido; provedor ausente bloqueia composer e mantém acesso à configuração"
+  ],
+  "errors": [],
+  "backendWrites": [],
+  "fixtureData": true
+}

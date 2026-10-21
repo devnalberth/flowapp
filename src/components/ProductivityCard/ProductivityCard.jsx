@@ -1,6 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Settings } from 'lucide-react'
+import { Settings, ArrowUpRight } from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
+import CardHeader from '../ui/CardHeader.jsx'
+import ActionMenu from '../ui/ActionMenu.jsx'
+import Modal from '../ui/Modal.jsx'
+import Button from '../ui/Button.jsx'
+import { formatMinutes } from '../../utils/habitStats'
+import { motion, useReducedMotion } from 'framer-motion'
 import './ProductivityCard.css'
 
 const FILTERS = ['Dia', 'Semana', 'Mês']
@@ -8,7 +14,7 @@ const FILTERS = ['Dia', 'Semana', 'Mês']
 // Meta padrão: 4 horas (240 minutos) por dia
 const DEFAULT_DAILY_GOAL = 240
 
-export default function ProductivityCard({ className = '', tasks = [] }) {
+export default function ProductivityCard({ className = '', tasks = [], redesign = false }) {
   const [activeFilter, setActiveFilter] = useState('Semana')
   const [showGoalModal, setShowGoalModal] = useState(false)
 
@@ -25,7 +31,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
   // Helper para obter data local YYYY-MM-DD
   const getLocalYYYYMMDD = (date) => {
     const offset = date.getTimezoneOffset()
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000))
+    const localDate = new Date(date.getTime() - offset * 60 * 1000)
     return localDate.toISOString().split('T')[0]
   }
 
@@ -38,7 +44,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
   const focusTimeByDateFromTasks = useMemo(() => {
     const byDate = {}
 
-    tasks.forEach(t => {
+    tasks.forEach((t) => {
       const timeSpent = Number(t.time_spent) || 0
       if (timeSpent <= 0) return
 
@@ -80,7 +86,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
       // Busca dados reais do log (objeto com property .hours)
       const todayEntry = focusLog[todayStr]
-      const hourlyData = (typeof todayEntry === 'object' && todayEntry?.hours) ? todayEntry.hours : {}
+      const hourlyData = typeof todayEntry === 'object' && todayEntry?.hours ? todayEntry.hours : {}
 
       for (let h = 0; h < 24; h++) {
         const isCurrentHour = h === currentHour
@@ -90,7 +96,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
         // Calcula valor da barra (em relação a uma meta horária ideal, ex: 60m ou fração da meta diária?)
         // Visualmente, 100% da barra = 60 minutos de foco na hora (foco total)
-        // OU proporcional à meta diária dividida por horas úteis. 
+        // OU proporcional à meta diária dividida por horas úteis.
         // Vamos usar 60m como "teto" visual da barra horária para ficar bonito.
         const percentage = Math.min((minutesInHour / 60) * 100, 100)
 
@@ -134,7 +140,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
 
       for (let d = 0; d < 7; d++) {
         const date = new Date(now)
-        date.setDate(date.getDate() - (i * 7) - (6 - d))
+        date.setDate(date.getDate() - i * 7 - (6 - d))
         const dateStr = getLocalYYYYMMDD(date)
         minutesInWeek += getFocusTimeForDate(dateStr)
       }
@@ -183,6 +189,7 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
     }
   }, [focusLog, focusTimeByDateFromTasks, dailyGoal])
 
+  const reducedMotion = useReducedMotion()
   const columnCount = chartData.length
 
   const handleSaveGoal = (newGoalMinutes) => {
@@ -232,98 +239,177 @@ export default function ProductivityCard({ className = '', tasks = [] }) {
   }, [activeFilter])
 
   return (
-    <section className={`prod ui-card ${className}`.trim()}>
-      <header className="prod__header">
-        <div className="prod__titleRow">
-          <div className="txt-cardTitle">Produtividade</div>
-          <button
-            className="prod__settingsBtn"
-            onClick={() => setShowGoalModal(true)}
-            title="Configurar meta diária"
+    <section className={`prod ui-card ${redesign ? 'home-weekly' : ''} ${className}`.trim()}>
+      {redesign && (
+        <>
+          <CardHeader
+            title={
+              activeFilter === 'Semana'
+                ? 'Foco da semana'
+                : activeFilter === 'Dia'
+                  ? 'Foco do dia'
+                  : 'Foco do mês'
+            }
+            subtitle={`${stats.totalHours} · últimos 7 dias`}
           >
-            <Settings size={16} />
-          </button>
-        </div>
-        <button
-          className="prod__filter"
-          type="button"
-          onClick={() => {
-            const next = activeFilter === 'Dia' ? 'Semana' : activeFilter === 'Semana' ? 'Mês' : 'Dia'
-            setActiveFilter(next)
-          }}
-        >
-          {activeFilter}
-          <svg className="prod__arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-      </header>
-
-      <div className={`prod__chart ${activeFilter === 'Dia' ? 'prod__chart--slide' : ''}`}>
-        <div className="prod__axisY">
-          {['100%', '75%', '50%', '25%', '0%'].map((label) => (
-            <span key={label}>{label}</span>
-          ))}
-        </div>
-
-        <div
-          className="prod__plotWrapper"
-          ref={scrollRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-        >
+            <ActionMenu
+              label="Opções de foco"
+              trigger={
+                <button
+                  type="button"
+                  className="fa-card-header__action"
+                  aria-label="Opções de foco"
+                >
+                  <ArrowUpRight size={16} />
+                </button>
+              }
+              items={[
+                ...FILTERS.map((filter) => ({
+                  label: filter,
+                  onClick: () => setActiveFilter(filter),
+                })),
+                {
+                  label: 'Configurar meta diária',
+                  icon: Settings,
+                  onClick: () => setShowGoalModal(true),
+                },
+              ]}
+            />
+          </CardHeader>
           <div
-            className="prod__plot"
-            aria-hidden="true"
-            style={{
-              gridTemplateColumns: activeFilter === 'Dia'
-                ? `repeat(24, 40px)`
-                : `repeat(${columnCount}, minmax(0, 1fr))`
-            }}
+            className="home-weekly__chart"
+            role="img"
+            aria-label={chartData
+              .map((b) => `${b.label}: ${Math.round(b.minutes)} minutos`)
+              .join(', ')}
           >
-            {chartData.map((bar, i) => (
-              <div key={i} className="prod__group" data-active={bar.active || undefined}>
-                <div className="prod__barContainer">
-                  <span
-                    className="prod__bar prod__bar--value"
-                    style={{ height: `${Math.max(bar.value, 4)}%` }}
-                    title={`${Math.round(bar.minutes)} min (${Math.round(bar.value)}% da meta)`}
-                  />
-                </div>
+            {chartData.map((bar, index) => (
+              <div className="home-weekly__day" key={index} data-active={bar.active || undefined}>
+                {bar.minutes > 0 && <span>{formatMinutes(bar.minutes)}</span>}
+                <motion.i
+                  initial={reducedMotion ? false : { scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{
+                    duration: 0.7,
+                    delay: reducedMotion ? 0 : index * 0.05,
+                  }}
+                  style={{
+                    height: `${Math.max(6, Math.min(172, bar.value * 2))}px`,
+                  }}
+                />
+                <small>{activeFilter === 'Semana' ? bar.label.slice(0, 1) : bar.label}</small>
               </div>
             ))}
           </div>
+        </>
+      )}
+      {!redesign && (
+        <>
+          <header className="prod__header">
+            <div className="prod__titleRow">
+              <div className="txt-cardTitle">Produtividade</div>
+              <button
+                className="prod__settingsBtn"
+                onClick={() => setShowGoalModal(true)}
+                title="Configurar meta diária"
+              >
+                <Settings size={16} />
+              </button>
+            </div>
+            <button
+              className="prod__filter"
+              type="button"
+              onClick={() => {
+                const next =
+                  activeFilter === 'Dia' ? 'Semana' : activeFilter === 'Semana' ? 'Mês' : 'Dia'
+                setActiveFilter(next)
+              }}
+            >
+              {activeFilter}
+              <svg
+                className="prod__arrow"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </header>
 
-          <div
-            className="prod__labels"
-            style={{
-              gridTemplateColumns: activeFilter === 'Dia'
-                ? `repeat(24, 40px)`
-                : `repeat(${columnCount}, minmax(0, 1fr))`
-            }}
-          >
-            {chartData.map((bar, i) => (
-              <span key={i}>{bar.label}</span>
-            ))}
+          <div className={`prod__chart ${activeFilter === 'Dia' ? 'prod__chart--slide' : ''}`}>
+            <div className="prod__axisY">
+              {['100%', '75%', '50%', '25%', '0%'].map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+
+            <div
+              className="prod__plotWrapper"
+              ref={scrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+            >
+              <div
+                className="prod__plot"
+                aria-hidden="true"
+                style={{
+                  gridTemplateColumns:
+                    activeFilter === 'Dia'
+                      ? `repeat(24, 40px)`
+                      : `repeat(${columnCount}, minmax(0, 1fr))`,
+                }}
+              >
+                {chartData.map((bar, i) => (
+                  <div key={i} className="prod__group" data-active={bar.active || undefined}>
+                    <div className="prod__barContainer">
+                      <span
+                        className="prod__bar prod__bar--value"
+                        style={{ height: `${Math.max(bar.value, 4)}%` }}
+                        title={`${Math.round(bar.minutes)} min (${Math.round(bar.value)}% da meta)`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="prod__labels"
+                style={{
+                  gridTemplateColumns:
+                    activeFilter === 'Dia'
+                      ? `repeat(24, 40px)`
+                      : `repeat(${columnCount}, minmax(0, 1fr))`,
+                }}
+              >
+                {chartData.map((bar, i) => (
+                  <span key={i}>{bar.label}</span>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <footer className="prod__footer">
-        <div>
-          <p className="prod__label">Foco Semanal</p>
-          <p className="prod__value">{stats.totalHours}</p>
-        </div>
-        <div className="prod__right">
-          <p className="prod__label">Nível de Produtividade</p>
-          <p className={`prod__value prod__level--${stats.productivity.toLowerCase()}`}>
-            {stats.productivity}
-          </p>
-        </div>
-      </footer>
-
+          <footer className="prod__footer">
+            <div>
+              <p className="prod__label">Foco Semanal</p>
+              <p className="prod__value">{stats.totalHours}</p>
+            </div>
+            <div className="prod__right">
+              <p className="prod__label">Nível de Produtividade</p>
+              <p className={`prod__value prod__level--${stats.productivity.toLowerCase()}`}>
+                {stats.productivity}
+              </p>
+            </div>
+          </footer>
+        </>
+      )}
       {/* Modal de Configuração da Meta */}
       {showGoalModal && (
         <GoalConfigModal
@@ -341,56 +427,58 @@ function GoalConfigModal({ currentGoal, onClose, onSave }) {
   const [minutes, setMinutes] = useState(currentGoal % 60)
 
   const handleSave = () => {
-    const totalMinutes = (hours * 60) + minutes
+    const totalMinutes = hours * 60 + minutes
     if (totalMinutes > 0) {
       onSave(totalMinutes)
     }
   }
 
   return (
-    <div className="goalModal">
-      <div className="goalModal__backdrop" onClick={onClose} />
-      <div className="goalModal__panel">
-        <header className="goalModal__header">
-          <h3>Meta Diária de Foco</h3>
-          <button className="goalModal__close" onClick={onClose}>×</button>
-        </header>
-        <div className="goalModal__content">
-          <p className="goalModal__description">
-            Defina quantas horas você deseja focar por dia. Os níveis de produtividade serão calculados com base nessa meta.
-          </p>
-          <div className="goalModal__inputs">
-            <div className="goalModal__inputGroup">
-              <label>Horas</label>
-              <input
-                type="number"
-                min="0"
-                max="12"
-                value={hours}
-                onChange={(e) => setHours(Math.max(0, Math.min(12, Number(e.target.value))))}
-              />
-            </div>
-            <span className="goalModal__separator">:</span>
-            <div className="goalModal__inputGroup">
-              <label>Minutos</label>
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={minutes}
-                onChange={(e) => setMinutes(Math.max(0, Math.min(59, Number(e.target.value))))}
-              />
-            </div>
-          </div>
-          <p className="goalModal__preview">
-            Meta: <strong>{hours}h {minutes}m</strong> por dia
-          </p>
-        </div>
-        <footer className="goalModal__footer">
-          <button className="goalModal__btn" onClick={onClose}>Cancelar</button>
-          <button className="goalModal__btn goalModal__btn--primary" onClick={handleSave}>Salvar</button>
-        </footer>
+    <Modal
+      title="Meta diária de foco"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>Salvar</Button>
+        </>
+      }
+    >
+      <p className="home-goal-config__description">
+        Defina quantas horas você deseja focar por dia. Os níveis de produtividade serão calculados
+        com base nessa meta.
+      </p>
+      <div className="home-goal-config__fields">
+        <label>
+          Horas
+          <input
+            type="number"
+            min="0"
+            max="12"
+            value={hours}
+            onChange={(e) => setHours(Math.max(0, Math.min(12, Number(e.target.value))))}
+          />
+        </label>
+        <label>
+          Minutos
+          <input
+            type="number"
+            min="0"
+            max="59"
+            value={minutes}
+            onChange={(e) => setMinutes(Math.max(0, Math.min(59, Number(e.target.value))))}
+          />
+        </label>
       </div>
-    </div>
+      <p className="home-goal-config__description">
+        Meta:{' '}
+        <strong>
+          {hours}h {minutes}m
+        </strong>{' '}
+        por dia
+      </p>
+    </Modal>
   )
 }

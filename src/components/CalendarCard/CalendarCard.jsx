@@ -1,11 +1,34 @@
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, X, CheckCircle2, Clock, TrendingUp, Calendar, Wallet, Target } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  Calendar,
+  Wallet,
+  Target,
+} from 'lucide-react'
 import { focusLogService } from '../../services/focusLogService'
+import Modal from '../ui/Modal.jsx'
 import './CalendarCard.css'
 
 const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const months = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+]
 
 // Chaves locais YYYY-MM-DD — nunca toISOString direto, que em UTC-3 desloca o dia.
 const localDayKey = (d) =>
@@ -43,12 +66,24 @@ export default function CalendarCard({
   habits = [],
   finances = [],
   events = [],
-  onEditEvent, // New prop
+  onEditEvent, // Existing event editor
+  redesign = false,
+  hideValues = false,
 }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(null)
 
-  const { days, completedDays, importantDays, hasTasks, hasEvents, hasFinances, today, monthLabel, year } = useMemo(() => {
+  const {
+    days,
+    completedDays,
+    importantDays,
+    hasTasks,
+    hasEvents,
+    hasFinances,
+    today,
+    monthLabel,
+    year,
+  } = useMemo(() => {
     const now = new Date()
     const viewMonth = currentDate.getMonth()
     const viewYear = currentDate.getFullYear()
@@ -70,7 +105,7 @@ export default function CalendarCard({
     // Dias que têm tarefas
     const withTasks = new Set()
 
-    tasks.forEach(t => {
+    tasks.forEach((t) => {
       const day = dayInView(toDayKey(t.due_date), viewYear, viewMonth)
       if (day != null) {
         withTasks.add(day)
@@ -82,21 +117,23 @@ export default function CalendarCard({
 
     // Dias com tarefas importantes (prioridade alta)
     const important = new Set()
-    tasks.filter(t => t.priority === 'high' || t.priority === 'Alta' || t.priority === 'Urgente').forEach(t => {
-      const day = dayInView(toDayKey(t.due_date), viewYear, viewMonth)
-      if (day != null) important.add(day)
-    })
+    tasks
+      .filter((t) => t.priority === 'high' || t.priority === 'Alta' || t.priority === 'Urgente')
+      .forEach((t) => {
+        const day = dayInView(toDayKey(t.due_date), viewYear, viewMonth)
+        if (day != null) important.add(day)
+      })
 
     // Dias com eventos
     const withEvents = new Set()
-    events.forEach(e => {
+    events.forEach((e) => {
       const day = dayInView(toDayKey(e.date), viewYear, viewMonth)
       if (day != null) withEvents.add(day)
     })
 
     // Dias com movimentações financeiras
     const withFinances = new Set()
-    finances.forEach(f => {
+    finances.forEach((f) => {
       const key = f.date ? toDayKey(f.date) : tsKey(f.created_at)
       const day = dayInView(key, viewYear, viewMonth)
       if (day != null) withFinances.add(day)
@@ -118,7 +155,7 @@ export default function CalendarCard({
   }, [tasks, events, finances, currentDate])
 
   const navigateMonth = (direction) => {
-    setCurrentDate(prev => {
+    setCurrentDate((prev) => {
       const newDate = new Date(prev)
       newDate.setMonth(newDate.getMonth() + direction)
       return newDate
@@ -161,19 +198,21 @@ export default function CalendarCard({
     const dateStr = keyOf(viewYear, viewMonth, selectedDay)
 
     // Tarefas do dia
-    const dayTasks = tasks.filter(t => toDayKey(t.due_date) === dateStr)
+    const dayTasks = tasks.filter((t) => toDayKey(t.due_date) === dateStr)
 
     // Hábitos concluídos nesse dia
-    const dayHabits = habits.filter(h => {
+    const dayHabits = habits.filter((h) => {
       const completions = h.completions || h.completed_dates || []
       return completions.includes(dateStr)
     })
 
     // Eventos do dia
-    const dayEvents = events.filter(e => toDayKey(e.date) === dateStr)
+    const dayEvents = events.filter((e) => toDayKey(e.date) === dateStr)
 
     // Finanças do dia
-    const dayFinances = finances.filter(f => (f.date ? toDayKey(f.date) : tsKey(f.created_at)) === dateStr)
+    const dayFinances = finances.filter(
+      (f) => (f.date ? toDayKey(f.date) : tsKey(f.created_at)) === dateStr
+    )
 
     // Produtividade do dia - usa focusLogService (localStorage) como fonte primária
     let focusMinutes = focusLogService.getTimeForDate(dateStr)
@@ -189,17 +228,25 @@ export default function CalendarCard({
       }, 0)
     }
 
-    const completedTasksCount = dayTasks.filter(t => t.completed || t.status === 'done').length
+    const completedTasksCount = dayTasks.filter((t) => t.completed || t.status === 'done').length
 
     // Balanço financeiro
-    const income = dayFinances.filter(f => f.type === 'income').reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
-    const expense = dayFinances.filter(f => f.type === 'expense').reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
+    const income = dayFinances
+      .filter((f) => f.type === 'income')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
+    const expense = dayFinances
+      .filter((f) => f.type === 'expense')
+      .reduce((acc, f) => acc + (Number(f.amount) || 0), 0)
 
     const selectedDate = new Date(viewYear, viewMonth, selectedDay)
 
     return {
       date: selectedDate,
-      dateFormatted: selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }),
+      dateFormatted: selectedDate.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      }),
       tasks: dayTasks,
       habits: dayHabits,
       events: dayEvents,
@@ -214,19 +261,35 @@ export default function CalendarCard({
   }, [selectedDay, currentDate, tasks, habits, events, finances])
 
   return (
-    <section className={`cal ui-card ${className}`.trim()}>
+    <section className={`cal ui-card ${redesign ? 'home-calendar' : ''} ${className}`.trim()}>
       <header className="cal__header">
-        <div className="cal__title">Calendário</div>
+        <div>
+          <button type="button" className="cal__title" onClick={goToToday} title="Ir para hoje">
+            {redesign ? `${monthLabel} ${year}` : 'Calendário'}
+          </button>
+          {redesign && (
+            <div className="home-calendar__legend">
+              <span>Tarefas</span>
+              <span>Eventos</span>
+              <span>Contas</span>
+            </div>
+          )}
+        </div>
         <div className="cal__nav">
           <button className="cal__navBtn" onClick={() => navigateMonth(-1)} title="Mês anterior">
-            <ChevronLeft size={18} />
+            <ChevronLeft size={redesign ? 16 : 18} />
           </button>
-          <button className="cal__monthBtn" onClick={goToToday} title="Ir para hoje">
+          <button
+            hidden={redesign}
+            className="cal__monthBtn"
+            onClick={goToToday}
+            title="Ir para hoje"
+          >
             <span>{monthLabel}</span>
             <span className="cal__year">{year}</span>
           </button>
           <button className="cal__navBtn" onClick={() => navigateMonth(1)} title="Próximo mês">
-            <ChevronRight size={18} />
+            <ChevronRight size={redesign ? 16 : 18} />
           </button>
         </div>
       </header>
@@ -239,7 +302,10 @@ export default function CalendarCard({
         ))}
       </div>
 
-      <div className="cal__grid">
+      <div
+        className="cal__grid"
+        style={redesign ? { '--calendar-rows': Math.ceil(days.length / 7) } : undefined}
+      >
         {days.map((day, index) => (
           <button
             key={`day-${index}`}
@@ -247,10 +313,17 @@ export default function CalendarCard({
             className={getDayClass(day)}
             onClick={() => handleDayClick(day)}
             disabled={!day}
+            aria-label={day ? `${day} de ${monthLabel} de ${year}` : undefined}
+            aria-current={day === today ? 'date' : undefined}
+            data-past={(today && day < today) || undefined}
           >
             {day}
             {day && (hasTasks.has(day) || hasEvents.has(day) || hasFinances.has(day)) && (
-              <span className="cal__dayDot" />
+              <span className="cal__dayDot">
+                {hasTasks.has(day) && <i className="is-task" />}
+                {hasEvents.has(day) && <i className="is-event" />}
+                {hasFinances.has(day) && <i className="is-finance" />}
+              </span>
             )}
           </button>
         ))}
@@ -260,6 +333,7 @@ export default function CalendarCard({
       {selectedDay && selectedDayData && (
         <DaySummaryModal
           data={selectedDayData}
+          hideValues={hideValues}
           onClose={() => setSelectedDay(null)}
           onEditEvent={onEditEvent}
         />
@@ -268,9 +342,14 @@ export default function CalendarCard({
   )
 }
 
-function DaySummaryModal({ data, onClose, onEditEvent }) {
+function DaySummaryModal({ data, onClose, onEditEvent, hideValues }) {
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+    return hideValues
+      ? 'R$ ••••'
+      : new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(value)
   }
 
   const formatMinutes = (minutes) => {
@@ -280,144 +359,162 @@ function DaySummaryModal({ data, onClose, onEditEvent }) {
   }
 
   return (
-    <div className="dayModal">
-      <div className="dayModal__backdrop" onClick={onClose} />
-      <div className="dayModal__panel">
-        <header className="dayModal__header">
-          <div>
-            <p className="dayModal__eyebrow">Resumo do Dia</p>
-            <h2 className="dayModal__date">{data.dateFormatted}</h2>
-          </div>
-          <button className="dayModal__close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </header>
-
-        <div className="dayModal__content">
-          {/* Mini Dashboard de Produtividade */}
-          <div className="dayModal__stats">
-            <div className="dayModal__stat">
-              <Clock size={16} />
-              <div>
-                <span className="dayModal__statValue">{formatMinutes(data.focusMinutes)}</span>
-                <span className="dayModal__statLabel">Foco</span>
-              </div>
+    <Modal
+      title={data.dateFormatted}
+      subtitle="Resumo do dia"
+      onClose={onClose}
+      className="home-day-modal"
+    >
+      <div className="dayModal__content">
+        {/* Mini Dashboard de Produtividade */}
+        <div className="dayModal__stats">
+          <div className="dayModal__stat">
+            <Clock size={16} />
+            <div>
+              <span className="dayModal__statValue">{formatMinutes(data.focusMinutes)}</span>
+              <span className="dayModal__statLabel">Foco</span>
             </div>
-            <div className="dayModal__stat">
+          </div>
+          <div className="dayModal__stat">
+            <CheckCircle2 size={16} />
+            <div>
+              <span className="dayModal__statValue">
+                {data.completedTasksCount}/{data.totalTasks}
+              </span>
+              <span className="dayModal__statLabel">Tarefas</span>
+            </div>
+          </div>
+          <div className="dayModal__stat">
+            <Target size={16} />
+            <div>
+              <span className="dayModal__statValue">{data.habits.length}</span>
+              <span className="dayModal__statLabel">Hábitos</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tarefas do Dia */}
+        {data.tasks.length > 0 && (
+          <div className="dayModal__section">
+            <h3 className="dayModal__sectionTitle">
               <CheckCircle2 size={16} />
-              <div>
-                <span className="dayModal__statValue">{data.completedTasksCount}/{data.totalTasks}</span>
-                <span className="dayModal__statLabel">Tarefas</span>
-              </div>
-            </div>
-            <div className="dayModal__stat">
-              <Target size={16} />
-              <div>
-                <span className="dayModal__statValue">{data.habits.length}</span>
-                <span className="dayModal__statLabel">Hábitos</span>
-              </div>
+              Tarefas ({data.tasks.length})
+            </h3>
+            <ul className="dayModal__list">
+              {data.tasks.map((task) => (
+                <li key={task.id} className={`dayModal__task ${task.completed ? 'completed' : ''}`}>
+                  <span className={`dayModal__taskCheck ${task.completed ? 'checked' : ''}`} />
+                  <span className="dayModal__taskTitle">{task.title}</span>
+                  <span
+                    className={`dayModal__taskPriority priority--${task.priority?.toLowerCase()}`}
+                  >
+                    {task.priority}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Hábitos Concluídos */}
+        {data.habits.length > 0 && (
+          <div className="dayModal__section">
+            <h3 className="dayModal__sectionTitle">
+              <TrendingUp size={16} />
+              Hábitos Concluídos ({data.habits.length})
+            </h3>
+            <ul className="dayModal__list">
+              {data.habits.map((habit) => (
+                <li key={habit.id} className="dayModal__habit">
+                  <span className="dayModal__habitEmoji">{habit.emoji || '✅'}</span>
+                  <span>{habit.title}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Eventos */}
+        {data.events.length > 0 && (
+          <div className="dayModal__section">
+            <h3 className="dayModal__sectionTitle">
+              <Calendar size={16} />
+              Eventos ({data.events.length})
+            </h3>
+            <ul className="dayModal__list">
+              {data.events.map((event) => (
+                <li
+                  key={event.id}
+                  className="dayModal__event"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onClose()
+                      onEditEvent?.(event)
+                    }
+                  }}
+                  onClick={() => {
+                    onClose()
+                    onEditEvent?.(event)
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                    borderRadius: 8,
+                  }}
+                  title="Clique para editar"
+                >
+                  <span className="dayModal__eventTime">{event.time || '—'}</span>
+                  <span>{event.title}</span>
+                  <span style={{ marginLeft: 'auto', opacity: 0.5, fontSize: 11 }}>Editar</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Movimentações Financeiras */}
+        {data.finances.length > 0 && (
+          <div className="dayModal__section">
+            <h3 className="dayModal__sectionTitle">
+              <Wallet size={16} />
+              Finanças ({data.finances.length})
+            </h3>
+            <ul className="dayModal__list dayModal__financeList">
+              {data.finances.map((finance) => (
+                <li key={finance.id} className={`dayModal__finance ${finance.type}`}>
+                  <span className="dayModal__financeDesc">
+                    {finance.description || finance.category}
+                  </span>
+                  <span className={`dayModal__financeAmount ${finance.type}`}>
+                    {finance.type === 'income' ? '+' : '-'}
+                    {formatCurrency(finance.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="dayModal__financeBalance">
+              <span>Balanço do dia:</span>
+              <span className={data.balance >= 0 ? 'positive' : 'negative'}>
+                {formatCurrency(data.balance)}
+              </span>
             </div>
           </div>
+        )}
 
-          {/* Tarefas do Dia */}
-          {data.tasks.length > 0 && (
-            <div className="dayModal__section">
-              <h3 className="dayModal__sectionTitle">
-                <CheckCircle2 size={16} />
-                Tarefas ({data.tasks.length})
-              </h3>
-              <ul className="dayModal__list">
-                {data.tasks.map(task => (
-                  <li key={task.id} className={`dayModal__task ${task.completed ? 'completed' : ''}`}>
-                    <span className={`dayModal__taskCheck ${task.completed ? 'checked' : ''}`} />
-                    <span className="dayModal__taskTitle">{task.title}</span>
-                    <span className={`dayModal__taskPriority priority--${task.priority?.toLowerCase()}`}>
-                      {task.priority}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Hábitos Concluídos */}
-          {data.habits.length > 0 && (
-            <div className="dayModal__section">
-              <h3 className="dayModal__sectionTitle">
-                <TrendingUp size={16} />
-                Hábitos Concluídos ({data.habits.length})
-              </h3>
-              <ul className="dayModal__list">
-                {data.habits.map(habit => (
-                  <li key={habit.id} className="dayModal__habit">
-                    <span className="dayModal__habitEmoji">{habit.emoji || '✅'}</span>
-                    <span>{habit.title}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Eventos */}
-          {data.events.length > 0 && (
-            <div className="dayModal__section">
-              <h3 className="dayModal__sectionTitle">
-                <Calendar size={16} />
-                Eventos ({data.events.length})
-              </h3>
-              <ul className="dayModal__list">
-                {data.events.map(event => (
-                  <li
-                    key={event.id}
-                    className="dayModal__event"
-                    onClick={() => { onClose(); onEditEvent?.(event) }}
-                    style={{ cursor: 'pointer', transition: 'background 0.2s', borderRadius: 8 }}
-                    title="Clique para editar"
-                  >
-                    <span className="dayModal__eventTime">{event.time || '—'}</span>
-                    <span>{event.title}</span>
-                    <span style={{ marginLeft: 'auto', opacity: 0.5, fontSize: 11 }}>Editar</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Movimentações Financeiras */}
-          {data.finances.length > 0 && (
-            <div className="dayModal__section">
-              <h3 className="dayModal__sectionTitle">
-                <Wallet size={16} />
-                Finanças ({data.finances.length})
-              </h3>
-              <ul className="dayModal__list dayModal__financeList">
-                {data.finances.map(finance => (
-                  <li key={finance.id} className={`dayModal__finance ${finance.type}`}>
-                    <span className="dayModal__financeDesc">{finance.description || finance.category}</span>
-                    <span className={`dayModal__financeAmount ${finance.type}`}>
-                      {finance.type === 'income' ? '+' : '-'}{formatCurrency(finance.amount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="dayModal__financeBalance">
-                <span>Balanço do dia:</span>
-                <span className={data.balance >= 0 ? 'positive' : 'negative'}>
-                  {formatCurrency(data.balance)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Estado vazio */}
-          {data.tasks.length === 0 && data.habits.length === 0 && data.events.length === 0 && data.finances.length === 0 && (
+        {/* Estado vazio */}
+        {data.tasks.length === 0 &&
+          data.habits.length === 0 &&
+          data.events.length === 0 &&
+          data.finances.length === 0 && (
             <div className="dayModal__empty">
               <Calendar size={48} strokeWidth={1} />
               <p>Nenhuma atividade registrada neste dia.</p>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
