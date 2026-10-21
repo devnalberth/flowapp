@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-21",
+  "environment": "Actual components with synthetic context; Supabase requests blocked",
+  "checks": [
+    "Gallery renders 8 active projects, original mean 67%, 42 pending tasks and 4 sorted deadlines",
+    "Category filters keep original global dashboard; empty category resets to all",
+    "Global value mask covers financial goal titles in project cards",
+    "Hero deadline and card open existing workspace; back returns to gallery",
+    "New-project tile opens existing form; Escape closes",
+    "Restore retains original todo write and automatic task-derived status; last restore returns to all",
+    "Gallery and archived fit 1024px without document overflow",
+    "Gallery and archived fit 390px without document overflow",
+    "Loading uses fixed gallery skeleton and accessible status",
+    "Reduced motion avoids card displacement",
+    "No runtime page errors"
+  ],
+  "errors": []
+}

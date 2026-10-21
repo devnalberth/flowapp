@@ -1,170 +1,218 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from "react";
 import {
-  CheckCircle2, ListChecks, Calendar, Target, Building2, ArrowUpRight,
-  MoreVertical, Pencil, Archive, ArchiveRestore, Trash2,
-} from 'lucide-react'
-import { computeProjectStats, isArchivedProject, PROJECT_STATUS_META } from '../../utils/projectMetrics'
-import './ProjectCard.css'
+  ListChecks,
+  CalendarDays,
+  User,
+  Flag,
+  Ellipsis,
+  Pencil,
+  Archive,
+  ArchiveRestore,
+  RotateCcw,
+  Trash2,
+  CircleCheck,
+  Circle,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  computeProjectStats,
+  isArchivedProject,
+  PROJECT_STATUS_META,
+} from "../../utils/projectMetrics";
+import { projectColorToken } from "../../utils/projectAppearance";
+import Button from "../ui/Button";
+import ProgressRing from "../ui/ProgressRing";
+import StatusBadge from "../ui/StatusBadge";
+import ActionMenu from "../ui/ActionMenu";
+import { useMotionPresets } from "../ui/motion";
+import "./ProjectCard.css";
 
 const formatDate = (value) => {
-  if (!value) return null
-  const d = new Date(`${String(value).slice(0, 10)}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-}
+  if (!value) return null;
+  const d = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+};
 
 const daysLeft = (end) => {
-  if (!end) return null
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const d = new Date(`${String(end).slice(0, 10)}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return null
-  return Math.round((d - today) / 86400000)
-}
+  if (!end) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(`${String(end).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.round((d - today) / 86400000);
+};
 
 export default function ProjectCard({
-  project, tasks = [], client, goal, onOpen, index = 0,
-  onEdit, onArchive, onRestore, onDelete,
+  project,
+  tasks = [],
+  client,
+  goal,
+  onOpen,
+  index = 0,
+  onEdit,
+  onArchive,
+  onRestore,
+  onDelete,
+  mask = (value) => value,
 }) {
-  const stats = useMemo(() => computeProjectStats(project, tasks), [project, tasks])
-  const archived = isArchivedProject(project)
-  const color = `#${(project.color || 'ff9500').replace('#', '')}`
+  const stats = useMemo(
+    () => computeProjectStats(project, tasks),
+    [project, tasks],
+  );
+  const archived = isArchivedProject(project),
+    color = archived
+      ? "var(--fa-text-muted)"
+      : projectColorToken(project.color);
   const statusMeta = archived
     ? PROJECT_STATUS_META.archived
-    : PROJECT_STATUS_META[stats.autoStatus] || PROJECT_STATUS_META.todo
+    : PROJECT_STATUS_META[stats.autoStatus] || PROJECT_STATUS_META.todo;
   const start = formatDate(project.startDate || project.start_date)
-  const end = formatDate(project.endDate || project.end_date)
-  const remaining = daysLeft(project.endDate || project.end_date)
-
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
-
-  useEffect(() => {
-    if (!menuOpen) return undefined
-    const close = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) setMenuOpen(false)
-    }
-    const onEscape = (event) => { if (event.key === 'Escape') setMenuOpen(false) }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keyup', onEscape)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keyup', onEscape)
-    }
-  }, [menuOpen])
-
-  const menuAction = (event, action) => {
-    event.stopPropagation()
-    setMenuOpen(false)
-    action?.(project)
-  }
-
-  // Ângulo do anel de progresso
-  const ring = `conic-gradient(${color} ${stats.progress * 3.6}deg, rgba(0,0,0,0.06) 0deg)`
-
+      ?.replace(" de ", " ")
+      .replace(".", ""),
+    end = formatDate(project.endDate || project.end_date)
+      ?.replace(" de ", " ")
+      .replace(".", "");
+  const remaining = daysLeft(project.endDate || project.end_date),
+    presets = useMotionPresets();
+  const tone = archived
+    ? "neutral"
+    : { doing: "info", closing: "accent", done: "success" }[statusMeta.tone] ||
+      "neutral";
+  const items = [
+    ...(!archived
+      ? [{ label: "Editar", icon: Pencil, onClick: () => onEdit?.(project) }]
+      : []),
+    {
+      label: archived ? "Restaurar" : "Arquivar",
+      icon: archived ? ArchiveRestore : Archive,
+      onClick: () => (archived ? onRestore?.(project) : onArchive?.(project)),
+    },
+    {
+      label: "Excluir",
+      icon: Trash2,
+      danger: true,
+      onClick: () => onDelete?.(project),
+    },
+  ];
   return (
-    <article
-      className={`projCard ${archived ? 'is-archived' : ''}`}
-      style={{ '--accent': color, '--i': Math.min(index, 12) }}
-      data-status={archived ? 'archived' : stats.autoStatus}
+    <motion.article
+      className={`project-tile ${archived ? "is-archived" : ""}`}
+      style={{ "--project-color": color }}
+      data-status={archived ? "archived" : stats.autoStatus}
+      variants={presets.card}
     >
-      <span className="projCard__stripe" />
-
-      <div className="projCard__menuWrap" ref={menuRef}>
-        <button
-          type="button"
-          className="projCard__menuBtn"
-          aria-label={`Ações do projeto ${project.title}`}
-          aria-expanded={menuOpen}
-          onClick={(event) => { event.stopPropagation(); setMenuOpen((open) => !open) }}
+      <header>
+        <i />
+        <span>{project.area || "Outros"}</span>
+        <StatusBadge
+          tone={tone}
+          icon={
+            stats.autoStatus === "completed" && !archived
+              ? CircleCheck
+              : undefined
+          }
         >
-          <MoreVertical size={16} />
-        </button>
-
-        {menuOpen && (
-          <div className="projCard__menu" role="menu">
-            {!archived && (
-              <button type="button" role="menuitem" onClick={(e) => menuAction(e, onEdit)}>
-                <Pencil size={14} /> Editar
-              </button>
-            )}
-            {archived ? (
-              <button type="button" role="menuitem" onClick={(e) => menuAction(e, onRestore)}>
-                <ArchiveRestore size={14} /> Restaurar
-              </button>
-            ) : (
-              <button type="button" role="menuitem" onClick={(e) => menuAction(e, onArchive)}>
-                <Archive size={14} /> Arquivar
-              </button>
-            )}
+          {statusMeta.label}
+        </StatusBadge>
+        <ActionMenu
+          label={`Ações do projeto ${mask(project.title)}`}
+          trigger={
             <button
               type="button"
-              role="menuitem"
-              className="projCard__menuDanger"
-              onClick={(e) => menuAction(e, onDelete)}
+              className="project-tile-menu"
+              aria-label={`Ações do projeto ${mask(project.title)}`}
             >
-              <Trash2 size={14} /> Excluir
+              <Ellipsis size={14} strokeWidth={1.75} />
             </button>
-          </div>
-        )}
-      </div>
-
+          }
+          items={items}
+        />
+      </header>
       <button
         type="button"
-        className="projCard__main"
+        className="project-tile-main"
         onClick={() => onOpen?.(project)}
-        aria-label={`Abrir projeto ${project.title}`}
+        aria-label={`Abrir projeto ${mask(project.title)}`}
       >
-        <header className="projCard__head">
-          <div className="projCard__titleWrap">
-            <h3 className="projCard__title">{project.title}</h3>
-            <span className={`projCard__status projCard__status--${statusMeta.tone}`}>{statusMeta.label}</span>
-          </div>
-          <span className="projCard__open"><ArrowUpRight size={18} /></span>
-        </header>
-
-        <div className="projCard__meta">
+        <h3>{mask(project.title)}</h3>
+        <span className="project-tile-links">
           {client && (
-            <span className="projCard__chip"><Building2 size={13} /> {client.name}</span>
+            <span>
+              <User size={11} strokeWidth={1.75} />
+              {mask(client.name)}
+            </span>
           )}
           {goal && (
-            <span className="projCard__chip projCard__chip--goal"><Target size={13} /> {goal.title}</span>
+            <span className="is-goal">
+              <Flag size={11} strokeWidth={1.75} />
+              {mask(goal.title)}
+            </span>
           )}
-        </div>
-
-        <div className="projCard__body">
-          <div className="projCard__ring" style={{ background: ring }}>
-            <div className="projCard__ringInner">
-              <strong>{stats.progress}%</strong>
-            </div>
-          </div>
-
-          <div className="projCard__stats">
-            <div className="projCard__stat">
-              <ListChecks size={15} />
-              <span><strong>{stats.totalTasks}</strong> tarefas</span>
-            </div>
-            <div className="projCard__stat projCard__stat--done">
-              <CheckCircle2 size={15} />
-              <span><strong>{stats.doneTasks}</strong> concluídas</span>
-            </div>
-            <div className="projCard__stat projCard__stat--pending">
-              <span className="projCard__dot" />
-              <span><strong>{stats.pendingTasks}</strong> pendentes</span>
-            </div>
-          </div>
-        </div>
-
-        {(start || end) && (
-          <footer className="projCard__dates">
-            <span className="projCard__dateItem"><Calendar size={13} /> {start || '—'} {end ? `→ ${end}` : ''}</span>
-            {typeof remaining === 'number' && !archived && stats.autoStatus !== 'completed' && (
-              <span className={`projCard__deadline ${remaining < 0 ? 'is-late' : ''}`}>
-                {remaining < 0 ? `${Math.abs(remaining)}d atrasado` : remaining === 0 ? 'vence hoje' : `${remaining}d restantes`}
-              </span>
+        </span>
+        <span className="project-tile-body">
+          <ProgressRing
+            value={stats.progress}
+            size="md"
+            color={color}
+            label={`Progresso de ${mask(project.title)}`}
+          />
+          <span>
+            <span>
+              <ListChecks size={13} strokeWidth={1.75} />
+              {stats.totalTasks} tarefas
+            </span>
+            <span>
+              <CircleCheck size={13} strokeWidth={1.75} />
+              {stats.doneTasks} concluídas
+            </span>
+            <span>
+              <Circle size={13} strokeWidth={1.75} />
+              {stats.pendingTasks} pendentes
+            </span>
+          </span>
+        </span>
+        {!archived && (start || end) && (
+          <span className="project-tile-dates">
+            <CalendarDays size={13} strokeWidth={1.75} />
+            <span>
+              {start || "—"} {end ? `→ ${end}` : ""}
+            </span>
+            {typeof remaining === "number" &&
+              !archived &&
+              stats.autoStatus !== "completed" && (
+                <small
+                  className={`project-deadline-pill ${remaining < 0 ? "is-late" : remaining <= 10 ? "is-soon" : ""}`}
+                >
+                  {remaining < 0
+                    ? `${Math.abs(remaining)}d atraso`
+                    : remaining === 0
+                      ? "hoje"
+                      : `${remaining} dias`}
+                </small>
+              )}
+            {stats.autoStatus === "completed" && !archived && (
+              <small className="project-tile-complete">concluído</small>
             )}
-          </footer>
+          </span>
         )}
       </button>
-    </article>
-  )
+      {archived && (
+        <footer className="project-tile-dates">
+          <CalendarDays size={13} strokeWidth={1.75} />
+          <span>
+            {start || "—"} {end ? `→ ${end}` : ""}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RotateCcw}
+            onClick={() => onRestore?.(project)}
+          >
+            Restaurar
+          </Button>
+        </footer>
+      )}
+    </motion.article>
+  );
 }
