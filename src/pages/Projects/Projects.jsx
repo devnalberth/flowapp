@@ -252,7 +252,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
   usePageActions({
     label: activeProject ? "Nova tarefa" : "Novo projeto",
-    title: activeProject?.title || "Projetos",
+    title: activeProject ? mask(activeProject.title) : "Projetos",
     onClick: activeProject ? () => handleNewTask("todo") : openNewProject,
     disabled: loading,
   });
@@ -281,6 +281,8 @@ export default function Projects({ onNavigate, onLogout, user }) {
             onDelete={handleDeleteProject}
             updateTask={updateTask}
             onNewTask={handleNewTask}
+            onNavigate={onNavigate}
+            mask={mask}
           />
         ) : (
           <motion.div

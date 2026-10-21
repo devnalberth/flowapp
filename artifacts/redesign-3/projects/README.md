@@ -39,4 +39,10 @@ Harness com callbacks e estado sintéticos; requisições Supabase bloqueadas. N
 
 ## Próximas unidades
 
-Visão geral do projeto (48473:2), Kanban (48474:241), Lista (48475:265), Calendário (48475:860), Sem projetos (48477:953) e os fluxos de menu, criação, cliente, exclusão e arquivo com Desfazer. O workspace e seus modais ainda estão com a apresentação anterior; diálogos nativos desses fluxos serão migrados na unidade correspondente. A limpeza dos estilos antigos de Projects fica para o fim do módulo.
+Kanban (48474:241), Lista (48475:265), Calendário (48475:860), Sem projetos (48477:953) e os fluxos de menu, criação, cliente, exclusão e arquivo com Desfazer. O workspace e seus modais ainda estão com a apresentação anterior; diálogos nativos desses fluxos serão migrados na unidade correspondente. A limpeza dos estilos antigos de Projects fica para o fim do módulo.
+
+## Visão geral — 48473:2
+
+Implementada com tokens e componentes compartilhados: cabeçalho, ações existentes, andamento, tempo decorrido, KPIs, abas, detalhes, cliente e descrição. Comparação de tempo usa apenas datas existentes; meta financeira reutiliza categoryRevenue para o mês corrente. Nenhuma gravação adicional. Sem timestamps de conclusão, o contexto mostra “tarefas do projeto”, evitando uma data inventada. Ausência de cliente, prazo, descrição ou meta tem apresentação condicional.
+
+Capturas projeto-visao-geral-1440/1024/390.png. Herói 548×306 em (288,220.6), painéis 548×347 em y601.6. overview-verification.json registra oito verificações locais. Build passou e os 20 cálculos/handlers da galeria continuam iguais por AST. O workspace ainda abre em Kanban, como antes; demais visões e modais permanecem pendentes. Nenhuma validação autenticada de backend ou deployment nesta unidade.

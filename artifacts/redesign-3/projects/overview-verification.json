@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Existing project data renders 62% tasks, 61% elapsed time, 9 days and 64% financial goal",
+    "Global financial mask covers goal titles and revenue",
+    "Edit opens original project form",
+    "1024px and 390px layouts have no horizontal overflow",
+    "Overview tabs retain original list and return navigation",
+    "Back returns to project gallery",
+    "Project without client uses empty state",
+    "Reduced motion keeps content visible"
+  ],
+  "scope": "Local UI with synthetic AppContext; Supabase blocked"
+}

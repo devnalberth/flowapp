@@ -1,0 +1,292 @@
+.project-overview {
+  min-width: 0;
+}
+.project-overview-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 84px;
+  margin-bottom: 16px;
+  padding-right: 145px;
+}
+.project-overview-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fa-text-muted);
+  font: var(--fa-type-badge);
+  cursor: pointer;
+}
+.project-overview-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.project-overview-title > i {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 6px;
+  background: var(--project-color);
+}
+.project-overview-title h1 {
+  margin: 0;
+  font: var(--fa-type-page);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.project-overview-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.project-overview-links > span:not(.fa-status) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font: var(--fa-type-badge);
+  background: var(--fa-bg-soft);
+  color: var(--fa-text-secondary);
+}
+.project-overview-links > .is-goal:not(.fa-status) {
+  background: var(--fa-bg-accent-soft);
+  color: var(--fa-text-accent);
+}
+.project-overview-links svg {
+  flex: none;
+}
+.project-overview-links .fa-status {
+  padding: 4px 9px;
+}
+.project-overview-actions {
+  display: flex;
+  gap: 8px;
+  position: absolute;
+  right: 0;
+  top: 32px;
+}
+.project-overview-actions button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 20px;
+  background: var(--fa-bg-card);
+  color: var(--fa-text-secondary);
+  cursor: pointer;
+}
+.project-overview-actions .is-danger {
+  color: var(--fa-status-danger);
+}
+.project-overview-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 145px);
+  gap: 16px;
+}
+.project-overview-hero.fa-hero {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 57px 28px;
+}
+.project-overview-hero > .fa-hero__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.project-overview-hero .fa-hero-rings {
+  top: -40px;
+  right: -20px;
+}
+.project-overview-number {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.project-overview-number > strong {
+  font: var(--fa-type-hero);
+  letter-spacing: -0.02em;
+}
+.project-overview-number > span {
+  font: var(--fa-type-body);
+  color: var(--fa-text-on-dark-muted);
+}
+.project-overview-hero .fa-progress__header {
+  margin-bottom: 6px;
+  color: var(--fa-text-on-dark-muted);
+  font: var(--fa-type-badge);
+}
+.project-overview-hero .fa-progress__header span:last-child {
+  color: var(--fa-text-on-dark);
+  font: var(--fa-type-badge);
+}
+.project-overview-hero .fa-progress__track {
+  background: var(--fa-bg-hero-2);
+}
+.project-overview-pace {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--fa-text-on-dark);
+  font: var(--fa-type-badge);
+}
+.project-overview-pace svg {
+  color: var(--fa-status-success-solid);
+  flex: none;
+}
+.project-overview-summary .fa-kpi {
+  height: 145px;
+}
+.project-overview-summary .fa-kpi__context {
+  flex-wrap: nowrap;
+}
+.project-overview-summary .fa-kpi__context > .project-overview-kpi-context {
+  padding: 0;
+  background: none;
+  color: var(--fa-text-caption);
+  font: var(--fa-type-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-overview-summary .fa-kpi__context > span:first-child {
+  flex: none;
+}
+.project-overview-tabs {
+  margin: 16px 0;
+  display: flex;
+}
+.project-overview-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.project-overview-card {
+  min-width: 0;
+  min-height: 347px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 24px;
+  background: var(--fa-bg-card);
+  padding: 20px;
+}
+.project-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--fa-border-divider);
+  font: var(--fa-type-body);
+}
+.project-info-row > svg {
+  color: var(--fa-text-muted);
+  flex: none;
+}
+.project-info-row > span {
+  flex: 1;
+  min-width: 0;
+  color: var(--fa-text-secondary);
+}
+.project-info-row > strong {
+  font: var(--fa-type-body-strong);
+  color: var(--fa-text-primary);
+  text-align: right;
+  max-width: 65%;
+  overflow-wrap: anywhere;
+}
+.project-info-row > .is-accent {
+  color: var(--fa-text-accent);
+}
+.project-info-row > .is-danger {
+  color: var(--fa-status-danger);
+}
+.project-client-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+}
+.project-client-notes > span {
+  font: var(--fa-type-badge);
+  color: var(--fa-text-muted);
+}
+.project-client-notes p,
+.project-overview-description p {
+  margin: 0;
+  font: var(--fa-type-body);
+  color: var(--fa-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.project-overview-description {
+  min-height: 0;
+  margin-top: 16px;
+  gap: 10px;
+}
+@media (max-width: 1199px) {
+  .project-overview-summary {
+    grid-template-rows: repeat(2, minmax(165px, auto));
+  }
+  .project-overview-summary .fa-kpi {
+    height: auto;
+  }
+  .project-overview-hero.fa-hero {
+    padding: 32px 24px;
+  }
+  .project-overview-number {
+    flex-wrap: wrap;
+  }
+  .project-overview-header {
+    height: auto;
+  }
+}
+@media (max-width: 1023px) {
+  .project-overview-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+  .project-overview-hero.fa-hero {
+    grid-row: auto;
+    min-height: 306px;
+  }
+}
+@media (max-width: 767px) {
+  .project-overview-header {
+    padding-right: 0;
+    padding-bottom: 48px;
+  }
+  .project-overview-actions {
+    top: auto;
+    bottom: 0;
+  }
+  .project-overview-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .project-overview-summary .fa-kpi {
+    min-height: 145px;
+  }
+  .project-overview-tabs {
+    max-width: 100%;
+    overflow: auto;
+  }
+  .project-overview-hero .fa-progress__header {
+    flex-wrap: wrap;
+  }
+  .project-overview-card {
+    min-height: 0;
+  }
+  .project-overview-summary .fa-kpi__context {
+    flex-wrap: wrap;
+  }
+}
