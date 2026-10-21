@@ -1,0 +1,16 @@
+{
+  "results": [
+    "Parser existente: data literal, sentinelas12h/00h comZ e offset não inventam horário; timestamp18hZ aparece15h local",
+    "FiltrosFlow/Rápidas/Finalizadas/Hoje e categoriaEstudos preservam os resultados existentes",
+    "Grade Figma 1440: timer548×306; 4KPIs266×145; lista1112×566; timer50m→18m42 e pausa contabiliza31,3m",
+    "Editar conserva data/hora local, estado de prioridade/status e subtarefas anteriores",
+    "Detalhe540px sem sessões inventadas; Esc; timer personalizado preserva configuração e é aplicado ao selecionar técnica",
+    "Nova tarefa: data/hora local→ISO, status/prioridade/projeto/subtarefas e tagFlow preservados; painel alternaHoje/7dias",
+    "Arquivadas sem data inventada; restauração→todo; arquivamento→archived; toastDesfazer restaura",
+    "Conclusão/desfazer envia timestamps e statusexistentes; excluir exigeconfirmação; cancelar nãoexclui; olho mascara R$",
+    "Conta vazia e larguras1100/900/390 sem overflow; movimento reduzido"
+  ],
+  "errors": [],
+  "backendWrites": [],
+  "fixtureData": true
+}

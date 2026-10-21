@@ -1,83 +1,179 @@
-.flowDash {
-  position: fixed;
-  inset: 0;
-  z-index: 1002;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  font-family: var(--font-sans, 'Manrope', sans-serif);
-}
-.flowDash__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(16, 16, 22, 0.55);
-  backdrop-filter: blur(6px);
-}
-.flowDash__panel {
-  position: relative;
-  width: min(560px, 100%);
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  background: #fff;
-  border-radius: 22px;
-  padding: 24px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
-  color: #0d0d12;
+.flowDash .fa-modal__body {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  animation: flowDashPop 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  gap: 20px;
 }
-@keyframes flowDashPop { from { opacity: 0; transform: translateY(12px) scale(.98) } to { opacity: 1; transform: none } }
-
-.flowDash__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.flowDash__eyebrow { display: block; text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.7rem; font-weight: 700; color: #ff4800; margin-bottom: 4px; }
-.flowDash__header h3 { margin: 0; font-family: var(--font-brand, 'Outfit', sans-serif); font-size: 1.5rem; }
-.flowDash__close { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #ececf0; background: #fafafa; color: #6b6b73; cursor: pointer; }
-.flowDash__close:hover { background: #f0f0f2; }
-
-.flowDash__period { display: inline-flex; gap: 4px; background: #f3f3f5; padding: 4px; border-radius: 12px; align-self: flex-start; }
-.flowDash__period button { border: none; background: transparent; padding: 7px 16px; border-radius: 9px; font: inherit; font-weight: 600; font-size: 0.85rem; color: #6b6b73; cursor: pointer; transition: all 150ms ease; }
-.flowDash__period button.is-active { background: #0d0d12; color: #fff; }
-
-/* Hero */
-.flowDash__hero { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-.flowDash__donut { position: relative; width: 120px; height: 120px; border-radius: 50%; flex-shrink: 0; }
-.flowDash__donut::after { content: ''; position: absolute; inset: 14px; background: #fff; border-radius: 50%; }
-.flowDash__donutHole { position: absolute; inset: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
-.flowDash__donutHole strong { font-family: var(--font-brand, 'Outfit', sans-serif); font-size: 1.25rem; line-height: 1; }
-.flowDash__donutHole span { font-size: 0.74rem; color: #8b8b93; }
-
-.flowDash__metrics { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 10px; }
-.flowDash__metric { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--c) 8%, #fff); border: 1px solid color-mix(in srgb, var(--c) 20%, #fff); }
-.flowDash__metricIcon { width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; color: #fff; background: var(--c); }
-.flowDash__metric strong { display: block; font-family: var(--font-brand, 'Outfit', sans-serif); font-size: 1.3rem; line-height: 1.1; }
-.flowDash__metricLabel { font-size: 0.78rem; color: #6b6b73; font-weight: 600; }
-
-/* Blocks */
-.flowDash__block { display: flex; flex-direction: column; gap: 12px; }
-.flowDash__block h4 { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 0.95rem; }
-.flowDash__block h4 svg { color: #ff4800; }
-.flowDash__empty { margin: 0; font-size: 0.85rem; color: #9a9aa2; }
-
-/* Daily bars */
-.flowDash__bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 130px; align-items: end; }
-.flowDash__barCol { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
-.flowDash__barStack { width: 70%; max-width: 30px; min-height: 4px; border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; background: #f0f0f2; }
-.flowDash__barSeg { display: block; width: 100%; }
-.flowDash__barLabel { font-size: 0.7rem; color: #9a9aa2; font-weight: 600; }
-
-/* Tasks */
-.flowDash__tasks { display: flex; flex-direction: column; gap: 12px; }
-.flowDash__task { display: flex; flex-direction: column; gap: 6px; }
-.flowDash__taskTop { display: flex; align-items: center; gap: 8px; }
-.flowDash__taskDot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.flowDash__taskName { flex: 1; min-width: 0; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.flowDash__taskTime { font-size: 0.82rem; font-weight: 700; color: #0d0d12; flex-shrink: 0; }
-.flowDash__taskTrack { height: 7px; background: #f0f0f2; border-radius: 99px; overflow: hidden; }
-.flowDash__taskTrack span { display: block; height: 100%; border-radius: 99px; transition: width 400ms ease; }
-
-@media (max-width: 480px) {
-  .flowDash__hero { justify-content: center; }
+.flowDash .fa-tabs {
+  align-self: flex-start;
+}
+.flowDash__hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--fa-bg-soft);
+}
+.flowDash__donut {
+  width: 120px;
+  height: 120px;
+  flex: none;
+  padding: 12px;
+  border-radius: 50%;
+}
+.flowDash__donutHole {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--fa-bg-soft);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.flowDash__donutHole strong {
+  font: var(--fa-type-card);
+}
+.flowDash__donutHole > span {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+.flowDash__metrics {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.flowDash__metric {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flowDash__metricIcon {
+  display: flex;
+  color: var(--c);
+}
+.flowDash__metric > div {
+  display: flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+}
+.flowDash__metric strong {
+  font: var(--fa-type-body-strong);
+}
+.flowDash__metricLabel {
+  font: var(--fa-type-body);
+  color: var(--fa-text-secondary);
+}
+.flowDash__block h4 {
+  margin: 0 0 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font: var(--fa-type-label);
+}
+.flowDash__block h4 > svg {
+  display: none;
+}
+.flowDash__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 220px;
+  padding-top: 12px;
+}
+.flowDash__barCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+}
+.flowDash__barStack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  width: 28px;
+  min-height: 4px;
+  margin-bottom: 6px;
+}
+.flowDash__barSeg {
+  border-radius: 6px;
+  min-height: 0;
+}
+.flowDash__barLabel {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+.flowDash__tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.flowDash__taskTop {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+  font: var(--fa-type-body);
+}
+.flowDash__taskDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.flowDash__taskName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flowDash__taskTime {
+  font-weight: 600;
+}
+.flowDash__taskTrack {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fa-progress-track);
+  overflow: hidden;
+}
+.flowDash__taskTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+.flowDash__empty {
+  margin: 0;
+  color: var(--fa-text-muted);
+  font: var(--fa-type-body);
+}
+@media (max-width: 767px) {
+  .flowDash__hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .flowDash__donut {
+    align-self: center;
+  }
+  .flowDash__metric > div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.flowDash__bars {
+  height: 240px;
+}
+.flowDash__barValue {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+  margin-bottom: 6px;
 }

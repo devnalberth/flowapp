@@ -12,6 +12,7 @@ export default function Modal({
   icon: Icon,
   children,
   footer,
+  headerActions,
   hint,
   className = '',
   width,
@@ -114,6 +115,7 @@ export default function Modal({
           <h2 id={titleId}>{title}</h2>
           {subtitle && <p id={subtitleId}>{subtitle}</p>}
         </div>
+        {headerActions}
         <button type="button" className="fa-modal__close" aria-label="Fechar" onClick={onClose}>
           <X size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>

@@ -1,29 +1,29 @@
 import { usePageActions } from '../../context/ShellContext.jsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 
 import CreateTaskModal from '../../components/CreateTaskModal/CreateTaskModal.jsx'
 import CreateEventModal from '../../components/CreateEventModal/CreateEventModal.jsx'
-import { Play, Pause, RotateCcw, Settings, Zap, Calendar, Sun, AlertTriangle, CalendarOff, CheckCircle2, ListTodo, Sparkles, Archive, Clock, RefreshCw, BarChart3, Briefcase, BookOpen } from 'lucide-react'
+import { Calendar, CheckCircle2, Archive, ChevronDown, Trash2 } from 'lucide-react'
 import useFocusTimer, { POMODORO_TECHNIQUES } from '../../hooks/useFocusTimer.js'
 import { normalizeTaskStatus, isArchivedTask } from '../../utils/taskStatus'
 import { buildLessonContextMap, buildBlockContextMap } from '../../utils/studyMetrics'
-import { categorizeTask, CATEGORY_META } from '../../utils/taskCategory'
+import { categorizeTask } from '../../utils/taskCategory'
 import FlowDashboardModal from '../../components/FlowDashboardModal/FlowDashboardModal.jsx'
 
-const STUDY_KIND_LABEL = { module: 'Módulo', submodule: 'Sub-módulo', subject: 'Matéria' }
-import ConfirmModal from '../../components/ConfirmModal/ConfirmModal.jsx'
+import ConfirmModal from '../../components/ui/ConfirmModal.jsx'
+import ActionMenu from '../../components/ui/ActionMenu.jsx'
+import KpiCard from '../../components/ui/KpiCard.jsx'
+import { Segmented } from '../../components/ui/Tabs.jsx'
+import EmptyState from '../../components/ui/EmptyState.jsx'
+import { useToast } from '../../components/ui/ToastProvider.jsx'
+import { motion } from 'framer-motion'
+import { useMotionPresets } from '../../components/ui/motion'
+import { focusLogService } from '../../services/focusLogService'
+import { formatMinutes } from '../../utils/habitStats'
+import { TaskFocusCard, CompactTaskRow, TaskDetailDrawer, PomodoroConfigModal } from './TasksUI'
 
 import './Tasks.css'
-
-// Fallback usado só quando a página é montada sem a prop `user` (o app sempre
-// passa o usuário autenticado). Dados genéricos de propósito: o repositório é
-// público, e dado pessoal aqui vira alvo de spam sem oferecer nada em troca.
-const DEFAULT_USER = {
-  name: 'Usuário',
-  email: 'usuario@exemplo.com',
-  avatarUrl: 'https://placehold.co/42x42',
-}
 
 const FILTERS = [
   { id: 'today', label: 'Hoje', group: 'timeline', icon: 'list', tone: 'primary' },
@@ -33,15 +33,14 @@ const FILTERS = [
   { id: 'archived', label: 'Arquivadas', group: 'status', icon: 'archive', tone: 'stone' },
   { id: 'tomorrow', label: 'Amanhã', group: 'timeline', icon: 'sun', tone: 'dawn' },
   { id: 'late', label: 'Atrasadas', group: 'timeline', icon: 'calendar-late', tone: 'warning' },
-  { id: 'unscheduled', label: 'Sem Agendamento', group: 'timeline', icon: 'calendar-off', tone: 'stone' },
+  {
+    id: 'unscheduled',
+    label: 'Sem Agendamento',
+    group: 'timeline',
+    icon: 'calendar-off',
+    tone: 'stone',
+  },
 ]
-
-const STATUS_META = {
-  todo: { label: 'A Fazer', icon: ListTodo },
-  in_progress: { label: 'Em Andamento', icon: RefreshCw },
-  done: { label: 'Concluída', icon: CheckCircle2 },
-  archived: { label: 'Arquivada', icon: Archive },
-}
 
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/
 const DATE_ONLY_WITH_MIDNIGHT_REGEX = /T00:00:00(?:\.000)?(?:Z|[+-]\d{2}:\d{2})?$/
@@ -63,12 +62,6 @@ const toLocalDateKey = (value) => {
   return `${year}-${month}-${day}`
 }
 
-const formatDateKeyPtBr = (dateKey) => {
-  if (!dateKey) return ''
-  const [year, month, day] = dateKey.split('-')
-  return `${day}/${month}/${year}`
-}
-
 // Início da semana atual (domingo 00:00). Base da "virada de semana": tarefas
 // concluídas em semanas anteriores somem do filtro Finalizadas (apenas na UI —
 // nada é apagado do banco e elas continuam contando nos projetos).
@@ -81,26 +74,57 @@ const getWeekStart = () => {
 
 // Status e Prioridades agora são definidos dentro do CreateTaskModal
 
-export default function Tasks({ onNavigate, onLogout, user, initialFilter = null, studyTarget = null }) {
-  const currentUser = user ?? DEFAULT_USER
-  const { tasks: contextTasks, projects, studies, addTask, updateTask, deleteTask, addEvent, syncTimerHabits, userId } = useApp()
+export default function Tasks({
+  onNavigate,
+  onLogout,
+  user,
+  initialFilter = null,
+  studyTarget = null,
+}) {
+  const notify = useToast()
+  const toggleTaskRef = useRef(null)
+  const presets = useMotionPresets()
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const withFeedback = async (action) => {
+    try {
+      await action()
+    } catch (error) {
+      notify({
+        title: 'Não foi possível salvar',
+        detail: error?.message || 'Tente novamente.',
+        tone: 'danger',
+      })
+    }
+  }
+  const mask = (value) =>
+    prefs.hideFinanceValues
+      ? String(value || '').replace(/R\$\s*[\d.,]+(?:\s*(?:mil|milhões?|mi))?/gi, 'R$ ••••')
+      : value
+  const {
+    tasks: contextTasks,
+    projects,
+    studies,
+    addTask,
+    updateTask,
+    deleteTask,
+    addEvent,
+    syncTimerHabits,
+    userId,
+    goals = [],
+    prefs = {},
+    loading,
+  } = useApp()
   const lessonCtxMap = useMemo(() => buildLessonContextMap(studies), [studies])
   const blockCtxMap = useMemo(() => buildBlockContextMap(studies), [studies])
-  const projectCtxMap = useMemo(() => {
-    const map = {}
-    for (const p of projects || []) map[p.id] = { title: p.title, area: p.area || null }
-    return map
-  }, [projects])
-
   // --- Estados de Filtro ---
   // Inicialização inteligente baseada no tipo de filtro (Timeline ou Status)
   const [timelineFilter, setTimelineFilter] = useState(() => {
-    const filterDef = FILTERS.find(f => f.id === initialFilter)
+    const filterDef = FILTERS.find((f) => f.id === initialFilter)
     return filterDef?.group === 'timeline' ? initialFilter : 'today'
   })
 
   const [statusFilters, setStatusFilters] = useState(() => {
-    const filterDef = FILTERS.find(f => f.id === initialFilter)
+    const filterDef = FILTERS.find((f) => f.id === initialFilter)
     return filterDef?.group === 'status' ? [initialFilter] : []
   })
 
@@ -123,15 +147,10 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     focusedBlock,
     setFocusedBlock,
     activeTechnique,
-    setActiveTechnique,
     pomodoroMode,
-    setPomodoroMode,
     timeLeft,
-    setTimeLeft,
     isRunning,
-    setIsRunning,
     sessionsCompleted,
-    setSessionsCompleted,
     focusedTaskId,
     setFocusedTaskId,
     customConfig,
@@ -156,7 +175,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   // Reage a mudanças na prop initialFilter (navegação via Dashboard)
   useEffect(() => {
     if (initialFilter) {
-      const filterDef = FILTERS.find(f => f.id === initialFilter)
+      const filterDef = FILTERS.find((f) => f.id === initialFilter)
       if (filterDef?.group === 'timeline') {
         setTimelineFilter(initialFilter)
         setStatusFilters([])
@@ -185,66 +204,69 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     // Virada de semana: concluídas de semanas anteriores somem da UI (não do banco)
     const weekStart = getWeekStart()
 
-    const matched = tasks.filter((task) => {
-      const dueDateKey = toLocalDateKey(task.due_date)
+    const matched = tasks
+      .filter((task) => {
+        const dueDateKey = toLocalDateKey(task.due_date)
 
-      // Verifica se está atrasada
-      const isDoneTask = normalizeTaskStatus(task) === 'done'
-      const isLate = !!dueDateKey && dueDateKey < toLocalDateKey(today) && !isDoneTask
+        // Verifica se está atrasada
+        const isDoneTask = normalizeTaskStatus(task) === 'done'
+        const isLate = !!dueDateKey && dueDateKey < toLocalDateKey(today) && !isDoneTask
 
-      // Verifica se está arquivada (status = 'archived')
-      const isArchived = normalizeTaskStatus(task) === 'archived'
+        // Verifica se está arquivada (status = 'archived')
+        const isArchived = normalizeTaskStatus(task) === 'archived'
 
-      // Se filtro de Arquivadas está ativo, mostra APENAS arquivadas
-      if (statusFilters.includes('archived')) {
-        return isArchived
-      }
-
-      // Para outros filtros, EXCLUI tarefas arquivadas
-      if (isArchived) return false
-
-      // Virada de semana: esconde concluídas de semanas anteriores (ou sem
-      // data de conclusão / legadas). É só na UI — a tarefa continua no banco
-      // (completed:true) e segue contando no progresso do projeto/meta.
-      if (isDoneTask) {
-        const completedDate = task.completed_at ? new Date(task.completed_at) : null
-        if (!completedDate || completedDate < weekStart) {
-          return false
+        // Se filtro de Arquivadas está ativo, mostra APENAS arquivadas
+        if (statusFilters.includes('archived')) {
+          return isArchived
         }
-      }
 
-      let matchesTimeline = false
-      if (timelineFilter === 'today') matchesTimeline = dueDateKey === toLocalDateKey(today)
-      else if (timelineFilter === 'tomorrow') matchesTimeline = dueDateKey === toLocalDateKey(tomorrow)
-      else if (timelineFilter === 'late') matchesTimeline = isLate
-      else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDateKey
-      else if (timelineFilter === 'any') matchesTimeline = true
+        // Para outros filtros, EXCLUI tarefas arquivadas
+        if (isArchived) return false
 
-      let matchesStatus = true
-      if (statusFilters.length > 0) {
-        matchesStatus = statusFilters.some(filterId => {
-          if (filterId === 'done') return isDoneTask
-          // FLOW: Apenas Alta e Urgente, E que NÃO estão atrasadas
-          if (filterId === 'flow') {
-            const isHighPriority = task.priority === 'Alta' || task.priority === 'Urgente'
-            return isHighPriority && !isLate && !isDoneTask
+        // Virada de semana: esconde concluídas de semanas anteriores (ou sem
+        // data de conclusão / legadas). É só na UI — a tarefa continua no banco
+        // (completed:true) e segue contando no progresso do projeto/meta.
+        if (isDoneTask) {
+          const completedDate = task.completed_at ? new Date(task.completed_at) : null
+          if (!completedDate || completedDate < weekStart) {
+            return false
           }
-          if (filterId === 'quick') return (task.tags || []).includes('quick') || task.estimatedMinutes <= 15
-          return false
-        })
-      }
+        }
 
-      // Se o filtro "Finalizada" estiver ativo, mostra APENAS as finalizadas da semana atual
-      if (statusFilters.includes('done')) return isDoneTask
+        let matchesTimeline = false
+        if (timelineFilter === 'today') matchesTimeline = dueDateKey === toLocalDateKey(today)
+        else if (timelineFilter === 'tomorrow')
+          matchesTimeline = dueDateKey === toLocalDateKey(tomorrow)
+        else if (timelineFilter === 'late') matchesTimeline = isLate
+        else if (timelineFilter === 'unscheduled') matchesTimeline = !dueDateKey
+        else if (timelineFilter === 'any') matchesTimeline = true
 
-      // Se não houver filtro de status (Minhas Tarefas padrão), ESCONDE as finalizadas
-      if (statusFilters.length === 0) return matchesTimeline && !isDoneTask
+        let matchesStatus = true
+        if (statusFilters.length > 0) {
+          matchesStatus = statusFilters.some((filterId) => {
+            if (filterId === 'done') return isDoneTask
+            // FLOW: Apenas Alta e Urgente, E que NÃO estão atrasadas
+            if (filterId === 'flow') {
+              const isHighPriority = task.priority === 'Alta' || task.priority === 'Urgente'
+              return isHighPriority && !isLate && !isDoneTask
+            }
+            if (filterId === 'quick')
+              return (task.tags || []).includes('quick') || task.estimatedMinutes <= 15
+            return false
+          })
+        }
 
-      // Caso contrário, retorna o match de status calculado
-      return matchesStatus
-    })
-    // Filtro por categoria (Produtividade x Estudos)
-    .filter((task) => flowCategory === 'all' || categorizeTask(task) === flowCategory)
+        // Se o filtro "Finalizada" estiver ativo, mostra APENAS as finalizadas da semana atual
+        if (statusFilters.includes('done')) return isDoneTask
+
+        // Se não houver filtro de status (Minhas Tarefas padrão), ESCONDE as finalizadas
+        if (statusFilters.length === 0) return matchesTimeline && !isDoneTask
+
+        // Caso contrário, retorna o match de status calculado
+        return matchesStatus
+      })
+      // Filtro por categoria (Produtividade x Estudos)
+      .filter((task) => flowCategory === 'all' || categorizeTask(task) === flowCategory)
 
     // Ordenação determinística em cascata
     const todayKey = toLocalDateKey(today)
@@ -280,7 +302,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   const [pendingArchiveTask, setPendingArchiveTask] = useState(null)
 
   const requestArchiveTask = (taskId) => {
-    const task = tasks.find(t => t.id === taskId)
+    const task = tasks.find((t) => t.id === taskId)
     if (task) setPendingArchiveTask(task)
   }
 
@@ -289,12 +311,18 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     setPendingArchiveTask(null)
     if (!task) return
     if (focusedTaskId === task.id) exitFocusMode()
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'archived' } : t))
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: 'archived' } : t)))
     await updateTask(task.id, { status: 'archived' })
+    notify({
+      title: 'Tarefa arquivada',
+      detail: mask(task.title),
+      action: 'Desfazer',
+      onAction: () => withFeedback(() => restoreTask(task.id)),
+    })
   }
 
   const restoreTask = async (taskId) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'todo' } : t))
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: 'todo' } : t)))
     await updateTask(taskId, { status: 'todo' })
   }
 
@@ -308,7 +336,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       setTimelineFilter('any')
       setStatusFilters((curr) => {
         if (curr.includes(filter.id)) {
-          const remaining = curr.filter(id => id !== filter.id)
+          const remaining = curr.filter((id) => id !== filter.id)
           if (remaining.length === 0) setTimelineFilter('today')
           return remaining
         }
@@ -318,7 +346,7 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   }
 
   const toggleTaskCompletion = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId)
+    const task = tasks.find((t) => t.id === taskId)
     if (!task) return
 
     const newCompleted = !task.completed
@@ -329,15 +357,28 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     // completed_at otimista: garante que a tarefa apareça/saia de Finalizadas
     // na hora, sem esperar o retorno do servidor.
     const completedAt = newCompleted ? new Date().toISOString() : null
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newCompleted, completed_at: completedAt } : t))
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? { ...t, completed: newCompleted, completed_at: completedAt } : t
+      )
+    )
 
     await updateTask(taskId, {
       completed: newCompleted,
       status: newCompleted ? 'done' : statusToRestore,
       completed_at: completedAt,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
+    if (newCompleted)
+      notify({
+        title: 'Tarefa concluída',
+        detail: mask(task.title),
+        action: 'Desfazer',
+        onAction: () => withFeedback(() => toggleTaskRef.current?.(taskId)),
+      })
   }
+
+  toggleTaskRef.current = toggleTaskCompletion
 
   const handleTaskSubmit = async (data) => {
     try {
@@ -353,11 +394,16 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
       const todayKey = toLocalDateKey(new Date())
       if (createdDateKey && createdDateKey === todayKey) {
         if (timelineFilter !== 'today') {
-          setTimelineFilter('today'); setStatusFilters([]);
+          setTimelineFilter('today')
+          setStatusFilters([])
         }
       }
     } catch (e) {
-      alert('Erro ao salvar tarefa')
+      notify({
+        title: 'Erro ao salvar tarefa',
+        detail: e?.message || 'Tente novamente.',
+        tone: 'danger',
+      })
     }
   }
 
@@ -366,7 +412,9 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
   const moveTaskToToday = async (task) => {
     const todayKey = toLocalDateKey(new Date())
     const dueDate = `${todayKey}T12:00:00.000Z`
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, due_date: dueDate, dueDate } : t))
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, due_date: dueDate, dueDate } : t))
+    )
     try {
       await updateTask(task.id, { dueDate })
     } catch (e) {
@@ -374,358 +422,333 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
     }
   }
 
-  const activeDetailTask = useMemo(() =>
-    detailTaskId ? tasks.find(t => t.id === detailTaskId) : null
-    , [detailTaskId, tasks])
+  const activeDetailTask = useMemo(
+    () => (detailTaskId ? tasks.find((t) => t.id === detailTaskId) : null),
+    [detailTaskId, tasks]
+  )
 
-  usePageActions({ options: [
-    { label: 'Nova tarefa', icon: CheckCircle2, onClick: () => { setEditTask(null); setTaskModalOpen(true) } },
-    { label: 'Novo evento', icon: Calendar, onClick: () => setEventModalOpen(true) },
-  ] })
+  const todayKey = toLocalDateKey(new Date())
+  const liveTasks = tasks.filter((t) => !isArchivedTask(t))
+  const todayTasks = liveTasks.filter((t) => toLocalDateKey(t.due_date) === todayKey)
+  const doneToday = todayTasks.filter(
+    (t) =>
+      normalizeTaskStatus(t) === 'done' &&
+      t.completed_at &&
+      new Date(t.completed_at) >= getWeekStart()
+  )
+  const pendingToday = todayTasks.filter((t) => normalizeTaskStatus(t) !== 'done')
+  const overdue = liveTasks.filter(
+    (t) =>
+      normalizeTaskStatus(t) !== 'done' &&
+      toLocalDateKey(t.due_date) &&
+      toLocalDateKey(t.due_date) < todayKey
+  )
+  const doneWeek = liveTasks.filter(
+    (t) =>
+      normalizeTaskStatus(t) === 'done' &&
+      t.completed_at &&
+      new Date(t.completed_at) >= getWeekStart()
+  )
+  const focusTotals = focusLogService.getCategoryTotals(1)
+  const archived = statusFilters.includes('archived')
+  const displayDone =
+    timelineFilter === 'today' && statusFilters.length === 0
+      ? doneToday.filter((t) => flowCategory === 'all' || categorizeTask(t) === flowCategory)
+      : []
+  const selectedConfig =
+    activeTechnique === 'custom' ? customConfig : POMODORO_TECHNIQUES[activeTechnique]
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const counts = {
+    today: pendingToday.length,
+    tomorrow: liveTasks.filter(
+      (t) =>
+        normalizeTaskStatus(t) !== 'done' && toLocalDateKey(t.due_date) === toLocalDateKey(tomorrow)
+    ).length,
+    late: overdue.length,
+    unscheduled: liveTasks.filter((t) => normalizeTaskStatus(t) !== 'done' && !t.due_date).length,
+  }
+  const openTask = (task) => setDetailTaskId(task.id)
+  const renderRow = (task) => (
+    <CompactTaskRow
+      key={task.id}
+      task={task}
+      projects={projects}
+      goals={goals}
+      lessonCtxMap={lessonCtxMap}
+      blockCtxMap={blockCtxMap}
+      focused={focusedTaskId === task.id}
+      time={formatTime(timeLeft)}
+      mask={mask}
+      onComplete={(id) => withFeedback(() => toggleTaskCompletion(id))}
+      onFocus={handleFocusTask}
+      onDetails={openTask}
+      onEdit={(task) => {
+        setEditTask(task)
+        setTaskModalOpen(true)
+      }}
+      onArchive={requestArchiveTask}
+      onRestore={(id) => withFeedback(() => restoreTask(id))}
+      onDelete={(task) => setDeleteTarget(task)}
+      onMove={(task) => withFeedback(() => moveTaskToToday(task))}
+    />
+  )
+  usePageActions({
+    label: 'Nova tarefa',
+    options: [
+      {
+        label: 'Nova tarefa',
+        icon: CheckCircle2,
+        onClick: () => {
+          setEditTask(null)
+          setTaskModalOpen(true)
+        },
+      },
+      { label: 'Novo evento', icon: Calendar, onClick: () => setEventModalOpen(true) },
+    ],
+  })
 
   return (
-    <div className="tasksPage">
-
-
-      <section className="tasksListShell">
-        <div className="tasksListShell__filters">
-          {FILTERS.map(f => {
-            const active = f.group === 'timeline' ? timelineFilter === f.id : statusFilters.includes(f.id)
-            return (
-              <button key={f.id} className={`tasksFilters__chip ${active ? 'tasksFilters__chip--active' : ''}`}
-                data-tone={f.tone} onClick={() => handleFilterClick(f)}>
-                <span className="tasksFilters__icon"><FilterIcon name={f.icon} /></span>
-                <span>{f.label}</span>
+    <div className="tasksPage tasks-redesign">
+      <motion.header
+        className="tasks-heading"
+        initial={{ opacity: 0, y: presets.reduce ? 0 : 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1>Tarefas</h1>
+        <p>O que importa hoje, em ordem. Urgente e Alta entram no Flow automaticamente.</p>
+      </motion.header>
+      <motion.div className="tasks-summary" variants={presets.grid} initial="hidden" animate="show">
+        <motion.div className="tasks-summary__focus" variants={presets.card}>
+          <TaskFocusCard
+            config={selectedConfig}
+            activeTechnique={activeTechnique}
+            onTechnique={switchTechnique}
+            category={
+              focusedTaskData
+                ? categorizeTask(focusedTaskData)
+                : focusedBlock
+                  ? 'study'
+                  : freeFocusCategory
+            }
+            onCategory={setFreeFocusCategory}
+            task={focusedTaskData}
+            block={focusedBlock}
+            tasks={liveTasks.filter((t) => normalizeTaskStatus(t) !== 'done')}
+            onTask={handleFocusTask}
+            onClear={() => {
+              setFocusedBlock(null)
+              exitFocusMode()
+            }}
+            time={formatTime(timeLeft)}
+            running={isRunning}
+            mode={pomodoroMode}
+            sessions={sessionsCompleted}
+            onToggle={toggleTimer}
+            onReset={resetTimer}
+            onDashboard={() => setShowFlowDash(true)}
+            onConfigure={() => setShowPomodoroConfig(true)}
+            mask={mask}
+          />
+        </motion.div>
+        <motion.div variants={presets.card}>
+          <KpiCard
+            label="Hoje"
+            value={`${todayTasks.length - pendingToday.length} de ${todayTasks.length}`}
+            context={`${pendingToday.length} tarefas abertas hoje`}
+            onAction={() => handleFilterClick(FILTERS.find((f) => f.id === 'today'))}
+          />
+        </motion.div>
+        <motion.div variants={presets.card}>
+          <KpiCard
+            label="Atrasadas"
+            value={overdue.length}
+            variation={overdue.length ? 'replanejar' : 'em dia'}
+            context={overdue.length ? 'escolha uma nova data' : 'nada ficou para trás'}
+            onAction={() => handleFilterClick(FILTERS.find((f) => f.id === 'late'))}
+          />
+        </motion.div>
+        <motion.div variants={presets.card}>
+          <KpiCard
+            label="Foco hoje"
+            value={formatMinutes(focusTotals.total)}
+            variation={formatMinutes(focusTotals.work)}
+            context={`trabalho · ${formatMinutes(focusTotals.study)} estudos`}
+            onAction={() => setShowFlowDash(true)}
+          />
+        </motion.div>
+        <motion.div variants={presets.card}>
+          <KpiCard
+            label="Concluídas na semana"
+            value={doneWeek.length}
+            context="desde o início da semana"
+            onAction={() => handleFilterClick(FILTERS.find((f) => f.id === 'done'))}
+          />
+        </motion.div>
+      </motion.div>
+      <motion.section
+        className={`tasks-table ${archived ? 'is-archived' : ''}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: presets.reduce ? 0 : 0.3 }}
+        aria-label="Lista de tarefas"
+      >
+        <div className="tasks-toolbar">
+          <Segmented
+            label="Período das tarefas"
+            value={timelineFilter}
+            onChange={(value) => handleFilterClick(FILTERS.find((f) => f.id === value))}
+            options={[
+              ['today', 'Hoje'],
+              ['tomorrow', 'Amanhã'],
+              ['late', 'Atrasadas'],
+              ['unscheduled', 'Sem data'],
+            ].map(([value, label]) => ({ value, label, count: counts[value] }))}
+          />
+          <div className="tasks-toolbar__status">
+            {[
+              ['flow', 'Flow'],
+              ['quick', 'Rápidas'],
+              ['done', 'Finalizadas'],
+              ['archived', 'Arquivadas'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={statusFilters.includes(id)}
+                className={`tasks-pill ${statusFilters.includes(id) ? 'is-active' : ''}`}
+                onClick={() => handleFilterClick(FILTERS.find((f) => f.id === id))}
+              >
+                {label}
+                {id === 'flow' &&
+                  ` · ${liveTasks.filter((t) => ['Alta', 'Urgente'].includes(t.priority) && normalizeTaskStatus(t) !== 'done' && !(toLocalDateKey(t.due_date) && toLocalDateKey(t.due_date) < todayKey)).length}`}
               </button>
-            )
-          })}
+            ))}
+          </div>
+          <div className="tasks-toolbar__more">
+            <ActionMenu
+              label="Categoria das tarefas"
+              trigger={
+                <button className="tasks-pill" type="button">
+                  Categoria:{' '}
+                  {flowCategory === 'all'
+                    ? 'Tudo'
+                    : flowCategory === 'work'
+                      ? 'Produtividade'
+                      : 'Estudos'}
+                  <ChevronDown size={14} />
+                </button>
+              }
+              items={[
+                ['all', 'Tudo'],
+                ['work', 'Produtividade'],
+                ['study', 'Estudos'],
+              ].map(([id, label]) => ({ label, onClick: () => setFlowCategory(id) }))}
+            />
+            <ActionMenu
+              label="Ordenação das tarefas"
+              trigger={
+                <button className="tasks-pill" type="button">
+                  {sortBy === 'time' ? 'Por horário' : 'Por prioridade'}
+                  <ChevronDown size={14} />
+                </button>
+              }
+              items={[
+                { label: 'Por horário', onClick: () => setSortBy('time') },
+                { label: 'Por prioridade', onClick: () => setSortBy('priority') },
+              ]}
+            />
+          </div>
         </div>
-
-        {/* POMODORO POWER USER UI */}
-        {(statusFilters.includes('flow') || focusedTaskId) && (
-          <section className="pomodoroCard ui-card">
-            <div className="pomodoroCard__header">
-              <div className="pomodoroCard__techniques">
-                {Object.values(POMODORO_TECHNIQUES).map(tech => {
-                  const Icon = tech.icon;
-                  return (
-                    <button
-                      key={tech.id}
-                      className={`techBtn ${activeTechnique === tech.id ? 'techBtn--active' : ''}`}
-                      onClick={() => switchTechnique(tech.id)}
-                      title={tech.label}
-                    >
-                      <Icon size={16} />
-                      <span>{tech.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              <button className="configBtn" onClick={() => setShowPomodoroConfig(true)}>
-                <Settings size={18} />
-              </button>
-            </div>
-
-            <div className="pomodoroCard__display">
-              {focusedTaskData ? (
-                <div className="pomodoroCard__focus">
-                  {(() => {
-                    const cat = CATEGORY_META[categorizeTask(focusedTaskData)]
-                    return (
-                      <span className="focusCatBadge" style={{ '--c': cat.color }}>
-                        {cat.emoji} {cat.label}
-                      </span>
-                    )
-                  })()}
-                  <span className="focusLabel">Focando em:</span>
-                  <p className="focusTitle">{focusedTaskData.title}</p>
-                  {/* Mostra o tempo já acumulado da tarefa se existir */}
-                  {focusedTaskData.time_spent > 0 && (
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-                      Tempo total acumulado: {Math.floor(focusedTaskData.time_spent)} min
-                    </span>
-                  )}
-                </div>
-              ) : focusedBlock ? (
-                <div className="pomodoroCard__focus">
-                  <span className="focusCatBadge" style={{ '--c': CATEGORY_META.study.color }}>
-                    {CATEGORY_META.study.emoji} {CATEGORY_META.study.label}
-                  </span>
-                  <span className="focusLabel">Estudando:</span>
-                  <p className="focusTitle">{focusedBlock.title}</p>
-                  {focusedBlock.studyTitle && (
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{focusedBlock.studyTitle}</span>
-                  )}
-                  <button type="button" className="focusClear" onClick={() => setFocusedBlock(null)}>
-                    Sair deste bloco
-                  </button>
-                </div>
-              ) : (
-                <div className="pomodoroCard__free">
-                  <span className="freeMode__eyebrow">Ciclo livre</span>
-                  <div className="freeMode__toggle" role="group" aria-label="Onde contar este ciclo">
-                    {['work', 'study'].map((id) => {
-                      const cat = CATEGORY_META[id]
-                      const active = freeFocusCategory === id
-                      return (
-                        <button
-                          type="button"
-                          key={id}
-                          className={`freeMode__btn ${active ? 'is-active' : ''}`}
-                          style={{ '--c': cat.color }}
-                          aria-pressed={active}
-                          onClick={() => setFreeFocusCategory(id)}
-                        >
-                          {cat.emoji} {cat.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <p className="pomodoroCard__message">
-                    Conta na meta de {(CATEGORY_META[freeFocusCategory] || CATEGORY_META.work).label.toLowerCase()} do dia. Selecione uma tarefa para vincular o tempo a ela.
-                  </p>
-                </div>
-              )}
-
-              <div className="pomodoroCard__timer">
-                {formatTime(timeLeft)}
-              </div>
-
-              <div className="pomodoroCard__status">
-                <span className={`statusPill ${pomodoroMode}`}>
-                  {pomodoroMode === 'focus' ? '🎯 Foco' : pomodoroMode === 'break' ? '☕ Pausa' : '🌴 Pausa Longa'}
-                </span>
-                <span className="sessionCount">
-                  Sessão {sessionsCompleted + 1}/{activeTechnique === 'custom' ? customConfig.sessions : POMODORO_TECHNIQUES[activeTechnique].sessions}
-                </span>
-              </div>
-            </div>
-
-            <div className="pomodoroCard__controls">
-              <button className={`pomodoroCard__btn ${isRunning ? 'pause' : 'play'}`} onClick={toggleTimer}>
-                {isRunning ? <><Pause size={20} /> Pausar</> : <><Play size={20} /> Iniciar</>}
-              </button>
-              <button className="pomodoroCard__btn reset" onClick={resetTimer}>
-                <RotateCcw size={20} />
-              </button>
-              <button className="pomodoroCard__btn dash" onClick={() => setShowFlowDash(true)} title="Painel de produtividade">
-                <BarChart3 size={20} />
-              </button>
-            </div>
-          </section>
-        )}
-
-        <header className="tasksListShell__head">
-          <div><p className="tasksListShell__eyebrow">Checklist</p><h2>Minhas Tarefas</h2></div>
-          <div className="tasksListShell__actions">
-            <div className="tasksListShell__sort tasksListShell__cat">
-              <span className="tasksListShell__sortLabel">Categoria:</span>
-              <button className={`tasksListShell__sortBtn ${flowCategory === 'all' ? 'active' : ''}`} onClick={() => setFlowCategory('all')}>
-                Tudo
-              </button>
-              <button className={`tasksListShell__sortBtn ${flowCategory === 'work' ? 'active' : ''}`} onClick={() => setFlowCategory('work')}>
-                <Briefcase size={14} /> Produtividade
-              </button>
-              <button className={`tasksListShell__sortBtn ${flowCategory === 'study' ? 'active' : ''}`} onClick={() => setFlowCategory('study')}>
-                <BookOpen size={14} /> Estudos
-              </button>
-            </div>
-            <div className="tasksListShell__sort">
-              <span className="tasksListShell__sortLabel">Ordenar:</span>
-              <button
-                className={`tasksListShell__sortBtn ${sortBy === 'time' ? 'active' : ''}`}
-                onClick={() => setSortBy('time')}
-              >
-                <Clock size={14} /> Horário
-              </button>
-              <button
-                className={`tasksListShell__sortBtn ${sortBy === 'priority' ? 'active' : ''}`}
-                onClick={() => setSortBy('priority')}
-              >
-                <Zap size={14} /> Prioridade
-              </button>
+        {archived && (
+          <div className="tasks-archive-note">
+            <Archive size={16} />
+            <div>
+              <strong>Arquivadas ficam fora do seu dia.</strong>
+              <p>Restaure quando fizer sentido retomar.</p>
             </div>
           </div>
-        </header>
+        )}
+        <div className="tasks-columns" aria-hidden="true">
+          <span>Tarefa</span>
+          <span>Área</span>
+          <span>Prioridade</span>
+          <span>Horário</span>
+          <span />
+        </div>
+        {loading ? (
+          <p className="tasks-loading" role="status">
+            Carregando suas tarefas…
+          </p>
+        ) : (
+          <>
+            {filteredTasks.some((t) => t.id === focusedTaskId) && (
+              <>
+                <p className="tasks-group">EM FOCO</p>
+                {filteredTasks.filter((t) => t.id === focusedTaskId).map(renderRow)}
+              </>
+            )}
+            {filteredTasks.some((t) => t.id !== focusedTaskId) && (
+              <>
+                <p className="tasks-group">
+                  {archived
+                    ? 'ARQUIVADAS'
+                    : statusFilters.includes('done')
+                      ? 'FINALIZADAS'
+                      : 'A FAZER'}
+                </p>
+                {filteredTasks.filter((t) => t.id !== focusedTaskId).map(renderRow)}
+              </>
+            )}
+            {displayDone.length > 0 && (
+              <>
+                <p className="tasks-group">CONCLUÍDAS HOJE · {displayDone.length}</p>
+                {displayDone.map(renderRow)}
+              </>
+            )}
+            {!filteredTasks.length && !displayDone.length && (
+              <EmptyState
+                title={archived ? 'Nenhuma tarefa arquivada' : 'Tudo tranquilo por aqui'}
+                description={
+                  archived
+                    ? 'As tarefas que você arquivar aparecem aqui e podem ser restauradas.'
+                    : 'Crie uma tarefa ou escolha outro período para organizar o próximo passo.'
+                }
+                action="Nova tarefa"
+                onAction={() => {
+                  setEditTask(null)
+                  setTaskModalOpen(true)
+                }}
+              />
+            )}
+          </>
+        )}
+      </motion.section>
 
-        <ul className="tasksList">
-          {filteredTasks.map((task, idx) => {
-            const statusKey = normalizeTaskStatus(task)
-            const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
-            const StatusIcon = statusMeta.icon
-            const isDone = statusKey === 'done'
-            const dueDateKey = toLocalDateKey(task.due_date)
-            const todayKey = toLocalDateKey(new Date())
-            const isLate = !isDone && !!dueDateKey && dueDateKey < todayKey
-            const isFocused = focusedTaskId === task.id
+      {isTaskModalOpen && (
+        <CreateTaskModal
+          open={true}
+          onClose={() => {
+            setTaskModalOpen(false)
+            setEditTask(null)
+          }}
+          onSubmit={handleTaskSubmit}
+          projectsOptions={projectOptions}
+          initialData={editTask}
+        />
+      )}
 
-            return (
-              <li
-                key={task.id}
-                data-priority={(task.priority || '').toLowerCase()}
-                style={{ '--i': Math.min(idx, 12) }}
-                className={`taskCard ${isDone ? 'taskCard--done' : ''} ${isLate ? 'taskCard--late' : ''} ${isFocused ? 'taskCard--focused' : ''} ${celebratingTask === task.id ? 'taskCard--celebrate' : ''}`}
-              >
-                {celebratingTask === task.id && (
-                  <div className="taskCard__celebration" aria-hidden="true">
-                    <span className="taskCard__xpPop">+10 XP</span>
-                    <span className="taskCard__confetti taskCard__confetti--one" />
-                    <span className="taskCard__confetti taskCard__confetti--two" />
-                    <span className="taskCard__confetti taskCard__confetti--three" />
-                    <span className="taskCard__confetti taskCard__confetti--four" />
-                    <span className="taskCard__confetti taskCard__confetti--five" />
-                  </div>
-                )}
-
-                <button
-                  className={`taskCard__checkbox ${isDone ? 'taskCard__checkbox--checked' : ''}`}
-                  onClick={() => toggleTaskCompletion(task.id)}
-                  aria-pressed={isDone}
-                  aria-label={isDone ? 'Marcar como não concluída' : 'Concluir tarefa'}
-                >
-                  <span className="taskCard__checkboxRipple" aria-hidden="true" />
-                  <svg className="taskCard__checkboxMark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                    <path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-
-                <div className="taskCard__body">
-                  <div className="taskCard__header">
-                    <div>
-                      {(() => {
-                        const sId = task.studyLessonId || task.study_lesson_id
-                        const bId = task.studyModuleId || task.study_module_id
-                        const sctx = sId
-                          ? lessonCtxMap[sId]
-                          : bId
-                            ? { ...blockCtxMap[bId], lessonTitle: blockCtxMap[bId]?.blockTitle }
-                            : null
-                        if (sctx) {
-                          return (
-                            <>
-                              <div className="taskCard__ctxRow">
-                                <span className="taskCtxChip taskCtxChip--course">
-                                  <em>Curso</em> {sctx.studyTitle}
-                                </span>
-                                {sctx.containerTitle && (
-                                  <span className={`taskCtxChip taskCtxChip--${sctx.containerKind}`}>
-                                    <em>{STUDY_KIND_LABEL[sctx.containerKind] || 'Módulo'}</em> {sctx.containerTitle}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="taskCard__title">{sctx.lessonTitle}</p>
-                            </>
-                          )
-                        }
-                        const pId = task.projectId || task.project_id
-                        const pctx = pId ? projectCtxMap[pId] : null
-                        if (pctx) {
-                          return (
-                            <>
-                              <div className="taskCard__ctxRow">
-                                <span className="taskCtxChip taskCtxChip--project">
-                                  <em>Projeto</em> {pctx.title}
-                                </span>
-                                {pctx.area && (
-                                  <span className="taskCtxChip"><em>Área</em> {pctx.area}</span>
-                                )}
-                              </div>
-                              <p className="taskCard__title">{task.title}</p>
-                            </>
-                          )
-                        }
-                        return (
-                          <>
-                            <p className="taskCard__title">{task.title}</p>
-                            <div className="taskCard__context">
-                              <span>{task.context || 'Geral'}</span>
-                              {task.project && <span>• {task.project}</span>}
-                            </div>
-                          </>
-                        )
-                      })()}
-                    </div>
-
-                    <div className="taskCard__badges">
-                      <span className={`taskStatusChip taskStatusChip--${statusKey}`}>
-                        <StatusIcon size={12} />
-                        {statusMeta.label}
-                      </span>
-
-                      {!isDone && (
-                        <button
-                          className={`taskCard__focusBtn ${isFocused ? 'active' : ''}`}
-                          onClick={() => handleFocusTask(task.id)}
-                        >
-                          {isFocused ? <Zap size={12} fill="currentColor" /> : <Play size={12} />}
-                          {isFocused ? 'Em Foco' : 'Focar'}
-                        </button>
-                      )}
-
-                      <span className={`taskChip priority-${task.priority?.toLowerCase()}`}>{task.priority}</span>
-                      {dueDateKey && <span className="taskCard__dueText">{formatDateKeyPtBr(dueDateKey)}</span>}
-                    </div>
-                  </div>
-
-                  <div className="taskCard__actions">
-                    {isLate && (
-                      <button
-                        className="taskCard__actionBtn taskCard__actionBtn--today"
-                        onClick={() => moveTaskToToday(task)}
-                        title="Reagendar esta tarefa para hoje"
-                      >
-                        <Sun size={13} /> Mover para hoje
-                      </button>
-                    )}
-                    <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => { setDetailTaskId(task.id); setEditTask(null); }}>
-                      Detalhes
-                    </button>
-                    {statusKey === 'archived' ? (
-                      <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => restoreTask(task.id)}>
-                        <RotateCcw size={13} /> Restaurar
-                      </button>
-                    ) : (
-                      <button className="taskCard__actionBtn taskCard__actionBtn--ghost" onClick={() => requestArchiveTask(task.id)}>
-                        <Archive size={13} /> Arquivar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-
-        {filteredTasks.length === 0 && <div className="tasksListShell__empty">Nenhuma tarefa encontrada.</div>}
-      </section>
-
-
-
-      {
-        isTaskModalOpen && (
-          <CreateTaskModal
-            open={true}
-            onClose={() => { setTaskModalOpen(false); setEditTask(null) }}
-            onSubmit={handleTaskSubmit}
-            projectsOptions={projectOptions}
-            initialData={editTask}
-          />
-        )
-      }
-
-      {
-        isEventModalOpen && (
-          <CreateEventModal
-            open={true}
-            onClose={() => setEventModalOpen(false)}
-            onSubmit={async (data) => {
-              await addEvent(data)
-              setEventModalOpen(false)
-            }}
-            onDelete={null} // Nenhuma exclusão ao criar novo
-          />
-        )
-      }
+      {isEventModalOpen && (
+        <CreateEventModal
+          open={true}
+          onClose={() => setEventModalOpen(false)}
+          onSubmit={async (data) => {
+            await addEvent(data)
+            setEventModalOpen(false)
+          }}
+          onDelete={null} // Nenhuma exclusão ao criar novo
+        />
+      )}
 
       <FlowDashboardModal open={showFlowDash} onClose={() => setShowFlowDash(false)} />
 
@@ -733,21 +756,76 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
         show={showPomodoroConfig}
         config={customConfig}
         onClose={() => setShowPomodoroConfig(false)}
-        onSave={(newCfg) => { setCustomConfig(newCfg); setShowPomodoroConfig(false); }}
-      />
-
-      <TaskDetailModal
-        task={activeDetailTask}
-        onClose={() => setDetailTaskId(null)}
-        deleteTask={async (id) => { await deleteTask(id); setDetailTaskId(null); }}
-        onArchive={(id) => { requestArchiveTask(id); setDetailTaskId(null); }}
-        onRestore={(id) => { restoreTask(id); setDetailTaskId(null); }}
-        onEdit={(task) => {
-          setEditTask(task);
-          setTaskModalOpen(true);
-          setDetailTaskId(null);
+        onSave={(newCfg) => {
+          setCustomConfig(newCfg)
+          setShowPomodoroConfig(false)
         }}
       />
+
+      <TaskDetailDrawer
+        tasks={tasks}
+        task={activeDetailTask}
+        projects={projects}
+        goals={goals}
+        mask={mask}
+        onClose={() => setDetailTaskId(null)}
+        onComplete={(id) => {
+          withFeedback(() => toggleTaskCompletion(id))
+          setDetailTaskId(null)
+        }}
+        onDelete={(task) => setDeleteTarget(task)}
+        onArchive={(id) => {
+          requestArchiveTask(id)
+          setDetailTaskId(null)
+        }}
+        onRestore={(id) => {
+          withFeedback(() => restoreTask(id))
+          setDetailTaskId(null)
+        }}
+        onEdit={(task) => {
+          setEditTask(task)
+          setTaskModalOpen(true)
+          setDetailTaskId(null)
+        }}
+      />
+      {deleteTarget && (
+        <ConfirmModal
+          title="Excluir tarefa?"
+          width={440}
+          className="tasks-confirm-delete"
+          message={
+            <>
+              Essa ação não pode ser desfeita. Se quiser só tirar da frente,{' '}
+              <button
+                type="button"
+                className="tasks-confirm-delete__archive"
+                onClick={() => {
+                  requestArchiveTask(deleteTarget.id)
+                  setDeleteTarget(null)
+                }}
+              >
+                arquive em vez de excluir.
+              </button>
+            </>
+          }
+          icon={Trash2}
+          confirmIcon={Trash2}
+          confirmLabel="Excluir tarefa"
+          danger
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={async () => {
+            try {
+              await deleteTask(deleteTarget.id)
+              setDeleteTarget(null)
+              setDetailTaskId(null)
+            } catch (error) {
+              notify({ title: 'Erro ao excluir tarefa', detail: error?.message, tone: 'danger' })
+            }
+          }}
+        >
+          <div className="tasks-confirm-delete__target">{mask(deleteTarget.title)}</div>
+        </ConfirmModal>
+      )}
 
       {pendingArchiveTask && (
         <ConfirmModal
@@ -755,126 +833,10 @@ export default function Tasks({ onNavigate, onLogout, user, initialFilter = null
           message={`"${pendingArchiveTask.title}" será movida para Arquivadas. Você pode restaurá-la quando quiser e ela não conta no progresso do projeto enquanto estiver arquivada.`}
           confirmLabel="Arquivar"
           cancelLabel="Cancelar"
-          onConfirm={handleConfirmArchive}
+          onConfirm={() => withFeedback(handleConfirmArchive)}
           onCancel={() => setPendingArchiveTask(null)}
         />
       )}
-    </div>
-  )
-}
-
-// === Subcomponentes Visuais ===
-
-function FilterIcon({ name }) {
-  const icons = {
-    list: <ListTodo size={14} />,
-    spark: <Sparkles size={14} />,
-    bolt: <Zap size={14} />,
-    check: <CheckCircle2 size={14} />,
-    archive: <Archive size={14} />,
-    sun: <Sun size={14} />,
-    'calendar-late': <AlertTriangle size={14} />,
-    'calendar-off': <CalendarOff size={14} />
-  }
-  return <span style={{ display: 'flex', alignItems: 'center' }}>{icons[name] || '•'}</span>
-}
-
-function TaskDetailModal({ task, onClose, deleteTask, onEdit, onArchive, onRestore }) {
-  if (!task) return null
-  const statusKey = normalizeTaskStatus(task)
-  const statusMeta = STATUS_META[statusKey] || STATUS_META.todo
-  const StatusIcon = statusMeta.icon
-  const subtasks = Array.isArray(task.subtasks)
-    ? task.subtasks
-    : Array.isArray(task.clarifyItems)
-      ? task.clarifyItems
-      : []
-
-  return (
-    <div className="taskModal" onClick={onClose}>
-      <div className="taskModal__backdrop" />
-      <div className="taskModal__panel" onClick={e => e.stopPropagation()}>
-        <header className="taskModal__header">
-          <h3>{task.title}</h3>
-          <button className="taskModal__close" onClick={onClose}>×</button>
-        </header>
-        <div className="taskModal__meta">
-          <span>Prioridade: {task.priority}</span>
-          <span className={`taskStatusChip taskStatusChip--${statusKey}`}>
-            <StatusIcon size={12} />
-            {statusMeta.label}
-          </span>
-        </div>
-        <div className="taskModal__description">
-          <p>{task.description || 'Sem descrição'}</p>
-        </div>
-
-        {subtasks.length > 0 && (
-          <div className="taskModal__subtasks">
-            <h4>Subtarefas</h4>
-            <ul>
-              {subtasks.map((subtask, index) => (
-                <li key={subtask.id || index}>
-                  <span className={subtask.done ? 'taskModal__subtaskText taskModal__subtaskText--done' : 'taskModal__subtaskText'}>
-                    {subtask.label || subtask.title || 'Subtarefa'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <footer className="taskModal__footer">
-          <button className="taskModal__closeBtn" onClick={onClose}>Fechar</button>
-          {statusKey === 'archived' ? (
-            <button className="taskModal__editBtn" onClick={() => onRestore(task.id)}>Restaurar</button>
-          ) : (
-            <button className="taskModal__editBtn" onClick={() => onArchive(task.id)}>Arquivar</button>
-          )}
-          <button className="taskModal__editBtn" onClick={() => onEdit(task)}>Editar</button>
-          <button className="taskModal__deleteBtn" onClick={() => { if (confirm('Excluir?')) deleteTask(task.id) }}>Excluir</button>
-        </footer>
-      </div>
-    </div>
-  )
-}
-
-function PomodoroConfigModal({ show, config, onClose, onSave }) {
-  const [local, setLocal] = useState(config)
-  useEffect(() => { if (config) setLocal(config) }, [config])
-  if (!show) return null
-
-  return (
-    <div className="pomodoroConfigModal">
-      <div className="pomodoroConfigModal__backdrop" onClick={onClose} />
-      <div className="pomodoroConfigModal__panel">
-        <header className="pomodoroConfigModal__header">
-          <h3>Configurar Personalizado</h3>
-          <button className="pomodoroConfigModal__close" onClick={onClose}>×</button>
-        </header>
-        <div className="pomodoroConfigModal__content">
-          <div className="pomodoroInput">
-            <label>Foco (minutos)</label>
-            <input type="number" value={local.focus} onChange={e => setLocal({ ...local, focus: Number(e.target.value) })} />
-          </div>
-          <div className="pomodoroInput">
-            <label>Pausa Curta (min)</label>
-            <input type="number" value={local.break} onChange={e => setLocal({ ...local, break: Number(e.target.value) })} />
-          </div>
-          <div className="pomodoroInput">
-            <label>Pausa Longa (min)</label>
-            <input type="number" value={local.longBreak} onChange={e => setLocal({ ...local, longBreak: Number(e.target.value) })} />
-          </div>
-          <div className="pomodoroInput">
-            <label>Sessões p/ Pausa Longa</label>
-            <input type="number" value={local.sessions} onChange={e => setLocal({ ...local, sessions: Number(e.target.value) })} />
-          </div>
-        </div>
-        <footer className="pomodoroConfigModal__footer">
-          <button className="pomodoroConfigModal__btn" onClick={onClose}>Cancelar</button>
-          <button className="pomodoroConfigModal__btn pomodoroConfigModal__btn--primary" onClick={() => onSave(local)}>Salvar</button>
-        </footer>
-      </div>
     </div>
   )
 }
