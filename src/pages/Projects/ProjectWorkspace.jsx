@@ -1,25 +1,12 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowLeft,
-  LayoutGrid,
-  List as ListIcon,
   CalendarDays,
-  Gauge,
-  Pencil,
-  Trash2,
   Plus,
   CheckCircle2,
-  ListChecks,
+  Circle,
   Clock,
-  Target,
-  Building2,
-  Mail,
-  Phone,
   ChevronLeft,
   ChevronRight,
-  Flag,
-  Archive,
-  ArchiveRestore,
 } from "lucide-react";
 import {
   computeProjectStats,
@@ -29,23 +16,20 @@ import {
 import { normalizeTaskStatus } from "../../utils/taskStatus";
 import ProjectOverview from "./ProjectOverview";
 import PriorityTag from "../../components/ui/PriorityTag";
+import TaskCheck from "../../components/ui/TaskCheck";
+import StatusBadge from "../../components/ui/StatusBadge";
+import EmptyState from "../../components/ui/EmptyState";
+import "./ProjectList.css";
 import { motion } from "framer-motion";
 import { useMotionPresets } from "../../components/ui/motion";
 import "./ProjectKanban.css";
-import "./ProjectWorkspace.css";
+import "./ProjectCalendar.css";
 
 const TASK_COLUMNS = [
   { status: "todo", label: "A Fazer" },
   { status: "in_progress", label: "Em Andamento" },
   { status: "done", label: "Concluída" },
 ];
-
-const PRIORITY_TONE = {
-  Urgente: "#ef4444",
-  Alta: "#f59e0b",
-  Normal: "#3b82f6",
-  Baixa: "#10b981",
-};
 
 const dateKey = (value) => {
   if (!value) return null;
@@ -93,7 +77,6 @@ export default function ProjectWorkspace({
     () => computeProjectStats(project, tasks),
     [project, tasks],
   );
-  const color = `#${(project.color || "ff9500").replace("#", "")}`;
   const archived = project.status === "archived";
   const statusMeta = archived
     ? PROJECT_STATUS_META.archived
@@ -108,162 +91,37 @@ export default function ProjectWorkspace({
     [project, tasks],
   );
 
-  const TABS = [
-    { id: "overview", label: "Visão Geral", icon: Gauge },
-    { id: "kanban", label: "Kanban", icon: LayoutGrid },
-    { id: "list", label: "Lista", icon: ListIcon },
-    { id: "calendar", label: "Calendário", icon: CalendarDays },
-  ];
-
-  if (tab === "overview" || tab === "kanban")
-    return (
-      <OverviewView
-        activeTab={tab}
-        project={project}
-        stats={stats}
-        client={client}
-        goal={goal}
-        statusMeta={statusMeta}
-        archived={archived}
-        onBack={onBack}
-        onEdit={onEdit}
-        onArchive={onArchive}
-        onRestore={onRestore}
-        onDelete={onDelete}
-        onTab={setTab}
-        onNavigate={onNavigate}
-        mask={mask}
-      >
-        {tab === "kanban" && (
-          <KanbanView
-            tasks={projectTasks}
-            updateTask={updateTask}
-            onNewTask={onNewTask}
-            mask={mask}
-          />
-        )}
-      </OverviewView>
-    );
-
   return (
-    <div className="pw" style={{ "--accent": color }}>
-      <header className="pw__header">
-        <button className="pw__back" onClick={onBack}>
-          <ArrowLeft size={18} /> Projetos
-        </button>
-
-        <div className="pw__titleRow">
-          <div className="pw__titleMain">
-            <span className="pw__dot" />
-            <div>
-              <h1 className="pw__title">{project.title}</h1>
-              <div className="pw__sub">
-                <span className={`pw__status pw__status--${statusMeta.tone}`}>
-                  {statusMeta.label}
-                </span>
-                {client && (
-                  <span className="pw__subItem">
-                    <Building2 size={13} /> {client.name}
-                  </span>
-                )}
-                {goal && (
-                  <span className="pw__subItem">
-                    <Target size={13} /> {goal.title}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="pw__headActions">
-            {!archived && (
-              <button
-                className="pw__iconBtn"
-                onClick={() => onEdit?.(project)}
-                title="Editar projeto"
-                aria-label="Editar projeto"
-              >
-                <Pencil size={16} />
-              </button>
-            )}
-            {archived ? (
-              <button
-                className="pw__iconBtn"
-                onClick={() => onRestore?.(project)}
-                title="Restaurar projeto"
-                aria-label="Restaurar projeto"
-              >
-                <ArchiveRestore size={16} />
-              </button>
-            ) : (
-              <button
-                className="pw__iconBtn"
-                onClick={() => onArchive?.(project)}
-                title="Arquivar projeto"
-                aria-label="Arquivar projeto"
-              >
-                <Archive size={16} />
-              </button>
-            )}
-            <button
-              className="pw__iconBtn pw__iconBtn--danger"
-              onClick={() => onDelete?.(project)}
-              title="Excluir projeto"
-              aria-label="Excluir projeto"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="pw__progressBar">
-          <div
-            className="pw__progressFill"
-            style={{ width: `${stats.progress}%` }}
-          />
-          <span className="pw__progressLabel">{stats.progress}% concluído</span>
-        </div>
-
-        <nav className="pw__tabs">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                className={`pw__tab ${tab === t.id ? "is-active" : ""}`}
-                onClick={() => setTab(t.id)}
-              >
-                <Icon size={15} /> {t.label}
-              </button>
-            );
-          })}
-        </nav>
-      </header>
-
-      <div className="pw__content">
-        {tab === "overview" && (
-          <OverviewView
-            project={project}
-            stats={stats}
-            client={client}
-            goal={goal}
-          />
-        )}
-        {tab === "kanban" && (
-          <KanbanView
-            tasks={projectTasks}
-            updateTask={updateTask}
-            onNewTask={onNewTask}
-          />
-        )}
-        {tab === "list" && (
-          <ListView tasks={projectTasks} updateTask={updateTask} />
-        )}
-        {tab === "calendar" && (
-          <CalendarView tasks={projectTasks} accent={color} />
-        )}
-      </div>
-    </div>
+    <OverviewView
+      activeTab={tab}
+      project={project}
+      stats={stats}
+      client={client}
+      goal={goal}
+      statusMeta={statusMeta}
+      archived={archived}
+      onBack={onBack}
+      onEdit={onEdit}
+      onArchive={onArchive}
+      onRestore={onRestore}
+      onDelete={onDelete}
+      onTab={setTab}
+      onNavigate={onNavigate}
+      mask={mask}
+    >
+      {tab === "kanban" && (
+        <KanbanView
+          tasks={projectTasks}
+          updateTask={updateTask}
+          onNewTask={onNewTask}
+          mask={mask}
+        />
+      )}
+      {tab === "list" && (
+        <ListView tasks={projectTasks} updateTask={updateTask} mask={mask} />
+      )}
+      {tab === "calendar" && <CalendarView tasks={projectTasks} mask={mask} />}
+    </OverviewView>
   );
 }
 
@@ -433,7 +291,8 @@ function KanbanView({ tasks, updateTask, onNewTask, mask = (value) => value }) {
 }
 
 /* ---------- Lista ---------- */
-function ListView({ tasks, updateTask }) {
+function ListView({ tasks, updateTask, mask = (value) => value }) {
+  const presets = useMotionPresets();
   const ordered = useMemo(() => {
     const rank = { todo: 0, in_progress: 1, done: 2, archived: 3 };
     return [...tasks].sort(
@@ -443,58 +302,104 @@ function ListView({ tasks, updateTask }) {
     );
   }, [tasks]);
 
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   if (ordered.length === 0)
     return (
-      <p className="pw__empty pw__empty--block">
-        Nenhuma tarefa neste projeto ainda.
-      </p>
+      <div className="project-list-card">
+        <EmptyState
+          title="Nenhuma tarefa neste projeto"
+          description="Crie uma tarefa pelo botão Nova tarefa para começar."
+        />
+      </div>
     );
-
   return (
-    <ul className="pw__list">
-      {ordered.map((task) => {
-        const s = normalizeTaskStatus(task);
-        const isDone = s === "done";
-        return (
-          <li key={task.id} className={`pw__row ${isDone ? "is-done" : ""}`}>
-            <button
-              className={`pw__check ${isDone ? "is-checked" : ""}`}
-              onClick={() =>
-                updateTask?.(task.id, {
-                  completed: !isDone,
-                  status: !isDone ? "done" : "todo",
-                  completed_at: !isDone ? new Date().toISOString() : null,
-                })
-              }
-              aria-label={isDone ? "Reabrir" : "Concluir"}
-            >
-              <CheckCircle2 size={16} />
-            </button>
-            <div className="pw__rowBody">
-              <span className="pw__rowTitle">{task.title}</span>
-              <div className="pw__rowMeta">
-                <span className={`pw__statusTag pw__statusTag--${s}`}>
-                  {TASK_COLUMNS.find((c) => c.status === s)?.label || "Tarefa"}
-                </span>
-                {task.priority && (
-                  <span
-                    className="pw__prio"
-                    style={{ "--p": PRIORITY_TONE[task.priority] || "#9ca3af" }}
+    <motion.div className="project-list-card" variants={presets.card}>
+      <table className="project-task-list">
+        <caption className="fa-sr-only">Tarefas do projeto</caption>
+        <colgroup>
+          <col className="project-list-check-col" />
+          <col />
+          <col className="project-list-status-col" />
+          <col className="project-list-priority-col" />
+          <col className="project-list-date-col" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">
+              <span className="fa-sr-only">Conclusão</span>
+            </th>
+            <th scope="col">Tarefa</th>
+            <th scope="col">Status</th>
+            <th scope="col">Prioridade</th>
+            <th scope="col">Prazo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ordered.map((task) => {
+            const s = normalizeTaskStatus(task);
+            const isDone = s === "done";
+            const dueToday = !isDone && dateKey(task.due_date) === todayKey;
+            return (
+              <motion.tr
+                key={task.id}
+                variants={presets.row}
+                className={`${isDone ? "is-done" : ""} ${dueToday ? "is-today" : ""}`}
+              >
+                <td>
+                  <TaskCheck
+                    checked={isDone}
+                    label={`${isDone ? "Reabrir" : "Concluir"} ${mask(task.title)}`}
+                    onChange={() =>
+                      updateTask?.(task.id, {
+                        completed: !isDone,
+                        status: !isDone ? "done" : "todo",
+                        completed_at: !isDone ? new Date().toISOString() : null,
+                      })
+                    }
+                  />
+                </td>
+                <th scope="row" className="project-list-title">
+                  {mask(task.title)}
+                </th>
+                <td data-label="Status">
+                  <StatusBadge
+                    tone={
+                      isDone
+                        ? "success"
+                        : s === "in_progress"
+                          ? "info"
+                          : "neutral"
+                    }
                   >
-                    <Flag size={11} /> {task.priority}
-                  </span>
-                )}
-                {fmtShort(task.due_date) && (
-                  <span className="pw__due">
-                    <Clock size={11} /> {fmtShort(task.due_date)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+                    {s === "todo"
+                      ? "A fazer"
+                      : s === "in_progress"
+                        ? "Em andamento"
+                        : TASK_COLUMNS.find((c) => c.status === s)?.label ||
+                          "Tarefa"}
+                  </StatusBadge>
+                </td>
+                <td data-label="Prioridade">
+                  {!isDone && task.priority ? (
+                    <PriorityTag priority={task.priority} />
+                  ) : (
+                    <span className="project-list-missing">—</span>
+                  )}
+                </td>
+                <td data-label="Prazo" className="project-list-date">
+                  {dueToday
+                    ? "Hoje"
+                    : fmtShort(task.due_date)
+                        ?.replace(" de ", " ")
+                        .replace(".", "") || "—"}
+                </td>
+              </motion.tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </motion.div>
   );
 }
 
@@ -515,7 +420,7 @@ const MONTHS = [
   "Dezembro",
 ];
 
-function CalendarView({ tasks, accent }) {
+function CalendarView({ tasks, mask = (value) => value }) {
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -558,70 +463,156 @@ function CalendarView({ tasks, accent }) {
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
   };
 
+  const presets = useMotionPresets();
+  const selectedDate = selected
+    ? new Date(cursor.getFullYear(), cursor.getMonth(), selected)
+    : null;
+  const selectedLabel = selectedDate
+    ?.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    })
+    .replace("-feira", "");
   return (
-    <div className="pw__calendar" style={{ "--accent": accent }}>
-      <div className="pw__calMain">
-        <header className="pw__calHead">
-          <button className="pw__calNav" onClick={() => shift(-1)}>
-            <ChevronLeft size={18} />
+    <motion.div className="project-calendar" variants={presets.grid}>
+      <motion.section
+        className="project-calendar-card"
+        variants={presets.card}
+        aria-label="Prazos das tarefas do projeto"
+      >
+        <header className="project-calendar-head">
+          <button
+            type="button"
+            onClick={() => shift(-1)}
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft size={16} />
           </button>
-          <strong>{monthLabel}</strong>
-          <button className="pw__calNav" onClick={() => shift(1)}>
-            <ChevronRight size={18} />
+          <h2 aria-live="polite">{monthLabel}</h2>
+          <button
+            type="button"
+            onClick={() => shift(1)}
+            aria-label="Próximo mês"
+          >
+            <ChevronRight size={16} />
           </button>
+          <p>Prazos das tarefas do projeto</p>
         </header>
-        <div className="pw__calWeek">
+        <div className="project-calendar-week" aria-hidden="true">
           {WEEKDAYS.map((d, i) => (
             <span key={i}>{d}</span>
           ))}
         </div>
-        <div className="pw__calGrid">
+        <div className="project-calendar-grid">
           {cells.map((d, i) => {
             const has = d && byDay[d];
+            const statuses = has
+              ? [...new Set(byDay[d].map(normalizeTaskStatus))]
+              : [];
             return (
               <button
+                type="button"
                 key={i}
-                className={`pw__calDay ${!d ? "is-empty" : ""} ${isToday(d) ? "is-today" : ""} ${selected === d ? "is-selected" : ""}`}
                 disabled={!d}
+                className={`project-calendar-day ${!d ? "is-empty" : ""} ${isToday(d) ? "is-today" : ""} ${d && selected === d ? "is-selected" : ""}`}
+                aria-label={
+                  d
+                    ? `${d} de ${monthLabel}, ${has ? byDay[d].length : 0} tarefa${has?.length === 1 ? "" : "s"}${isToday(d) ? ", hoje" : ""}`
+                    : undefined
+                }
+                aria-pressed={d ? selected === d : undefined}
+                aria-current={isToday(d) ? "date" : undefined}
                 onClick={() => setSelected(d)}
               >
-                {d}
+                <span>{d}</span>
                 {has && (
-                  <span className="pw__calDot" data-count={byDay[d].length} />
+                  <span className="project-calendar-dots">
+                    {statuses.map((status) => (
+                      <i key={status} data-status={status} />
+                    ))}
+                  </span>
                 )}
               </button>
             );
           })}
         </div>
-      </div>
-
-      <aside className="pw__calSide">
-        <h4>{selected ? `Dia ${selected}` : "Selecione um dia"}</h4>
-        {selected ? (
-          selectedTasks.length ? (
-            <ul className="pw__calTasks">
-              {selectedTasks.map((t) => (
-                <li
-                  key={t.id}
-                  className={normalizeTaskStatus(t) === "done" ? "is-done" : ""}
-                >
-                  <span
-                    className="pw__calTaskDot"
-                    style={{
-                      background: PRIORITY_TONE[t.priority] || "#9ca3af",
-                    }}
-                  />
-                  {t.title}
-                </li>
-              ))}
+      </motion.section>
+      <motion.aside
+        className="project-calendar-card project-calendar-side"
+        variants={presets.card}
+        aria-live="polite"
+      >
+        <h2>
+          {selectedLabel
+            ? selectedLabel.charAt(0).toUpperCase() + selectedLabel.slice(1)
+            : "Selecione um dia"}
+        </h2>
+        <p className="project-calendar-caption">
+          {selected
+            ? `${selectedTasks.length} tarefa${selectedTasks.length === 1 ? "" : "s"} com prazo`
+            : "Clique num dia para ver as tarefas."}
+        </p>
+        {selected &&
+          (selectedTasks.length ? (
+            <ul className="project-calendar-tasks">
+              {selectedTasks.map((t) => {
+                const status = normalizeTaskStatus(t),
+                  done = status === "done";
+                return (
+                  <li key={t.id} className={done ? "is-done" : ""}>
+                    <span
+                      className="project-calendar-task-check"
+                      aria-label={done ? "Concluída" : "Não concluída"}
+                    >
+                      {done ? (
+                        <CheckCircle2 size={22} />
+                      ) : (
+                        <Circle size={22} strokeWidth={1.5} />
+                      )}
+                    </span>
+                    <div>
+                      <strong>{mask(t.title)}</strong>
+                      <span>
+                        {status === "todo"
+                          ? "A fazer"
+                          : status === "in_progress"
+                            ? "Em andamento"
+                            : "Concluída"}
+                      </span>
+                    </div>
+                    {t.priority && !done && (
+                      <PriorityTag priority={t.priority} />
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
-            <p className="pw__empty">Sem tarefas neste dia.</p>
-          )
-        ) : (
-          <p className="pw__empty">Clique num dia para ver as tarefas.</p>
-        )}
-      </aside>
-    </div>
+            <EmptyState
+              title="Sem tarefas neste dia"
+              description="Selecione outro dia para consultar os prazos."
+              icon={CalendarDays}
+            />
+          ))}
+        <div className="project-calendar-legend">
+          <span>
+            <i data-status="done" />
+            Concluída
+          </span>
+          <span>
+            <i data-status="in_progress" />
+            Em andamento
+          </span>
+          <span>
+            <i data-status="todo" />A fazer
+          </span>
+          <span>
+            <i className="is-today" />
+            Hoje (contorno)
+          </span>
+        </div>
+      </motion.aside>
+    </motion.div>
   );
 }

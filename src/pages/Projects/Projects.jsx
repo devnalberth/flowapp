@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { Plus, FolderPlus, Archive } from "lucide-react";
 import { motion } from "framer-motion";
 import ProjectsSkeleton from "./ProjectsSkeleton";
+import ProjectsEmpty from "./ProjectsEmpty";
 import EmptyState from "../../components/ui/EmptyState";
 import FilterPill from "../../components/ui/FilterPill";
 import { useMotionPresets } from "../../components/ui/motion";
@@ -343,17 +344,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
 
             {projects.length === 0 ||
             (activeProjects.length === 0 && activeCat !== "archived") ? (
-              <div className="projGallery__empty">
-                <FolderPlus size={32} />
-                <h3>Nenhum projeto ainda</h3>
-                <p>
-                  Crie seu primeiro projeto para organizar tarefas, prazos e
-                  clientes.
-                </p>
-                <button className="projGallery__new" onClick={openNewProject}>
-                  <Plus size={16} /> Criar projeto
-                </button>
-              </div>
+              <ProjectsEmpty onCreate={openNewProject} />
             ) : visibleProjects.length === 0 ? (
               <EmptyState
                 icon={FolderPlus}

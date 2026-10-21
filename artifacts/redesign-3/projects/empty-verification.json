@@ -1,0 +1,8 @@
+{
+  "checks": [
+    "No projects shows source empty card and three steps without dashboard or filters",
+    "CTA opens existing creation form; Escape returns to empty state",
+    "1024px and 390px empty state fit viewport"
+  ],
+  "scope": "Synthetic AppContext; Supabase blocked"
+}

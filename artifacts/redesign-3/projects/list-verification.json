@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "All 13 tasks keep original todo, in_progress, done ordering",
+    "Keyboard completion updates UI and preserves original payload",
+    "Reopen updates UI and preserves original todo/null payload",
+    "Today highlight derives from due_date; missing deadlines remain absent",
+    "Global financial privacy remains applied",
+    "1024px and 390px retain all tasks and fit viewport",
+    "Reduced motion keeps rows visible",
+    "Empty list renders shared empty state"
+  ],
+  "scope": "Synthetic stateful AppContext; Supabase blocked"
+}

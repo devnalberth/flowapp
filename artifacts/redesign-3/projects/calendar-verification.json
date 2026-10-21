@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "October has 31 days and 4 leading blanks; selected day shows the existing due_date task",
+    "Today is identified from local date",
+    "Empty day is visible and calendar remains read-only",
+    "Month navigation keeps original cursor and resets selected day",
+    "Keyboard selection reveals task",
+    "Calendar interactions perform no task writes",
+    "1024px and 390px retain complete calendar without horizontal overflow",
+    "Reduced motion keeps calendar visible"
+  ],
+  "scope": "Synthetic stateful AppContext; Supabase blocked"
+}
