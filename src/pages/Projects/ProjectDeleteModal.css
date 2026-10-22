@@ -1,0 +1,65 @@
+.project-delete-modal {
+  margin: max(16px, min(320px, calc((100dvh - 350px) / 2))) auto;
+}
+.project-delete-modal .fa-modal__header {
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 28px 0;
+}
+.project-delete-modal .fa-modal__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  color: var(--fa-status-danger);
+  background: var(--fa-status-danger-bg);
+}
+.project-delete-modal .fa-modal__icon svg {
+  width: 22px;
+  height: 22px;
+}
+.project-delete-modal .fa-modal__close {
+  display: none;
+}
+.project-delete-modal .fa-modal__body {
+  padding: 6px 28px 0;
+  flex-shrink: 0;
+}
+.project-delete-message {
+  margin: 0;
+  color: var(--fa-text-muted);
+  font: var(--fa-type-body);
+}
+.project-delete-name {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--fa-bg-soft);
+  font: var(--fa-type-body-strong);
+  overflow-wrap: anywhere;
+}
+.project-delete-modal .fa-modal__footer {
+  padding: 16px 28px 28px;
+  border: 0;
+  background: none;
+}
+.project-delete-modal .fa-modal__actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 767px) {
+  .project-delete-modal {
+    margin: 32px auto;
+  }
+  .project-delete-modal .fa-modal__actions {
+    justify-content: flex-end;
+  }
+}
+
+.project-delete-error {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--fa-status-danger-bg);
+  color: var(--fa-status-danger);
+  font: var(--fa-type-body);
+}

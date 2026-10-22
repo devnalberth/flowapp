@@ -11,6 +11,11 @@ Referências do arquivo Figma `8BETSzvCvZT1odD8o05jhL`, página `48412:153`:
 | Lista | 48475:265 | projeto-lista-1440.png |
 | Calendário | 48475:860 | projeto-calendario-1440.png |
 | Sem projetos | 48477:953 | projetos-vazio-1440.png |
+| Menu de ações | 48471:13932 | projeto-menu-1440.png |
+| Novo projeto | 48476:2 | projeto-formulario-1440.png |
+| Novo cliente | 48476:604 | projeto-cliente-1440.png |
+| Excluir projeto | 48477:2 | projeto-exclusao-1440.png |
+| Arquivar + Desfazer | 48477:353 | projeto-arquivar-1440.png |
 
 Galeria retornou contexto esparso. Foram consultados os contextos completos dos filhos Header (48470:6), herói (48470:9), KPI (48470:43), prazos (48471:373), categorias (48470:827) e card (48471:492), além dos screenshots e motion. Componentes compartilhados HeroCard/HeroRings, KpiCard, CardHeader, FilterPill, StatusBadge, ProgressRing, ActionMenu e EmptyState. Motion de entrada sem loop, com movimento reduzido.
 
@@ -44,7 +49,7 @@ Harness com callbacks e estado sintéticos; requisições Supabase bloqueadas. N
 
 ## Próximas unidades
 
-Fluxos de menu, criação, cliente, exclusão e arquivo com Desfazer. Os modais e diálogos nativos desses fluxos serão migrados na unidade correspondente. As quatro visões do workspace já usam o redesign; ProjectWorkspace.css foi removido após confirmar que não há consumidores. A limpeza dos estilos antigos de Projects fica para o fim do módulo.
+Referências visuais de Projetos e seus cinco fluxos implementadas. Próximo módulo na seção 12: Estudos, sem caderno. A função de status manual persistente continua adiada para a seção 10.2. O alerta nativo de falha ao criar tarefa a partir de Projetos foi preservado nesta unidade; ele pertence ao fluxo compartilhado de criação de tarefas. Não foram alterados AppContext, services ou migrations.
 
 ## Visão geral — 48473:2
 
@@ -75,3 +80,21 @@ Oito verificações em calendar-verification.json cobrem dias e alinhamento do m
 Card 1112×404 em (288,200), ícone FolderKanban, texto e três passos do Figma. CTA usa o formulário de criação existente; condição de exibição permanece igual. Três verificações em empty-verification.json: estado sem painel/filtros, CTA e Escape, layouts 1024/390px.
 
 Validação destas três telas é local, com dados sintéticos e Supabase bloqueado. Nenhuma alteração em services, AppContext, projectMetrics ou migrations. Não foi realizado deployment nem teste autenticado do backend.
+
+## Fluxos de menu e formulários
+
+Menu reutiliza ActionMenu, com rótulos “Editar projeto”, “Arquivar” e “Excluir projeto”, divisória e escopo de estilos local. Contexto completo do filho 48471:14386 consultado após resposta esparsa do frame. Teclado, Escape e edição existente verificados.
+
+Novo projeto usa Modal, Input/Select/DateInput e Button compartilhados; largura 600px em (420,120). Contexto completo 48476:423 inclui Status 48483:14339. O Status inicial já existia; os valores todo/in_progress/review/completed foram preservados, inclusive o auto-sync que posteriormente os deriva das tarefas. Não foi criada a função de status manual persistente. Cores mantêm os seis valores gravados; apenas os swatches mudam para tokens. Limite de descrição continua 200. Contador mostra o tamanho real, não o número ilustrativo do Figma. Datas continuam inputs nativos: o formato exibido depende da plataforma/idioma do navegador.
+
+Cliente usa Modal compartilhado em camada nativa sobre o projeto, com largura 520px em (460,200). Contexto completo 48476:1245 consultado. Campos, validação de nome, estado saving, callbacks e ID retornado preservados. Escape fecha apenas o modal superior; rascunho do projeto fica intacto. Corpos desses dois modais não encolhem por baixo do rodapé em viewport estreita; a rolagem permanece no dialog.
+
+forms-verification.json registra nove verificações com AppContext sintético e estado: Escape aninhado, foco, 1024/390px, criação e seleção do cliente, cores/status, limite, nome obrigatório, payload integral e edição por ID. Comparação AST confirmou 28 cálculos/handlers preservados, incluindo constantes/defaults e handlers dos dois formulários; callbacks de mutação da página foram verificados pelos payloads, pois receberam novos estados visuais e tratamento de erros.
+
+## Exclusão e arquivamento
+
+Excluir usa Modal/Button compartilhados, composição de confirmação em 440px, ação de arquivar e ação danger. O backend/local não garante o texto “tarefas ficam sem projeto” da referência: AppContext remove o projeto da lista e o service exclui só o registro. Não fizemos promessa sobre tarefas nem mudamos FK/schema/services. Texto mantém o aviso irreversível e a desvinculação da meta no agregado existente. Excluir continua chamando deleteProject(id), com o mesmo retorno à galeria quando o projeto ativo é removido. Estado pending bloqueia nova confirmação e Escape enquanto a requisição corre. Erros são exibidos dentro da confirmação.
+
+Arquivar continua updateProject(id,{status:'archived'}), com toast em 24px do canto inferior direito e Desfazer por 6s conforme handoff principal. Contexto completo do filho 48477:939 consultado. Desfazer chama o handler de restaurar existente: escreve todo e deixa o auto-sync derivar o status. Toast recebeu somente props opcionais icon/className para reutilizar a implementação compartilhada com ícone Archive; padrões dos demais avisos permanecem iguais. Erros de arquivar/restaurar usam aviso; erros de projeto/cliente ficam no formulário, visíveis acima do backdrop.
+
+actions-verification.json registra seis verificações: cancelar sem escrita, erro com retry, alternativa de arquivar sem exclusão, Desfazer e status derivado, modais/toast em 1024/390px e erro de criação com rascunho preservado. Exclusão confirmada por ID, navegação e arquivo/desfazer também executados em scripts locais específicos. Requisições Supabase bloqueadas; não houve teste autenticado nem deployment. Falhas injetadas verificam a UI e callbacks; não validam rollback do estado otimista do AppContext, que não foi alterado.

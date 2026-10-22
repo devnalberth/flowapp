@@ -1,19 +1,27 @@
-import { CircleCheck, TriangleAlert, X } from 'lucide-react'
-import './Toast.css'
+import { CircleCheck, TriangleAlert, X } from "lucide-react";
+import "./Toast.css";
 
 export default function Toast({
   title,
+  icon,
+  className = "",
   detail,
-  tone = 'success',
+  tone = "success",
   action,
   onAction,
   onClose,
   ...props
 }) {
-  const Icon = tone === 'danger' ? TriangleAlert : CircleCheck
+  const Icon = icon || (tone === "danger" ? TriangleAlert : CircleCheck);
   return (
-    <div className="fa-toast" role={tone === 'danger' ? 'alert' : 'status'} {...props}>
-      <span className={`fa-toast__icon ${tone === 'danger' ? 'is-danger' : ''}`}>
+    <div
+      className={`fa-toast ${className}`}
+      role={tone === "danger" ? "alert" : "status"}
+      {...props}
+    >
+      <span
+        className={`fa-toast__icon ${tone === "danger" ? "is-danger" : ""}`}
+      >
         <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
       </span>
       <div className="fa-toast__text">
@@ -25,9 +33,14 @@ export default function Toast({
           {action}
         </button>
       )}
-      <button type="button" className="fa-toast__close" aria-label="Fechar aviso" onClick={onClose}>
+      <button
+        type="button"
+        className="fa-toast__close"
+        aria-label="Fechar aviso"
+        onClick={onClose}
+      >
         <X size={14} strokeWidth={1.75} aria-hidden="true" />
       </button>
     </div>
-  )
+  );
 }

@@ -1,192 +1,196 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
-import ClientModal from '../ClientModal/ClientModal.jsx'
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Plus,
+  Check,
+  FolderKanban,
+  CircleCheck,
+  ChevronDown,
+} from "lucide-react";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
+import { Input, Select, DateInput } from "../ui/Field";
+import { projectColorToken } from "../../utils/projectAppearance";
+import ClientModal from "../ClientModal/ClientModal.jsx";
 
-import './CreateProjectModal.css'
+import "./CreateProjectModal.css";
 
-const AREAS = ['Profissional', 'Pessoal', 'Financeiro', 'Estudos']
-const STATUS_OPTIONS = ['todo', 'in_progress', 'review', 'completed']
+const AREAS = ["Profissional", "Pessoal", "Financeiro", "Estudos"];
+const STATUS_OPTIONS = ["todo", "in_progress", "review", "completed"];
 const COLOR_OPTIONS = [
-  { label: 'Laranja', value: 'ff9500' },
-  { label: 'Azul', value: '007aff' },
-  { label: 'Verde', value: '34c759' },
-  { label: 'Rosa', value: 'ff2d55' },
-  { label: 'Roxo', value: 'af52de' },
-  { label: 'Cinza', value: '8e8e93' },
-]
-const DESCRIPTION_LIMIT = 200
+  { label: "Laranja", value: "ff9500" },
+  { label: "Azul", value: "007aff" },
+  { label: "Verde", value: "34c759" },
+  { label: "Rosa", value: "ff2d55" },
+  { label: "Roxo", value: "af52de" },
+  { label: "Cinza", value: "8e8e93" },
+];
+const DESCRIPTION_LIMIT = 200;
 
 const DEFAULT_FORM = {
-  title: '',
+  title: "",
   area: AREAS[0],
-  status: 'todo',
+  status: "todo",
   color: COLOR_OPTIONS[0].value,
-  description: '',
-  goalId: '',
-  startDate: '',
-  endDate: '',
-  clientId: '',
+  description: "",
+  goalId: "",
+  startDate: "",
+  endDate: "",
+  clientId: "",
+};
+
+const toDateInput = (value) => (value ? String(value).slice(0, 10) : "");
+
+function ProjectSelect(props) {
+  return (
+    <div className="project-form-select">
+      <Select {...props} />
+      <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
+    </div>
+  );
 }
 
-const toDateInput = (value) => (value ? String(value).slice(0, 10) : '')
-
-export default function CreateProjectModal({ open, onClose, onSubmit, goalOptions = [], clientOptions = [], onCreateClient, initialData = null }) {
-  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }))
-  const [showClientModal, setShowClientModal] = useState(false)
-  const dialogRef = useRef(null)
-  const nameRef = useRef(null)
+export default function CreateProjectModal({
+  open,
+  onClose,
+  onSubmit,
+  goalOptions = [],
+  clientOptions = [],
+  onCreateClient,
+  initialData = null,
+  error,
+}) {
+  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }));
+  const [showClientModal, setShowClientModal] = useState(false);
+  const nameRef = useRef(null);
 
   const remainingChars = useMemo(
-    () => `${(form.description || '').length}/${DESCRIPTION_LIMIT}`,
+    () => `${(form.description || "").length}/${DESCRIPTION_LIMIT}`,
     [form.description],
-  )
+  );
+  useEffect(() => {
+    if (open && !showClientModal)
+      requestAnimationFrame(() => nameRef.current?.focus());
+  }, [open, showClientModal]);
 
   useEffect(() => {
-    if (!open) {
-      return undefined
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose?.()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open, onClose])
-
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-      requestAnimationFrame(() => {
-        nameRef.current?.focus()
-      })
-    }
-
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return undefined
+    if (!open) return undefined;
     if (initialData) {
       setForm({
         ...DEFAULT_FORM,
         ...initialData,
-        description: initialData.description || '',
-        goalId: initialData.goalId || initialData.goal_id || DEFAULT_FORM.goalId,
-        clientId: initialData.clientId || initialData.client_id || DEFAULT_FORM.clientId,
+        description: initialData.description || "",
+        goalId:
+          initialData.goalId || initialData.goal_id || DEFAULT_FORM.goalId,
+        clientId:
+          initialData.clientId ||
+          initialData.client_id ||
+          DEFAULT_FORM.clientId,
         startDate: toDateInput(initialData.startDate || initialData.start_date),
         endDate: toDateInput(initialData.endDate || initialData.end_date),
-      })
+      });
     } else {
-      setForm(() => ({ ...DEFAULT_FORM }))
+      setForm(() => ({ ...DEFAULT_FORM }));
     }
-  }, [open, initialData])
+  }, [open, initialData]);
 
   const updateField = (field) => (event) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }))
-  }
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
 
   const handleSubmit = (event) => {
-    event.preventDefault()
-    onSubmit?.(form)
-  }
+    event.preventDefault();
+    onSubmit?.(form);
+  };
 
   const handleCreateClient = async (clientData) => {
-    const created = await onCreateClient?.(clientData)
+    const created = await onCreateClient?.(clientData);
     if (created?.id) {
-      setForm((prev) => ({ ...prev, clientId: created.id }))
+      setForm((prev) => ({ ...prev, clientId: created.id }));
     }
-    setShowClientModal(false)
-  }
+    setShowClientModal(false);
+  };
 
   return (
-    <div className="createProjectModal" role="dialog" aria-modal="true">
-      <div className="createProjectModal__backdrop" onClick={onClose} />
-
-      <section className="createProjectModal__panel" ref={dialogRef}>
-        <header className="createProjectModal__header">
-          <h2 className="createProjectModal__title">Criar Novo Projeto</h2>
-          <button type="button" className="createProjectModal__iconBtn" onClick={onClose} aria-label="Fechar modal">
-            <span className="createProjectModal__closeIcon" />
-          </button>
-        </header>
-
-        <form className="createProjectModal__form" onSubmit={handleSubmit}>
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Nome do projeto*</span>
-            <input
-              ref={nameRef}
-              className="createProjectModal__input"
-              type="text"
-              name="title"
-              placeholder="Nome do projeto"
-              value={form.title}
-              onChange={updateField('title')}
-              required
-            />
-          </label>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Área do Projeto</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        width={600}
+        className="createProjectModal"
+        title={initialData ? "Editar projeto" : "Novo projeto"}
+        subtitle="Ligue a uma meta para ele contar no progresso dela."
+        icon={FolderKanban}
+        hint="Enter salva · Esc cancela"
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="project-form">
+              {initialData ? "Salvar alterações" : "Criar projeto"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="project-form"
+          className="project-form"
+          onSubmit={handleSubmit}
+        >
+          {error && <p className="project-form-error" role="alert">{error}</p>}
+          <Input
+            label="Nome do projeto"
+            ref={nameRef}
+            name="title"
+            value={form.title}
+            onChange={updateField("title")}
+            placeholder="Nome do projeto"
+            required
+          />
+          <div className="project-form-row">
+            <ProjectSelect
+              label="Área"
               name="area"
               value={form.area}
-              onChange={updateField('area')}
+              onChange={updateField("area")}
             >
               {AREAS.map((area) => (
                 <option key={area} value={area}>
                   {area}
                 </option>
               ))}
-            </select>
-          </label>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Cor do Projeto</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
-              name="color"
-              value={form.color}
-              onChange={updateField('color')}
-            >
-              {COLOR_OPTIONS.map((color) => (
-                <option key={color.value} value={color.value}>
-                  {color.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Status Inicial</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
-              name="status"
-              value={form.status}
-              onChange={updateField('status')}
-            >
-              <option value="todo">A Fazer</option>
-              <option value="in_progress">Em Andamento</option>
-              <option value="review">Em Revisão</option>
-              <option value="completed">Concluído</option>
-            </select>
-          </label>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Vincular a Meta (Opcional)</span>
-            <select
-              className="createProjectModal__input createProjectModal__input--select"
+            </ProjectSelect>
+            <fieldset className="project-form-colors">
+              <legend>Cor do projeto</legend>
+              <div>
+                {COLOR_OPTIONS.map((color) => (
+                  <button
+                    type="button"
+                    key={color.value}
+                    aria-label={color.label}
+                    aria-pressed={form.color === color.value}
+                    style={{
+                      "--swatch":
+                        color.value === "8e8e93"
+                          ? "var(--fa-text-muted)"
+                          : projectColorToken(color.value),
+                    }}
+                    onClick={() =>
+                      setForm((prev) => ({ ...prev, color: color.value }))
+                    }
+                  >
+                    {form.color === color.value && <Check size={14} />}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+          <div className="project-form-row">
+            <ProjectSelect
+              label="Vincular a meta · opcional"
               name="goalId"
               value={form.goalId}
-              onChange={updateField('goalId')}
+              onChange={updateField("goalId")}
             >
               <option value="">Sem vínculo</option>
               {goalOptions?.map((goal) => (
@@ -194,92 +198,88 @@ export default function CreateProjectModal({ open, onClose, onSubmit, goalOption
                   {goal.title}
                 </option>
               ))}
-            </select>
-          </label>
-
-          <div className="createProjectModal__row">
-            <label className="createProjectModal__field">
-              <span className="createProjectModal__label">Início</span>
-              <input
-                className="createProjectModal__input"
-                type="date"
-                name="startDate"
-                value={form.startDate}
-                onChange={updateField('startDate')}
-              />
-            </label>
-            <label className="createProjectModal__field">
-              <span className="createProjectModal__label">Prazo de término</span>
-              <input
-                className="createProjectModal__input"
-                type="date"
-                name="endDate"
-                value={form.endDate}
-                onChange={updateField('endDate')}
-              />
-            </label>
-          </div>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Cliente (Opcional)</span>
-            <div className="createProjectModal__clientRow">
-              <select
-                className="createProjectModal__input createProjectModal__input--select"
+            </ProjectSelect>
+            <div className="project-form-client">
+              <ProjectSelect
+                label="Cliente · opcional"
                 name="clientId"
                 value={form.clientId}
-                onChange={updateField('clientId')}
+                onChange={updateField("clientId")}
               >
                 <option value="">Sem cliente</option>
                 {clientOptions?.map((client) => (
                   <option key={client.id} value={client.id}>
-                    {client.name}{client.company ? ` · ${client.company}` : ''}
+                    {client.name}
+                    {client.company ? ` · ${client.company}` : ""}
                   </option>
                 ))}
-              </select>
-              <button
-                type="button"
-                className="createProjectModal__clientAdd"
-                onClick={() => setShowClientModal(true)}
-                title="Cadastrar novo cliente"
-              >
-                <Plus size={16} /> Novo
+              </ProjectSelect>
+              <button type="button" onClick={() => setShowClientModal(true)}>
+                <Plus size={12} /> Cadastrar novo cliente
               </button>
             </div>
-          </label>
-
-          <label className="createProjectModal__field">
-            <span className="createProjectModal__label">Descrição do projeto</span>
-            <div className="createProjectModal__textareaWrap">
+          </div>
+          <div className="project-form-row">
+            <DateInput
+              label="Início"
+              name="startDate"
+              value={form.startDate}
+              onChange={updateField("startDate")}
+            />
+            <DateInput
+              label="Prazo de término"
+              name="endDate"
+              value={form.endDate}
+              onChange={updateField("endDate")}
+            />
+          </div>
+          <fieldset className="project-form-status">
+            <legend>Status</legend>
+            <div>
+              {STATUS_OPTIONS.map((status, i) => (
+                <button
+                  key={status}
+                  type="button"
+                  data-status={status}
+                  aria-pressed={form.status === status}
+                  onClick={() => setForm((prev) => ({ ...prev, status }))}
+                >
+                  <i />
+                  {
+                    ["A fazer", "Em andamento", "Em finalização", "Concluído"][
+                      i
+                    ]
+                  }
+                </button>
+              ))}
+            </div>
+            <p>
+              <CircleCheck size={15} /> Depois ele acompanha as tarefas: 80%
+              feitas vira Em finalização e 100% vira Concluído.
+            </p>
+          </fieldset>
+          <label className="project-form-description">
+            <span>Descrição · opcional</span>
+            <div>
               <textarea
-                className="createProjectModal__textarea"
                 name="description"
                 placeholder="Descreva o objetivo e escopo do projeto..."
                 maxLength={DESCRIPTION_LIMIT}
                 value={form.description}
-                onChange={updateField('description')}
+                onChange={updateField("description")}
               />
-              <span className="createProjectModal__counter">{remainingChars}</span>
+              <span>{remainingChars}</span>
             </div>
           </label>
-
-          <footer className="createProjectModal__footer">
-            <button type="button" className="createProjectModal__btn createProjectModal__btn--ghost" onClick={onClose}>
-              Cancelar
-            </button>
-            <button type="submit" className="createProjectModal__btn createProjectModal__btn--primary">
-              {initialData ? 'Salvar alterações' : 'Criar Projeto'}
-            </button>
-          </footer>
         </form>
-      </section>
-
+      </Modal>
       {showClientModal && (
         <ClientModal
-          open={true}
+          open
           onClose={() => setShowClientModal(false)}
           onSubmit={handleCreateClient}
         />
       )}
-    </div>
-  )
+    </>
+  );
 }

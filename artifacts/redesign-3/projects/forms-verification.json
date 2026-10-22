@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Nested Escape closes only client dialog and preserves project draft",
+    "Native client modal contains keyboard focus",
+    "Client layout fits 1024px and 390px",
+    "Existing client callback retains fields and returned ID is selected",
+    "Six persisted colors and four original status values remain available",
+    "Project form fits 1024px and 390px",
+    "Existing 200-character description limit enforced",
+    "Required title validation and original complete project payload preserved",
+    "Existing project edit prefills and updates the same project ID"
+  ],
+  "scope": "Synthetic AppContext with recorded callbacks; Supabase blocked"
+}

@@ -81,15 +81,22 @@ export default function ProjectCard({
       "neutral";
   const items = [
     ...(!archived
-      ? [{ label: "Editar", icon: Pencil, onClick: () => onEdit?.(project) }]
+      ? [
+          {
+            label: "Editar projeto",
+            icon: Pencil,
+            onClick: () => onEdit?.(project),
+          },
+        ]
       : []),
     {
       label: archived ? "Restaurar" : "Arquivar",
       icon: archived ? ArchiveRestore : Archive,
       onClick: () => (archived ? onRestore?.(project) : onArchive?.(project)),
     },
+    { separator: true },
     {
-      label: "Excluir",
+      label: "Excluir projeto",
       icon: Trash2,
       danger: true,
       onClick: () => onDelete?.(project),
@@ -116,6 +123,7 @@ export default function ProjectCard({
           {statusMeta.label}
         </StatusBadge>
         <ActionMenu
+          className="project-actions-menu"
           label={`Ações do projeto ${mask(project.title)}`}
           trigger={
             <button

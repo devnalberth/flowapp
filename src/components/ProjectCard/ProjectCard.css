@@ -172,3 +172,18 @@
 .project-tile.is-archived .fa-ring__fill {
   stroke: var(--fa-text-muted) !important;
 }
+
+.project-actions-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.project-actions-menu .fa-action-menu__item {
+  margin: 0;
+  flex: none;
+}
+.project-actions-menu .fa-action-menu__separator {
+  width: 100%;
+  margin: 0;
+  flex: none;
+}

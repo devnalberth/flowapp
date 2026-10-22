@@ -5,6 +5,8 @@ import { Plus, FolderPlus, Archive } from "lucide-react";
 import { motion } from "framer-motion";
 import ProjectsSkeleton from "./ProjectsSkeleton";
 import ProjectsEmpty from "./ProjectsEmpty";
+import ProjectDeleteModal from "./ProjectDeleteModal";
+import { useToast } from "../../components/ui/ToastProvider";
 import EmptyState from "../../components/ui/EmptyState";
 import FilterPill from "../../components/ui/FilterPill";
 import { useMotionPresets } from "../../components/ui/motion";
@@ -54,6 +56,11 @@ export default function Projects({ onNavigate, onLogout, user }) {
   const [taskPreset, setTaskPreset] = useState(null); // { projectId, status }
   const [activeCat, setActiveCat] = useState("all"); // filtro de categoria da galeria
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const notify = useToast();
   const presets = useMotionPresets();
   const mask = (value) =>
     prefs.hideFinanceValues
@@ -169,7 +176,11 @@ export default function Projects({ onNavigate, onLogout, user }) {
       setModalOpen(false);
       setEditProject(null);
     } catch (e) {
-      alert(editProject ? "Erro ao editar projeto" : "Erro ao criar projeto");
+      setFormError(
+        editProject
+          ? "Erro ao editar projeto. Tente novamente."
+          : "Erro ao criar projeto. Tente novamente.",
+      );
     }
   };
 
@@ -178,7 +189,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
       return await addClient(data);
     } catch (e) {
       console.error("Erro ao criar cliente:", e);
-      alert(`Erro ao criar cliente: ${e?.message || e}`);
+      setFormError(`Erro ao criar cliente: ${e?.message || e}`);
       return null;
     }
   };
@@ -203,24 +214,30 @@ export default function Projects({ onNavigate, onLogout, user }) {
   };
 
   const handleEditProject = (project) => {
+    setFormError(null);
     setEditProject(project);
     setModalOpen(true);
   };
 
-  const handleDeleteProject = async (project) => {
+  const handleDeleteProject = (project) => {
     const target = project || activeProject;
-    if (!target) return;
-    if (
-      window.confirm(
-        `Excluir o projeto "${target.title}"? Essa ação não pode ser desfeita.`,
-      )
-    ) {
-      try {
-        await deleteProject(target.id);
-        if (activeProjectId === target.id) setActiveProjectId(null);
-      } catch (e) {
-        alert("Erro ao excluir projeto");
-      }
+    if (target) {
+      setDeleteError(null);
+      setDeleteTarget(target);
+    }
+  };
+  const confirmDeleteProject = async () => {
+    const target = deleteTarget;
+    if (!target || deletePending) return;
+    setDeletePending(true);
+    try {
+      await deleteProject(target.id);
+      if (activeProjectId === target.id) setActiveProjectId(null);
+      setDeleteTarget(null);
+    } catch (e) {
+      setDeleteError("Erro ao excluir projeto. Tente novamente.");
+    } finally {
+      setDeletePending(false);
     }
   };
 
@@ -231,8 +248,22 @@ export default function Projects({ onNavigate, onLogout, user }) {
     try {
       await updateProject(target.id, { status: "archived" });
       if (activeProjectId === target.id) setActiveProjectId(null);
+      notify?.({
+        title: `“${mask(target.title)}” foi para Arquivados`,
+        detail: "Sai do painel e dos filtros. Dá para restaurar quando quiser.",
+        icon: Archive,
+        className: "project-archive-toast",
+        action: "Desfazer",
+        onAction: () => handleRestoreProject(target),
+      });
+      return true;
     } catch (e) {
-      alert("Erro ao arquivar projeto");
+      notify?.({
+        title: "Erro ao arquivar projeto",
+        detail: "Tente novamente.",
+        tone: "danger",
+      });
+      return false;
     }
   };
 
@@ -242,11 +273,16 @@ export default function Projects({ onNavigate, onLogout, user }) {
     try {
       await updateProject(project.id, { status: "todo" });
     } catch (e) {
-      alert("Erro ao restaurar projeto");
+      notify?.({
+        title: "Erro ao restaurar projeto",
+        detail: "Tente novamente.",
+        tone: "danger",
+      });
     }
   };
 
   const openNewProject = () => {
+    setFormError(null);
     setEditProject(null);
     setModalOpen(true);
   };
@@ -393,6 +429,35 @@ export default function Projects({ onNavigate, onLogout, user }) {
         )}
       </div>
 
+      {deleteTarget && (
+        <ProjectDeleteModal
+          project={deleteTarget}
+          goal={goalFor(deleteTarget)}
+          mask={mask}
+          pending={deletePending}
+          error={deleteError}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDeleteProject}
+          onArchive={
+            isArchivedProject(deleteTarget)
+              ? undefined
+              : async () => {
+                  setDeletePending(true);
+                  try {
+                    if (await handleArchiveProject(deleteTarget))
+                      setDeleteTarget(null);
+                    else
+                      setDeleteError(
+                        "Erro ao arquivar projeto. Tente novamente.",
+                      );
+                  } finally {
+                    setDeletePending(false);
+                  }
+                }
+          }
+        />
+      )}
+
       {isModalOpen && (
         <CreateProjectModal
           open
@@ -405,6 +470,7 @@ export default function Projects({ onNavigate, onLogout, user }) {
           clientOptions={clients}
           onCreateClient={handleCreateClient}
           initialData={editProject}
+          error={formError}
         />
       )}
 

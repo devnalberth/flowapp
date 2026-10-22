@@ -1,260 +1,202 @@
 .createProjectModal {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  margin: max(16px, min(120px, calc((100dvh - 766px) / 2))) auto;
 }
-
-.createProjectModal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(13, 13, 18, 0.45);
-  backdrop-filter: blur(2px);
-  z-index: 0;
-}
-
-.createProjectModal__panel {
-  position: relative;
-  width: min(840px, 100%);
-  max-height: calc(100vh - 48px);
-  background: #fff;
-  border-radius: 16px;
+.project-form {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(13, 13, 18, 0.12);
-  z-index: 1;
+  gap: 18px;
 }
-
-.createProjectModal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #dfe1e7;
+.project-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
 }
-
-.createProjectModal__title {
+.project-form-colors,
+.project-form-status {
+  padding: 0;
   margin: 0;
-  font-size: 18px;
-  line-height: 25.2px;
-  font-weight: 600;
-  color: var(--text);
+  border: 0;
+  min-width: 0;
 }
-
-.createProjectModal__iconBtn {
-  width: 48px;
-  height: 48px;
-  border: 1px solid #dfe1e7;
-  background: #fff;
+.project-form-colors legend,
+.project-form-status legend,
+.project-form-description > span {
+  padding: 0;
+  margin-bottom: 8px;
+  font: var(--fa-type-label);
+  color: var(--fa-text-secondary);
+}
+.project-form-colors > div {
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+  flex-wrap: wrap;
+}
+.project-form-colors button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  box-shadow: 0 1px 2px rgba(13, 13, 18, 0.06);
-  border-radius: 40px;
+  background: var(--swatch);
+  color: var(--fa-text-on-dark);
   cursor: pointer;
 }
-
-.createProjectModal__iconBtn:focus-visible {
-  outline: 2px solid #ff9500;
-  outline-offset: 2px;
+.project-form-colors button[aria-pressed="true"] {
+  border-color: var(--fa-text-primary);
 }
-
-.createProjectModal__closeIcon {
-  width: 18px;
-  height: 18px;
-  position: relative;
-}
-
-.createProjectModal__closeIcon::before,
-.createProjectModal__closeIcon::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: #0d0d12;
-  transform-origin: center;
-}
-
-.createProjectModal__closeIcon::before {
-  transform: translateY(-50%) rotate(45deg);
-}
-
-.createProjectModal__closeIcon::after {
-  transform: translateY(-50%) rotate(-45deg);
-}
-
-.createProjectModal__form {
-  padding: 24px;
+.project-form-client {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-}
-
-.createProjectModal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.createProjectModal__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.createProjectModal__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.createProjectModal__clientRow {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
-
-.createProjectModal__clientRow .createProjectModal__input { flex: 1; }
-
-.createProjectModal__clientAdd {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  white-space: nowrap;
-  padding: 0 16px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255, 105, 0, 0.4);
-  background: rgba(255, 105, 0, 0.07);
-  color: #d2410a;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
 }
-.createProjectModal__clientAdd:hover { background: rgba(255, 105, 0, 0.14); transform: translateY(-1px); }
-
-@media (max-width: 560px) {
-  .createProjectModal__row { grid-template-columns: 1fr; }
-}
-
-.createProjectModal__label {
-  font-size: 14px;
-  line-height: 21px;
-  font-weight: 500;
-  color: #666d80;
-}
-
-.createProjectModal__input,
-.createProjectModal__textarea {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid #dfe1e7;
-  padding: 12px;
-  font-size: 16px;
-  line-height: 24px;
-  font-family: var(--font-sans);
-  color: #0d0d12;
-  background: #fff;
-}
-
-.createProjectModal__input::placeholder,
-.createProjectModal__textarea::placeholder {
-  color: #818898;
-}
-
-.createProjectModal__input:focus,
-.createProjectModal__textarea:focus {
-  outline: 2px solid #ff9500;
-  border-color: transparent;
-}
-
-.createProjectModal__input--select {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #818898 50%),
-    linear-gradient(135deg, #818898 50%, transparent 50%);
-  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
-}
-
-.createProjectModal__textareaWrap {
+.project-form-client > button {
   display: flex;
-  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  align-self: start;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--fa-text-accent);
+  font: var(--fa-type-badge);
+  cursor: pointer;
+}
+.project-form-status > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
-
-.createProjectModal__textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-.createProjectModal__counter {
-  align-self: flex-end;
-  font-size: 12px;
-  line-height: 18px;
-  color: #a4acb9;
-  letter-spacing: 0.24px;
-  font-family: 'Geist', var(--font-sans);
-}
-
-.createProjectModal__footer {
+.project-form-status button {
   display: flex;
-  justify-content: flex-end;
-  gap: 14px;
-  padding-top: 8px;
-  border-top: 1px solid #dfe1e7;
-}
-
-.createProjectModal__btn {
-  min-width: 128px;
-  height: 48px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  font-size: 16px;
-  font-weight: 600;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 12px;
+  background: var(--fa-bg-card);
+  color: var(--fa-text-muted);
+  font: var(--fa-type-table);
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(13, 13, 18, 0.06);
+  white-space: nowrap;
 }
-
-.createProjectModal__btn--ghost {
-  background: #fff;
-  border-color: #dfe1e7;
-  color: #0d0d12;
+.project-form-status button[aria-pressed="true"] {
+  background: var(--fa-bg-soft);
+  outline: 1.5px solid var(--fa-text-primary);
+  outline-offset: -1.5px;
+  color: var(--fa-text-primary);
 }
-
-.createProjectModal__btn--primary {
-  background: linear-gradient(180deg, #ff7a18, #ff4800);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(255, 72, 0, 0.3);
+.project-form-status i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--fa-text-caption);
 }
-.createProjectModal__btn--primary:hover { transform: translateY(-1px); }
-
-@media (max-width: 720px) {
+.project-form-status [data-status="in_progress"] i {
+  background: var(--fa-status-info-solid);
+}
+.project-form-status [data-status="review"] i {
+  background: var(--fa-bg-accent);
+}
+.project-form-status [data-status="completed"] i {
+  background: var(--fa-status-success-solid);
+}
+.project-form-status p {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 0;
+  font: var(--fa-type-badge);
+  color: var(--fa-text-caption);
+}
+.project-form-status p svg {
+  flex: none;
+}
+.project-form-description {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.project-form-description > div {
+  padding: 12px 14px 10px;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.project-form-description > div:focus-within {
+  border-color: var(--fa-border-focus);
+  box-shadow: var(--fa-focus-ring);
+}
+.project-form-description textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 0;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--fa-text-primary);
+  font: var(--fa-type-body);
+}
+.project-form-description textarea:focus-visible {
+  box-shadow: none;
+  outline: 0;
+}
+.project-form-description > div > span {
+  font: var(--fa-type-caption);
+  color: var(--fa-text-caption);
+}
+@media (max-width: 767px) {
   .createProjectModal {
-    padding: 12px;
+    margin: 16px auto;
   }
-
-  .createProjectModal__panel {
-    width: 100%;
-    max-height: 100vh;
+  .project-form-row {
+    grid-template-columns: minmax(0, 1fr);
   }
-
-  .createProjectModal__form {
-    padding: 20px;
-  }
-
-  .createProjectModal__footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .createProjectModal__btn {
-    width: 100%;
+  .project-form-status > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.project-form input[type="date"] {
+  position: relative;
+  padding-left: 40px;
+}
+.project-form input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  left: 14px;
+  width: 16px;
+  height: 16px;
+}
+.createProjectModal > .fa-modal__body {
+  flex-shrink: 0;
+}
+
+.project-form-select {
+  position: relative;
+  min-width: 0;
+}
+.project-form-select select {
+  appearance: none;
+  padding-right: 40px;
+}
+.project-form-select > svg {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  pointer-events: none;
+  color: var(--fa-text-muted);
+}
+.project-form-status button {
+  font-size: 13px;
+}
+
+.project-form-error { margin:0; padding:12px 14px; border-radius:12px; background:var(--fa-status-danger-bg); color:var(--fa-status-danger); font:var(--fa-type-body); }

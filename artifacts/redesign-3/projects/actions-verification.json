@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Escape dismisses delete confirmation without write",
+    "Delete failure remains visible in dialog with retry available",
+    "Archive alternative sends archive write and performs no deletion",
+    "Undo preserves restore todo and task-derived in_progress",
+    "Delete and archive toast fit 1024px and 390px",
+    "Create failure is visible inside modal and retains draft"
+  ],
+  "scope": "Synthetic AppContext, injected callback failures; Supabase blocked"
+}

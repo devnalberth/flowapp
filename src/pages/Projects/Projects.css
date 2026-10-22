@@ -911,3 +911,7 @@
     width: 100%;
   }
 }
+
+.project-archive-toast .fa-toast__icon { background:var(--fa-bg-hero-2); }
+.project-archive-toast .fa-toast__close { display:none; }
+@media(max-width:767px) { .project-archive-toast { flex-wrap:wrap; } .project-archive-toast .fa-toast__text { flex:1; min-width:160px; } .project-archive-toast .fa-toast__action { margin-left:auto; } }

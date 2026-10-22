@@ -1,0 +1,8 @@
+{
+  "checks": [
+    "Reference labels and separator",
+    "ArrowDown and Escape restore trigger focus",
+    "Edit calls existing project form"
+  ],
+  "scope": "Local UI with synthetic AppContext; Supabase blocked"
+}
