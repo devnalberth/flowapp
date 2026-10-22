@@ -28,4 +28,12 @@ Comparação AST confirmou 23 cálculos/handlers originais intactos em Studies.j
 
 ## Próximas unidades
 
-Detalhe 48490:15645, Sem estudos 48496:18184, Estudo sem conteúdo 48496:18357, Novo estudo 48494:14922, Adicionar conteúdo 48495:15277, Excluir estudo 48496:16429 e referência Estudar 48496:17717. Não implementar Caderno, busca do caderno ou edição de estudo da seção 10.2. Detalhe e modais ainda usam a apresentação anterior, com seus handlers preservados. A limpeza dos estilos e componentes antigos fica para o fim do módulo.
+Sem estudos 48496:18184, Estudo sem conteúdo 48496:18357, Novo estudo 48494:14922, Adicionar conteúdo 48495:15277, Excluir estudo 48496:16429 e referência Estudar 48496:17717. Não implementar Caderno, busca do caderno ou edição de estudo da seção 10.2. Os modais ainda usam a apresentação anterior, com seus handlers preservados. A limpeza dos estilos e componentes antigos fica para o fim do módulo.
+
+## Detalhe implementado — 48490:15645
+
+Contexto, screenshot e motion do Figma consultados. Hero 548×306 em (288,247.6), quatro KPIs, cabeçalho Conteúdo e árvore de módulos, sub-módulos, matérias e aulas. Capturas estudo-detalhe-1440/1024/390.png. StudyDetail e StudyContentTree reutilizam os componentes e presets compartilhados.
+
+A árvore mantém compareMixedNodes, moduleProgress, countProgressUnits, isEmptyLeaf e os handlers existentes. Aulas abrem o LessonModal atual; editar estudo e Caderno seguem adiados. Controles de editar/excluir blocos permanecem disponíveis para preservar ações existentes. KPIs sem destino existente não recebem setas decorativas acionáveis. O rótulo itens reflete blocos folha vazios no cálculo; avaliações e agendamentos vêm dos dados, sem reproduzir números fictícios do wireframe.
+
+detail-verification.json: dez verificações locais com contexto sintético e Supabase bloqueado. Testados 18/25 unidades, conclusão e reabertura de aula e matéria vazia com atualização do agregado, editor de aula existente, contrato de navegação Tarefas, link externo, ordenação intercalada por created_at e ausência de overflow em 1024/390px. Nenhum erro de runtime. Comparação AST dos 23 cálculos/handlers originais e build passaram. Permanecem avisos de bundle e externalização do SDK Anthropic. Services, APIs, banco e migrations intactos. Sem validação autenticada ou deployment.

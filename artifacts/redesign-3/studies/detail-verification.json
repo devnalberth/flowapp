@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Existing progress: 18 of 25 units",
+    "Lesson completion updates and restores aggregate progress",
+    "Empty subject completion remains one progress unit",
+    "Existing lesson editor opens",
+    "Study action preserves Tasks navigation contract",
+    "Existing external platform link preserved",
+    "No horizontal overflow at 1024px",
+    "No horizontal overflow at 390px",
+    "Mixed content order uses existing created_at comparator",
+    "No browser runtime errors"
+  ],
+  "runtimeErrors": []
+}

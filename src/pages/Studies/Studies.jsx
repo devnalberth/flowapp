@@ -18,6 +18,8 @@ import { safeExternalUrl } from '../../utils/safeUrl'
 
 import './Studies.css'
 import StudiesPanel from './StudiesPanel'
+import StudyDetail from './StudyDetail'
+import StudyContentTree from './StudyContentTree'
 
 const TYPE_ICON = { COURSE: BookOpen, UNIVERSITY: GraduationCap, BOOK: Book, MENTORSHIP: Compass }
 
@@ -643,62 +645,11 @@ export default function Studies({ user, onNavigate, onLogout }) {
         {!activeStudy ? (
           <StudiesPanel studies={studies} agg={agg} filteredStudies={filteredStudies} statusFilter={statusFilter} typeFilter={typeFilter} statusFilters={statusFilters} typeFilters={typeFilters} onStatusChange={setStatusFilter} onTypeChange={setTypeFilter} onOpen={setActiveStudyId} onCreate={()=>setModalOpen(true)} onNavigate={onNavigate} loading={loading}/>
         ) : (
-          <div className="stDetail">
-            <button className="stDetail__back" onClick={() => setActiveStudyId(null)}>
-              <ArrowLeft size={18} /> Voltar para Estudos
-            </button>
-
-            {(() => {
-              const ov = studyOverview(activeStudy)
-              const meta = STUDY_TYPE_META[activeStudy.type] || STUDY_TYPE_META.COURSE
-              const Icon = TYPE_ICON[activeStudy.type] || BookOpen
-              const st = STUDY_STATUS_META[ov.status]
-              return (
-                <>
-                  <header className="stDetail__header">
-                    <div className="stDetail__cover" style={{ '--accent': meta.color }}>
-                      {activeStudy.coverUrl ? <img src={activeStudy.coverUrl} alt={activeStudy.title} /> : <Icon size={34} />}
-                    </div>
-                    <div className="stDetail__headText">
-                      <div className="stDetail__chips">
-                        <span className="stChip" style={{ '--accent': meta.color }}>{meta.icon} {meta.label}</span>
-                        {activeStudy.category && <span className="stChip stChip--muted">{activeStudy.category}</span>}
-                        <span className="stChip stChip--status" style={{ color: st.color, borderColor: st.color }}>{st.label}</span>
-                      </div>
-                      <h2>{activeStudy.title}</h2>
-                      {safeExternalUrl(activeStudy.url) && (
-                        <a className="stDetail__link" href={safeExternalUrl(activeStudy.url)} target="_blank" rel="noreferrer">
-                          Acessar plataforma →
-                        </a>
-                      )}
-                    </div>
-                    <button className="stDetail__del" onClick={handleDeleteStudy} title="Excluir estudo"><Trash2 size={16} /></button>
-                  </header>
-
-                  <StudyOverviewPanel overview={ov} />
-
-                  <div className="stDetail__modulesHead">
-                    <h3>Conteúdo</h3>
-                    <button className="stDetail__addModule" onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['module'] })}>
-                      <Plus size={15} /> Novo módulo
-                    </button>
-                  </div>
-
-                  <div className="stModules">
-                    {activeStudy.modules.length === 0 ? (
-                      <div className="stModules__empty">
-                        <Layers size={26} />
-                        <p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos e aulas — e pode agendar qualquer um deles para a aba Tarefas.</p>
-                        <button onClick={() => openModuleModal({ mode: 'create', allowedKinds: ['module'] })}><Plus size={15} /> Criar módulo</button>
-                      </div>
-                    ) : (
-                      activeStudy.modules.map((mod, i) => renderModule(mod, i))
-                    )}
-                  </div>
-                </>
-              )
-            })()}
-          </div>
+          <StudyDetail study={activeStudy} onBack={()=>setActiveStudyId(null)} onDelete={handleDeleteStudy} onNewModule={()=>openModuleModal({mode:'create',allowedKinds:['module']})} onNavigate={onNavigate} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})}>
+            {activeStudy.modules.length===0 ? <div className="stModules__empty"><Layers size={26}/><p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos e aulas — e pode agendar qualquer um deles para a aba Tarefas.</p><button onClick={()=>openModuleModal({mode:'create',allowedKinds:['module']})}><Plus size={15}/>Criar módulo</button></div> :
+              <StudyContentTree study={activeStudy} expandedModules={expandedModules} expandedSubmodules={expandedSubmodules} expandedMaterias={expandedMaterias} setExpandedModules={setExpandedModules} setExpandedSubmodules={setExpandedSubmodules} setExpandedMaterias={setExpandedMaterias} onLesson={setSelectedLesson} onToggleLesson={handleToggleLesson} onDeleteLesson={handleDeleteLesson} onEdit={editModule} onDeleteBlock={handleDeleteModule} onToggleBlock={toggleStudyModule} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})} onAdd={openModuleModal}/>
+            }
+          </StudyDetail>
         )}
 
         {isModalOpen && (
