@@ -1,59 +1,84 @@
-import { useState, useRef } from 'react'
-import { X, Book, GraduationCap, BookOpen, Upload, Compass } from 'lucide-react'
-import { studyService } from '../../services/studyService'
-import './CreateStudyModal.css'
+import { useState, useRef, useId, useEffect } from "react";
+import {
+  X,
+  Book,
+  GraduationCap,
+  BookOpen,
+  Image,
+  ChevronDown,
+  Compass,
+} from "lucide-react";
+import { studyService } from "../../services/studyService";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
+import Field, { Input, Select } from "../ui/Field";
+import Toast from "../ui/Toast";
+import "./CreateStudyModal.css";
 
 const STUDY_TYPES = [
-  { id: 'COURSE', label: 'Curso', icon: BookOpen },
-  { id: 'UNIVERSITY', label: 'Faculdade', icon: GraduationCap },
-  { id: 'MENTORSHIP', label: 'Mentoria', icon: Compass },
-  { id: 'BOOK', label: 'Livro', icon: Book },
-]
+  { id: "COURSE", label: "Curso", icon: BookOpen, color: "brasa" },
+  {
+    id: "UNIVERSITY",
+    label: "Faculdade",
+    icon: GraduationCap,
+    color: "violeta",
+  },
+  { id: "MENTORSHIP", label: "Mentoria", icon: Compass, color: "ciano" },
+  { id: "BOOK", label: "Livro", icon: Book, color: "verde" },
+];
 
 const CATEGORIES = [
-  'Programação',
-  'Audiovisual',
-  'Design',
-  'Marketing',
-  'Finanças',
-  'Idiomas',
-  'Gestão',
-  'Saúde',
-  'Outros',
-]
+  "Programação",
+  "Audiovisual",
+  "Design",
+  "Marketing",
+  "Finanças",
+  "Idiomas",
+  "Gestão",
+  "Saúde",
+  "Outros",
+];
 
 const STATUS_OPTIONS = [
-  { id: 'NOT_STARTED', label: 'Não Iniciado' },
-  { id: 'IN_PROGRESS', label: 'Em Andamento' },
-  { id: 'PAUSED', label: 'Pausado' },
-  { id: 'COMPLETED', label: 'Concluído' },
-]
+  { id: "NOT_STARTED", label: "Não iniciado" },
+  { id: "IN_PROGRESS", label: "Em andamento" },
+  { id: "PAUSED", label: "Pausado" },
+  { id: "COMPLETED", label: "Concluído" },
+];
 
 export default function CreateStudyModal({ onClose, onSubmit, userId }) {
+  const [submitError, setSubmitError] = useState(false);
+  const formId = useId();
   const [formData, setFormData] = useState({
-    title: '',
-    type: 'COURSE',
-    category: '',
-    status: 'NOT_STARTED',
-    url: '',
-    description: '',
-  })
-  const [coverFile, setCoverFile] = useState(null)
-  const [coverPreview, setCoverPreview] = useState(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useRef(null)
+    title: "",
+    type: "COURSE",
+    category: "",
+    status: "NOT_STARTED",
+    url: "",
+    description: "",
+  });
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const titleRef = useRef(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => titleRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!formData.title.trim()) return
+    e.preventDefault();
+    if (!formData.title.trim()) return;
 
-    setIsUploading(true)
+    setSubmitError(false);
+    setIsUploading(true);
 
     try {
       // Se tiver arquivo de capa, faz upload primeiro
-      let coverUrl = null
+      let coverUrl = null;
       if (coverFile && userId) {
-        coverUrl = await studyService.uploadCoverImage(coverFile, userId)
+        coverUrl = await studyService.uploadCoverImage(coverFile, userId);
       }
 
       await onSubmit({
@@ -64,225 +89,273 @@ export default function CreateStudyModal({ onClose, onSubmit, userId }) {
         url: formData.url || null,
         description: formData.description || null,
         coverUrl: coverUrl,
-      })
+      });
 
       // Reset form
-      setFormData({ title: '', type: 'COURSE', category: '', status: 'NOT_STARTED', url: '', description: '' })
-      setCoverFile(null)
-      setCoverPreview(null)
-      onClose()
+      setFormData({
+        title: "",
+        type: "COURSE",
+        category: "",
+        status: "NOT_STARTED",
+        url: "",
+        description: "",
+      });
+      setCoverFile(null);
+      setCoverPreview(null);
+      onClose();
     } catch (error) {
-      console.error('Erro ao criar estudo:', error)
-      alert('Erro ao criar estudo. Tente novamente.')
+      console.error("Erro ao criar estudo:", error);
+      setSubmitError(true);
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setCoverFile(file)
+      setCoverFile(file);
       // Preview
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setCoverPreview(reader.result)
-      }
-      reader.readAsDataURL(file)
+        setCoverPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleDrop = (e) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      setCoverFile(file)
-      const reader = new FileReader()
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setCoverFile(file);
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setCoverPreview(reader.result)
-      }
-      reader.readAsDataURL(file)
+        setCoverPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleDragOver = (e) => {
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const removeCover = () => {
-    setCoverFile(null)
-    setCoverPreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+    setCoverFile(null);
+    setCoverPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const getNameLabel = () => {
     switch (formData.type) {
-      case 'COURSE': return 'Nome do Curso'
-      case 'UNIVERSITY': return 'Nome da Faculdade/Curso'
-      case 'MENTORSHIP': return 'Nome da Mentoria'
-      case 'BOOK': return 'Título do Livro'
-      default: return 'Nome'
+      case "COURSE":
+        return "Nome do curso";
+      case "UNIVERSITY":
+        return "Nome da faculdade/curso";
+      case "MENTORSHIP":
+        return "Nome da mentoria";
+      case "BOOK":
+        return "Título do livro";
+      default:
+        return "Nome";
     }
-  }
+  };
 
   return (
-    <div className="study-modal-overlay" onClick={onClose}>
-      <div className="study-modal study-modal--expanded" onClick={(e) => e.stopPropagation()}>
-        <header className="study-modal__header">
-          <h2>Novo Estudo</h2>
-          <button className="study-modal__close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </header>
-
-        <form className="study-modal__form" onSubmit={handleSubmit}>
-          {/* Tipo de Estudo */}
-          <div className="study-modal__field">
-            <label>Tipo de Estudo</label>
-            <div className="study-modal__types">
-              {STUDY_TYPES.map((type) => {
-                const Icon = type.icon
-                return (
-                  <button
-                    key={type.id}
-                    type="button"
-                    className={`study-modal__type ${formData.type === type.id ? 'active' : ''}`}
-                    onClick={() => handleChange('type', type.id)}
-                  >
-                    <Icon size={20} />
-                    <span>{type.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+    <Modal
+      className="study-modal"
+      width={600}
+      title="Novo estudo"
+      subtitle="Curso, faculdade, mentoria ou livro. O progresso vem do conteúdo."
+      icon={GraduationCap}
+      onClose={onClose}
+      hint="Enter salva · Esc cancela"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={!formData.title.trim() || isUploading}
+            loading={isUploading}
+          >
+            Criar estudo
+          </Button>
+        </>
+      }
+    >
+      {submitError && (
+        <Toast
+          tone="danger"
+          title="Não foi possível criar o estudo"
+          detail="Tente novamente. Os campos foram mantidos."
+          onClose={() => setSubmitError(false)}
+        />
+      )}
+      <form id={formId} className="study-modal__form" onSubmit={handleSubmit}>
+        <fieldset className="study-modal__type-field">
+          <legend>Tipo de estudo</legend>
+          <div className="study-modal__types">
+            {STUDY_TYPES.map((type) => {
+              const Icon = type.icon;
+              return (
+                <button
+                  key={type.id}
+                  type="button"
+                  className={`study-modal__type ${formData.type === type.id ? "active" : ""}`}
+                  style={{
+                    "--study-type-color": `var(--fa-p-${type.color}-500)`,
+                    "--study-type-soft": `var(--fa-p-${type.color}-50)`,
+                  }}
+                  aria-pressed={formData.type === type.id}
+                  onClick={() => handleChange("type", type.id)}
+                >
+                  <span>
+                    <Icon size={17} strokeWidth={1.75} aria-hidden="true" />
+                  </span>
+                  {type.label}
+                </button>
+              );
+            })}
           </div>
-
-          {/* Nome */}
-          <div className="study-modal__field">
-            <label htmlFor="study-title">{getNameLabel()}</label>
-            <input
-              id="study-title"
-              type="text"
-              placeholder="Digite o nome..."
-              value={formData.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-              autoFocus
-            />
+        </fieldset>
+        <Input
+          ref={titleRef}
+          id="study-title"
+          label={getNameLabel()}
+          placeholder="Digite o nome…"
+          value={formData.title}
+          onChange={(e) => handleChange("title", e.target.value)}
+          autoFocus
+        />
+        <div className="study-modal__row">
+          <div className="study-modal__select">
+            <Select
+              id="study-category"
+              label="Categoria"
+              value={formData.category}
+              onChange={(e) => handleChange("category", e.target.value)}
+            >
+              <option value="">Selecione…</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </Select>
+            <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
           </div>
-
-          {/* Categoria e Status lado a lado */}
-          <div className="study-modal__row">
-            <div className="study-modal__field study-modal__field--half">
-              <label htmlFor="study-category">Categoria</label>
-              <select
-                id="study-category"
-                value={formData.category}
-                onChange={(e) => handleChange('category', e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="study-modal__field study-modal__field--half">
-              <label htmlFor="study-status">Status</label>
-              <select
-                id="study-status"
-                value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-              >
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+          <div className="study-modal__select">
+            <Select
+              id="study-status"
+              label="Status"
+              value={formData.status}
+              onChange={(e) => handleChange("status", e.target.value)}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+            <ChevronDown size={16} strokeWidth={1.75} aria-hidden="true" />
           </div>
-
-          {/* URL do Curso */}
-          <div className="study-modal__field">
-            <label htmlFor="study-url">URL do Curso (opcional)</label>
-            <input
-              id="study-url"
-              type="url"
-              placeholder="https://..."
-              value={formData.url}
-              onChange={(e) => handleChange('url', e.target.value)}
-            />
-          </div>
-
-          {/* Upload de Capa */}
-          <div className="study-modal__field">
-            <label>Capa (opcional)</label>
-            <div
-              className={`study-modal__upload ${coverPreview ? 'has-preview' : ''}`}
+        </div>
+        <Input
+          id="study-url"
+          type="url"
+          label="Link da plataforma"
+          optional
+          placeholder="https://"
+          value={formData.url}
+          onChange={(e) => handleChange("url", e.target.value)}
+        />
+        <div className="study-modal__cover-field">
+          <label htmlFor="study-cover">
+            Capa <span>· opcional</span>
+          </label>
+          <div
+            className={`study-modal__upload ${coverPreview ? "has-preview" : ""}`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            <button
+              type="button"
+              className="study-modal__upload-trigger"
               onClick={triggerFileInput}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
+              aria-label={
+                coverPreview
+                  ? "Trocar imagem de capa"
+                  : "Selecionar imagem de capa"
+              }
             >
               {coverPreview ? (
-                <div className="study-modal__preview-wrapper">
-                  <img src={coverPreview} alt="Preview" className="study-modal__preview-img" />
-                  <button
-                    type="button"
-                    className="study-modal__remove-cover"
-                    onClick={(e) => { e.stopPropagation(); removeCover(); }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
+                <img
+                  src={coverPreview}
+                  alt="Prévia da capa"
+                  className="study-modal__preview-img"
+                />
               ) : (
-                <div className="study-modal__upload-placeholder">
-                  <Upload size={24} />
-                  <span>Clique ou arraste uma imagem</span>
-                </div>
+                <>
+                  <span className="study-modal__upload-icon">
+                    <Image size={18} strokeWidth={1.75} aria-hidden="true" />
+                  </span>
+                  <span className="study-modal__upload-text">
+                    <strong>Clique ou arraste uma imagem</strong>
+                    <span>Sem capa, o card usa a cor e o ícone do tipo.</span>
+                  </span>
+                </>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-            </div>
-          </div>
-
-          {/* Descrição */}
-          <div className="study-modal__field">
-            <label htmlFor="study-description">Descrição / Anotações</label>
-            <textarea
-              id="study-description"
-              placeholder="Login, senha, observações..."
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              rows={3}
+            </button>
+            {coverPreview && (
+              <button
+                type="button"
+                className="study-modal__remove-cover"
+                aria-label="Remover capa"
+                onClick={removeCover}
+              >
+                <X size={16} />
+              </button>
+            )}
+            <input
+              id="study-cover"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              hidden
             />
           </div>
-
-          {/* Ações */}
-          <div className="study-modal__actions">
-            <button type="button" className="study-modal__cancel" onClick={onClose}>
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="study-modal__submit"
-              disabled={!formData.title.trim() || isUploading}
-            >
-              {isUploading ? 'Salvando...' : 'Criar Estudo'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
+        </div>
+        <Field
+          id="study-description"
+          className="study-modal__description"
+          label="Descrição"
+          optional
+          count={formData.description.length}
+          maxLength={200}
+        >
+          <textarea
+            id="study-description"
+            placeholder="Do que se trata, em uma ou duas frases"
+            value={formData.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            rows={2}
+            maxLength={200}
+          />
+        </Field>
+      </form>
+    </Modal>
+  );
 }

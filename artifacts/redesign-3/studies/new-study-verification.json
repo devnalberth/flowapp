@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "Initial focus, title validation and existing category/status options preserved",
+    "Focus trapped, Escape closes and restores trigger",
+    "All four types submit original payload with trimmed title and null optional fields",
+    "Description limited to 200 with counter; desktop dialog matches 600x782 source",
+    "Cover preview/removal and upload-before-create retain original payload",
+    "Create failure keeps form and shows visible toast in dialog; Enter retries successfully",
+    "Upload failure never creates study and preserves input",
+    "No horizontal overflow and reachable submit at 1024px",
+    "No horizontal overflow and reachable submit at 390px",
+    "Reduced motion keeps dialog visible",
+    "No browser runtime errors"
+  ],
+  "box": {
+    "x": 420,
+    "y": 108.4375,
+    "width": 600,
+    "height": 783.125
+  },
+  "scope": "Synthetic AppContext, simulated upload/create failures; no real Supabase writes",
+  "runtimeErrors": []
+}

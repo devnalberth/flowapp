@@ -262,13 +262,8 @@ export default function Studies({ user, onNavigate, onLogout }) {
   }, [selectedLesson, activeStudy])
 
   const handleCreateStudy = async (studyData) => {
-    try {
-      await addStudy(studyData)
-      setModalOpen(false)
-    } catch (error) {
-      console.error('Error creating study:', error)
-      alert('Erro ao criar estudo: ' + error.message)
-    }
+    await addStudy(studyData)
+    setModalOpen(false)
   }
 
   const openModuleModal = (cfg) => setModuleModal(cfg)
