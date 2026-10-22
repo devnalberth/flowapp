@@ -17,6 +17,7 @@ import ProgressBar from "../../components/ui/ProgressBar";
 import FilterPill from "../../components/ui/FilterPill";
 import StatusBadge from "../../components/ui/StatusBadge";
 import Button from "../../components/ui/Button";
+import StudyEmptyState from "./StudyEmptyState";
 import EmptyState from "../../components/ui/EmptyState";
 import { useMotionPresets } from "../../components/ui/motion";
 import {
@@ -125,6 +126,10 @@ export default function StudiesPanel({
         <div className="studies-hub-loading" role="status">
           Carregando estudos…
         </div>
+      ) : studies.length === 0 ? (
+        <motion.div variants={presets.card}>
+          <StudyEmptyState onCreate={onCreate} />
+        </motion.div>
       ) : (
         <>
           <motion.div className="studies-hub-summary" variants={presets.card}>

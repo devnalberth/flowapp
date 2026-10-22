@@ -28,7 +28,7 @@ Comparação AST confirmou 23 cálculos/handlers originais intactos em Studies.j
 
 ## Próximas unidades
 
-Sem estudos 48496:18184, Estudo sem conteúdo 48496:18357, Novo estudo 48494:14922, Adicionar conteúdo 48495:15277, Excluir estudo 48496:16429 e referência Estudar 48496:17717. Não implementar Caderno, busca do caderno ou edição de estudo da seção 10.2. Os modais ainda usam a apresentação anterior, com seus handlers preservados. A limpeza dos estilos e componentes antigos fica para o fim do módulo.
+Novo estudo 48494:14922, Adicionar conteúdo 48495:15277, Excluir estudo 48496:16429 e referência Estudar 48496:17717. Não implementar Caderno, busca do caderno ou edição de estudo da seção 10.2. Os modais ainda usam a apresentação anterior, com seus handlers preservados. A limpeza dos estilos e componentes antigos fica para o fim do módulo.
 
 ## Detalhe implementado — 48490:15645
 
@@ -37,3 +37,11 @@ Contexto, screenshot e motion do Figma consultados. Hero 548×306 em (288,247.6)
 A árvore mantém compareMixedNodes, moduleProgress, countProgressUnits, isEmptyLeaf e os handlers existentes. Aulas abrem o LessonModal atual; editar estudo e Caderno seguem adiados. Controles de editar/excluir blocos permanecem disponíveis para preservar ações existentes. KPIs sem destino existente não recebem setas decorativas acionáveis. O rótulo itens reflete blocos folha vazios no cálculo; avaliações e agendamentos vêm dos dados, sem reproduzir números fictícios do wireframe.
 
 detail-verification.json: dez verificações locais com contexto sintético e Supabase bloqueado. Testados 18/25 unidades, conclusão e reabertura de aula e matéria vazia com atualização do agregado, editor de aula existente, contrato de navegação Tarefas, link externo, ordenação intercalada por created_at e ausência de overflow em 1024/390px. Nenhum erro de runtime. Comparação AST dos 23 cálculos/handlers originais e build passaram. Permanecem avisos de bundle e externalização do SDK Anthropic. Services, APIs, banco e migrations intactos. Sem validação autenticada ou deployment.
+
+## Estados vazios implementados
+
+Sem estudos 48496:18184 e Estudo sem conteúdo 48496:18357: contextos completos, screenshots e motion consultados individualmente, com print da implementação apresentado antes de avançar. StudyEmptyState compõe EmptyState e Button compartilhados, com passos numerados, card branco, padding64 e ícone64/28. EmptyState recebeu apenas children opcional; usos anteriores preservam seu comportamento.
+
+Sem estudos: card (288,199.8), largura1112, sem métricas ou filtros sem dados; CTA abre CreateStudyModal existente. Mantido o subtítulo sobre conteúdo, pois o progresso inclui blocos vazios. Estudo sem conteúdo: hero548×306 em (288,220.6), KPIs zero, orientação de agendamento e card vazio em (288,610.6); CTA abre ModuleModal com allowedKinds module. Edição de estudo continua adiada. Ícones usam os mesmos Lucide existentes identificados nos componentes do Figma; herói usa o asset compartilhado local.
+
+empty-verification.json e no-content-verification.json: seis verificações em cada estado, incluindo geometria desktop, três passos, abertura dos formulários sem salvar, ausência de overflow em1024/390 e nenhuma escrita/erro de runtime. Fixtures sintéticas com Supabase bloqueado. Capturas sem-estudos-* e estudo-sem-conteudo-*. Build passou e os23 cálculos/handlers originais continuam intactos. Próxima unidade: Novo estudo48494:14922, seguida dos fluxos de conteúdo/exclusão/Estudar.

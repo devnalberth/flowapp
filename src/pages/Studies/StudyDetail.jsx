@@ -23,6 +23,7 @@ import {
   isNodeComplete,
 } from "../../utils/studyMetrics";
 import { safeExternalUrl } from "../../utils/safeUrl";
+import StudyEmptyState from "./StudyEmptyState";
 import "./StudyDetail.css";
 
 const COLORS = {
@@ -45,15 +46,14 @@ export default function StudyDetail({
   const presets = useMotionPresets(),
     ov = studyOverview(study),
     type = STUDY_TYPE_META[study.type] || STUDY_TYPE_META.COURSE;
+  const empty = (study.modules || []).length === 0;
   const next = ov.nextLesson,
     completeModules = (study.modules || []).filter(isNodeComplete).length;
   const jump = () =>
-    document
-      .getElementById("study-content")
-      ?.scrollIntoView({
-        behavior: presets.reduce ? "auto" : "smooth",
-        block: "start",
-      });
+    document.getElementById("study-content")?.scrollIntoView({
+      behavior: presets.reduce ? "auto" : "smooth",
+      block: "start",
+    });
   const label = ov.blockUnits
     ? "itens"
     : study.type === "BOOK"
@@ -140,29 +140,33 @@ export default function StudyDetail({
               <div className="study-detail-number">
                 <strong>{ov.completedLessons}</strong>
                 <span>
-                  de {ov.totalLessons} {label}
+                  {empty
+                    ? `${label} por enquanto`
+                    : `de ${ov.totalLessons} ${label}`}
                 </span>
               </div>
-              <div className="study-detail-hero-chips">
-                {ov.avgRating > 0 && (
+              {!empty && (
+                <div className="study-detail-hero-chips">
+                  {ov.avgRating > 0 && (
+                    <span>
+                      <Star size={12} />
+                      {String(ov.avgRating).replace(".", ",")} de média
+                    </span>
+                  )}
                   <span>
-                    <Star size={12} />
-                    {String(ov.avgRating).replace(".", ",")} de média
+                    <Layers size={12} />
+                    {ov.modulesCount} módulos
                   </span>
-                )}
-                <span>
-                  <Layers size={12} />
-                  {ov.modulesCount} módulos
-                </span>
-                {(ov.submodulesCount > 0 || ov.materiasCount > 0) && (
-                  <span>
-                    <Boxes size={12} />
-                    {ov.submodulesCount} sub-módulo
-                    {ov.submodulesCount === 1 ? "" : "s"} · {ov.materiasCount}{" "}
-                    matéria{ov.materiasCount === 1 ? "" : "s"}
-                  </span>
-                )}
-              </div>
+                  {(ov.submodulesCount > 0 || ov.materiasCount > 0) && (
+                    <span>
+                      <Boxes size={12} />
+                      {ov.submodulesCount} sub-módulo
+                      {ov.submodulesCount === 1 ? "" : "s"} · {ov.materiasCount}{" "}
+                      matéria{ov.materiasCount === 1 ? "" : "s"}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <ProgressRing
               value={ov.progress}
@@ -194,34 +198,50 @@ export default function StudyDetail({
               </Button>
             </div>
           ) : (
-            <p className="study-detail-no-next">Nenhum conteúdo agendado.</p>
+            <div className="study-detail-next">
+              <span>
+                <CalendarClock size={18} />
+              </span>
+              <div>
+                <strong>Nada agendado ainda</strong>
+                <span>Agende uma aula e ela aparece nas Tarefas</span>
+              </div>
+            </div>
           )}
         </HeroCard>
         <KpiCard
           label="Módulos"
           value={ov.modulesCount}
-          variation={`${completeModules} completos`}
-          context={`faltam ${ov.modulesCount - completeModules}`}
+          variation={empty ? "—" : `${completeModules} completos`}
+          context={
+            empty
+              ? "crie o primeiro"
+              : `faltam ${ov.modulesCount - completeModules}`
+          }
           onAction={jump}
         />
         <KpiCard
           label={ov.blockUnits ? "Itens concluídos" : "Aulas concluídas"}
-          value={`${ov.completedLessons}/${ov.totalLessons}`}
+          value={empty ? 0 : `${ov.completedLessons}/${ov.totalLessons}`}
           variation={`${ov.progress}%`}
           context="do estudo"
         />
         <KpiCard
           label="Agendados"
           value={ov.scheduledCount}
-          variation={next ? schedule(next) : "sem próximo"}
-          context={next?.title || "defina uma data no conteúdo"}
+          variation={next ? schedule(next) : "—"}
+          context={next?.title || "nada nas Tarefas"}
           onAction={() => onNavigate?.("Tarefas")}
         />
         <KpiCard
           label="Matérias"
           value={ov.materiasCount}
-          variation={`+${ov.submodulesCount} sub-módulo${ov.submodulesCount === 1 ? "" : "s"}`}
-          context="na estrutura do estudo"
+          variation={
+            empty
+              ? "—"
+              : `+${ov.submodulesCount} sub-módulo${ov.submodulesCount === 1 ? "" : "s"}`
+          }
+          context={empty ? "nenhuma ainda" : "na estrutura do estudo"}
         />
       </motion.div>
       <motion.header
@@ -231,13 +251,23 @@ export default function StudyDetail({
       >
         <div>
           <h2>Conteúdo</h2>
-          <p>Clique numa aula para abrir os detalhes e as anotações dela.</p>
+          <p>
+            {empty
+              ? "Módulos, sub-módulos, matérias e aulas. Marque o que concluir; agende para cair nas Tarefas."
+              : "Clique numa aula para abrir os detalhes e as anotações dela."}
+          </p>
         </div>
         <Button variant="secondary" size="sm" icon={Plus} onClick={onNewModule}>
           Novo módulo
         </Button>
       </motion.header>
-      {children}
+      {empty ? (
+        <motion.div variants={presets.card}>
+          <StudyEmptyState content onCreate={onNewModule} />
+        </motion.div>
+      ) : (
+        children
+      )}
     </motion.section>
   );
 }

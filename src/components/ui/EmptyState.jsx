@@ -9,6 +9,7 @@ export default function EmptyState({
   action,
   onAction,
   className = '',
+  children,
 }) {
   return (
     <div className={`fa-empty ${className}`}>
@@ -22,6 +23,7 @@ export default function EmptyState({
           {action}
         </Button>
       )}
+      {children}
     </div>
   )
 }

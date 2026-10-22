@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "Study with no modules shows zero progress and onboarding",
+    "Desktop empty card matches source position and width",
+    "Create module opens existing form restricted to module kind",
+    "No horizontal overflow at 1024px",
+    "No horizontal overflow at 390px",
+    "No writes or runtime errors"
+  ],
+  "box": {
+    "x": 288,
+    "y": 610.59375,
+    "width": 1112,
+    "height": 404.390625
+  },
+  "runtimeErrors": []
+}

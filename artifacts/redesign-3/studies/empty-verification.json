@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "Empty account shows three onboarding steps without dashboard metrics",
+    "Desktop card matches source position and width",
+    "Primary action opens existing study creation form",
+    "No horizontal overflow at 1024px",
+    "No horizontal overflow at 390px",
+    "No writes or runtime errors"
+  ],
+  "box": {
+    "x": 288,
+    "y": 199.796875,
+    "width": 1112,
+    "height": 404.390625
+  },
+  "runtimeErrors": []
+}

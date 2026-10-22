@@ -646,9 +646,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
           <StudiesPanel studies={studies} agg={agg} filteredStudies={filteredStudies} statusFilter={statusFilter} typeFilter={typeFilter} statusFilters={statusFilters} typeFilters={typeFilters} onStatusChange={setStatusFilter} onTypeChange={setTypeFilter} onOpen={setActiveStudyId} onCreate={()=>setModalOpen(true)} onNavigate={onNavigate} loading={loading}/>
         ) : (
           <StudyDetail study={activeStudy} onBack={()=>setActiveStudyId(null)} onDelete={handleDeleteStudy} onNewModule={()=>openModuleModal({mode:'create',allowedKinds:['module']})} onNavigate={onNavigate} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})}>
-            {activeStudy.modules.length===0 ? <div className="stModules__empty"><Layers size={26}/><p>Comece criando o primeiro módulo. Dentro dele você adiciona sub-módulos e aulas — e pode agendar qualquer um deles para a aba Tarefas.</p><button onClick={()=>openModuleModal({mode:'create',allowedKinds:['module']})}><Plus size={15}/>Criar módulo</button></div> :
               <StudyContentTree study={activeStudy} expandedModules={expandedModules} expandedSubmodules={expandedSubmodules} expandedMaterias={expandedMaterias} setExpandedModules={setExpandedModules} setExpandedSubmodules={setExpandedSubmodules} setExpandedMaterias={setExpandedMaterias} onLesson={setSelectedLesson} onToggleLesson={handleToggleLesson} onDeleteLesson={handleDeleteLesson} onEdit={editModule} onDeleteBlock={handleDeleteModule} onToggleBlock={toggleStudyModule} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})} onAdd={openModuleModal}/>
-            }
           </StudyDetail>
         )}
 

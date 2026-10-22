@@ -1,0 +1,66 @@
+.studies-first-empty.fa-empty {
+  padding: 64px 24px;
+  gap: 16px;
+  border: 0;
+  border-radius: var(--fa-radius-card);
+  background: var(--fa-bg-card);
+}
+.studies-first-empty .fa-empty__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+}
+.studies-first-empty .fa-empty__icon svg {
+  width: 28px;
+  height: 28px;
+}
+.studies-first-empty h3 {
+  font: var(--fa-type-section);
+  letter-spacing: -0.005em;
+}
+.studies-first-empty p {
+  max-width: none;
+  color: var(--fa-text-secondary);
+  font: var(--fa-type-body);
+}
+.studies-empty-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 0 0;
+  list-style: none;
+}
+.studies-empty-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 12px;
+  border-radius: var(--fa-radius-input);
+  background: var(--fa-bg-soft);
+  color: var(--fa-text-secondary);
+  font: var(--fa-type-badge);
+}
+.studies-empty-steps li > span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--fa-bg-card);
+  color: var(--fa-text-accent);
+}
+@media (max-width: 767px) {
+  .studies-first-empty.fa-empty {
+    padding: 40px 20px;
+  }
+  .studies-empty-steps {
+    width: 100%;
+  }
+  .studies-empty-steps li {
+    width: 100%;
+    text-align: left;
+  }
+}
