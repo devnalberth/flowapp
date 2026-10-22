@@ -1,0 +1,49 @@
+{
+  "checks": [
+    "600px dialog matches source; all four local priority SVGs load at intrinsic 8x8",
+    "No overflow or footer overlap at 1024px",
+    "No overflow or footer overlap at 390px",
+    "Actual Studies handler preserves existing lesson payload, including pre-existing omission of time and priority",
+    "All four kinds preserve trimmed individual payload, schedule and priority",
+    "Clearing date retains existing null time/priority behavior",
+    "Bulk parser preserves order, removes list prefixes and omits individual scheduling",
+    "Edit prefill, long description and move destination preserved",
+    "Failure toast visible inside dialog, values retained, Enter retries",
+    "Focus trap, Escape, trigger restoration and reduced motion",
+    "No browser runtime errors"
+  ],
+  "box": {
+    "x": 420,
+    "y": 96.703125,
+    "width": 600,
+    "height": 731.578125
+  },
+  "assets": [
+    {
+      "src": "/assets/redesign/studies/priorities/baixa.svg",
+      "loaded": true,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "src": "/assets/redesign/studies/priorities/normal.svg",
+      "loaded": true,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "src": "/assets/redesign/studies/priorities/alta.svg",
+      "loaded": true,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "src": "/assets/redesign/studies/priorities/urgente.svg",
+      "loaded": true,
+      "width": 8,
+      "height": 8
+    }
+  ],
+  "scope": "Local synthetic context and callback fixtures. Supabase blocked. Known lesson scheduling omission preserved.",
+  "runtimeErrors": []
+}
