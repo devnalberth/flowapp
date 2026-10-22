@@ -1,0 +1,52 @@
+.study-delete-confirm .fa-modal__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 28px 0;
+}
+.study-delete-confirm .fa-modal__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--fa-status-danger-bg);
+  color: var(--fa-status-danger);
+}
+.study-delete-confirm .fa-modal__icon svg {
+  width: 22px;
+  height: 22px;
+}
+.study-delete-confirm .fa-modal__close {
+  display: none;
+}
+.study-delete-confirm .fa-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 6px 28px 0;
+  overflow-y: auto;
+}
+.study-delete-confirm .fa-confirm__message {
+  color: var(--fa-text-muted);
+}
+.study-delete-name {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--fa-bg-soft);
+  color: var(--fa-text-primary);
+  font: var(--fa-type-body-strong);
+  overflow-wrap: anywhere;
+}
+.study-delete-confirm .fa-modal__footer {
+  padding: 16px 28px 28px;
+  background: transparent;
+  border: 0;
+}
+.study-delete-confirm .fa-modal__actions {
+  gap: 10px;
+}
+@media (max-width: 479px) {
+  .study-delete-confirm .fa-modal__actions {
+    flex-wrap: wrap;
+  }
+}

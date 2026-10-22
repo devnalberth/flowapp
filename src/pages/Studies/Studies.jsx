@@ -1,5 +1,5 @@
 import { usePageActions } from '../../context/ShellContext.jsx'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import CreateStudyModal from '../../components/CreateStudyModal/CreateStudyModal.jsx'
 import LessonModal from '../../components/LessonModal/LessonModal.jsx'
@@ -20,6 +20,7 @@ import './Studies.css'
 import StudiesPanel from './StudiesPanel'
 import StudyDetail from './StudyDetail'
 import StudyContentTree from './StudyContentTree'
+import StudyDeleteConfirm from './StudyDeleteConfirm'
 
 const TYPE_ICON = { COURSE: BookOpen, UNIVERSITY: GraduationCap, BOOK: Book, MENTORSHIP: Compass }
 
@@ -222,6 +223,10 @@ export default function Studies({ user, onNavigate, onLogout }) {
     addStudyLesson, updateStudyLesson, deleteStudyLesson,
     toggleStudyLesson, loading,
   } = useApp()
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deletePending, setDeletePending] = useState(false)
+  const [deleteError, setDeleteError] = useState(false)
+  const deleteInFlight = useRef(false)
   const [activeStudyId, setActiveStudyId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
@@ -338,11 +343,29 @@ export default function Studies({ user, onNavigate, onLogout }) {
     catch (error) { alert('Erro ao atualizar aula: ' + error.message) }
   }
 
-  const handleDeleteStudy = async () => {
+  const requestDeleteStudy = () => {
     if (!activeStudy) return
-    if (!confirm(`Excluir "${activeStudy.title}"? Todos os módulos e aulas serão perdidos.`)) return
-    try { await deleteStudy(activeStudy.id); setActiveStudyId(null) }
-    catch { alert('Erro ao excluir estudo') }
+    setDeleteError(false)
+    setDeleteTarget(activeStudy)
+  }
+  const cancelDeleteStudy = () => {
+    if (!deleteInFlight.current) setDeleteTarget(null)
+  }
+  const handleDeleteStudy = async () => {
+    if (!deleteTarget || deleteInFlight.current) return
+    deleteInFlight.current = true
+    setDeletePending(true)
+    setDeleteError(false)
+    try {
+      await deleteStudy(deleteTarget.id)
+      setActiveStudyId(null)
+      setDeleteTarget(null)
+    } catch {
+      setDeleteError(true)
+    } finally {
+      deleteInFlight.current = false
+      setDeletePending(false)
+    }
   }
 
   const editModule = (node, kind) =>
@@ -640,10 +663,12 @@ export default function Studies({ user, onNavigate, onLogout }) {
         {!activeStudy ? (
           <StudiesPanel studies={studies} agg={agg} filteredStudies={filteredStudies} statusFilter={statusFilter} typeFilter={typeFilter} statusFilters={statusFilters} typeFilters={typeFilters} onStatusChange={setStatusFilter} onTypeChange={setTypeFilter} onOpen={setActiveStudyId} onCreate={()=>setModalOpen(true)} onNavigate={onNavigate} loading={loading}/>
         ) : (
-          <StudyDetail study={activeStudy} onBack={()=>setActiveStudyId(null)} onDelete={handleDeleteStudy} onNewModule={()=>openModuleModal({mode:'create',allowedKinds:['module']})} onNavigate={onNavigate} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})}>
+          <StudyDetail study={activeStudy} onBack={()=>setActiveStudyId(null)} onDelete={requestDeleteStudy} onNewModule={()=>openModuleModal({mode:'create',allowedKinds:['module']})} onNavigate={onNavigate} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})}>
               <StudyContentTree study={activeStudy} expandedModules={expandedModules} expandedSubmodules={expandedSubmodules} expandedMaterias={expandedMaterias} setExpandedModules={setExpandedModules} setExpandedSubmodules={setExpandedSubmodules} setExpandedMaterias={setExpandedMaterias} onLesson={setSelectedLesson} onToggleLesson={handleToggleLesson} onDeleteLesson={handleDeleteLesson} onEdit={editModule} onDeleteBlock={handleDeleteModule} onToggleBlock={toggleStudyModule} onStudy={node=>onNavigate?.('Tarefas',{initialFilter:'flow',studyTarget:{id:node.id,title:node.title,studyTitle:activeStudy?.title||null}})} onAdd={openModuleModal}/>
           </StudyDetail>
         )}
+
+        {deleteTarget && <StudyDeleteConfirm study={deleteTarget} pending={deletePending} error={deleteError} onCancel={cancelDeleteStudy} onConfirm={handleDeleteStudy} onDismissError={()=>setDeleteError(false)}/>}
 
         {isModalOpen && (
           <CreateStudyModal onClose={() => setModalOpen(false)} onSubmit={handleCreateStudy} userId={user?.id} />

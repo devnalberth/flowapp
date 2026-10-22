@@ -1,0 +1,22 @@
+{
+  "checks": [
+    "Opening confirmation performs no writes and uses actual module/lesson counts",
+    "Compact dialog matches Figma 440px and 307px height",
+    "Cancel focus, focus trap, Escape and trigger restoration without writes",
+    "Cancel button leaves study untouched",
+    "No horizontal overflow at 1024px",
+    "No horizontal overflow at 390px",
+    "Single original deleteStudy(id) call, pending guard and return to remaining studies on success",
+    "Optimistic removal failure keeps snapshot and visible error toast; retry uses same study id",
+    "Reduced motion preserves content",
+    "No browser runtime errors"
+  ],
+  "box": {
+    "x": 500,
+    "y": 259.796875,
+    "width": 440,
+    "height": 307.390625
+  },
+  "scope": "Synthetic AppContext models existing optimistic removal; no real Supabase writes",
+  "runtimeErrors": []
+}
