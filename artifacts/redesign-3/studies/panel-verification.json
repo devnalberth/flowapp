@@ -1,0 +1,53 @@
+{
+  "checks": [
+    "Six studies preserve weighted 61%, 62/101 units and existing upcoming entries",
+    "Original status/type intersection filters retain global metrics and clear empty result",
+    "Study action keeps existing Tasks pomodoro navigation contract",
+    "Hero and keyboard card open original study detail with back navigation",
+    "New study opens existing form",
+    "All four local Figma cover symbols load at intrinsic 96x96 geometry",
+    "1024px and 390px fit viewport",
+    "Reduced motion keeps study content visible",
+    "Panel actions produce no data writes or runtime errors",
+    "Loading omits stale cards"
+  ],
+  "assets": [
+    {
+      "src": "/assets/redesign/studies/course.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    },
+    {
+      "src": "/assets/redesign/studies/university.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    },
+    {
+      "src": "/assets/redesign/studies/book.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    },
+    {
+      "src": "/assets/redesign/studies/mentorship.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    },
+    {
+      "src": "/assets/redesign/studies/course.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    },
+    {
+      "src": "/assets/redesign/studies/course.svg",
+      "loaded": true,
+      "width": 96,
+      "height": 96
+    }
+  ],
+  "scope": "Synthetic AppContext; Supabase blocked; fixture date 2026-10-15"
+}

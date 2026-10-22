@@ -17,6 +17,7 @@ import { compareMixedNodes } from '../../services/studyService'
 import { safeExternalUrl } from '../../utils/safeUrl'
 
 import './Studies.css'
+import StudiesPanel from './StudiesPanel'
 
 const TYPE_ICON = { COURSE: BookOpen, UNIVERSITY: GraduationCap, BOOK: Book, MENTORSHIP: Compass }
 
@@ -640,70 +641,7 @@ export default function Studies({ user, onNavigate, onLogout }) {
 
       <div className="studiesWrapper">
         {!activeStudy ? (
-          <>
-            <StudiesDashboard agg={agg} />
-
-            <section className="stFilters">
-              <div className="stFilters__group">
-                {statusFilters.map((f) => (
-                  <button key={f.id} className={statusFilter === f.id ? 'is-active' : ''} onClick={() => setStatusFilter(f.id)}>{f.label}</button>
-                ))}
-              </div>
-              <div className="stFilters__group">
-                {typeFilters.map((f) => (
-                  <button key={f.id} className={typeFilter === f.id ? 'is-active' : ''} onClick={() => setTypeFilter(f.id)}>{f.label}</button>
-                ))}
-              </div>
-            </section>
-
-            <section className="stGrid">
-              {loading ? (
-                <p className="stGrid__empty">Carregando…</p>
-              ) : filteredStudies.length === 0 ? (
-                <div className="stGrid__empty">
-                  <Sparkles size={28} />
-                  <p>Nenhum estudo por aqui. Crie um curso, faculdade, mentoria ou livro para começar.</p>
-                </div>
-              ) : (
-                filteredStudies.map((study, i) => {
-                  const ov = studyOverview(study)
-                  const meta = STUDY_TYPE_META[study.type] || STUDY_TYPE_META.COURSE
-                  const Icon = TYPE_ICON[study.type] || BookOpen
-                  const st = STUDY_STATUS_META[ov.status]
-                  return (
-                    <article
-                      key={study.id}
-                      className="stCard"
-                      style={{ animationDelay: `${i * 50}ms` }}
-                      onClick={() => setActiveStudyId(study.id)}
-                      role="button"
-                    >
-                      <div className="stCard__cover">
-                        {study.coverUrl
-                          ? <img src={study.coverUrl} alt={study.title} />
-                          : <div className="stCard__coverFallback" style={{ '--accent': meta.color }}><Icon size={30} /></div>}
-                        <span className="stCard__type" style={{ '--accent': meta.color }}>{meta.icon} {meta.label}</span>
-                      </div>
-                      <div className="stCard__body">
-                        <div className="stCard__top">
-                          <h3>{study.title}</h3>
-                          <ProgressRing value={ov.progress} size={44} stroke={5} />
-                        </div>
-                        {study.category && <span className="stCard__cat">{study.category}</span>}
-                        <div className="stCard__meta">
-                          <span><ListChecks size={13} /> {ov.completedLessons}/{ov.totalLessons} concluídos</span>
-                          {ov.nextLesson
-                            ? <span className="stCard__next"><Calendar size={13} /> {fmtShort(ov.nextLesson.scheduledDate)}</span>
-                            : <span className="stCard__status" style={{ color: st.color }}>{st.label}</span>}
-                        </div>
-                        <div className="stCard__bar"><span style={{ width: `${ov.progress}%` }} /></div>
-                      </div>
-                    </article>
-                  )
-                })
-              )}
-            </section>
-          </>
+          <StudiesPanel studies={studies} agg={agg} filteredStudies={filteredStudies} statusFilter={statusFilter} typeFilter={typeFilter} statusFilters={statusFilters} typeFilters={typeFilters} onStatusChange={setStatusFilter} onTypeChange={setTypeFilter} onOpen={setActiveStudyId} onCreate={()=>setModalOpen(true)} onNavigate={onNavigate} loading={loading}/>
         ) : (
           <div className="stDetail">
             <button className="stDetail__back" onClick={() => setActiveStudyId(null)}>
